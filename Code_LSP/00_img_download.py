@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-A script for dowlonding PlanetScope imagery
+A script for downloading PlanetScope imagery
 
 Author: Dennis Milechin, and adapted by Minkyu Moon
 """
@@ -46,22 +46,22 @@ def setup_filter(coords, minyear, maxyear):
     ground_control =  {
                     "type": "StringInFilter",
                     "config": ["true"],
-                    "field_name": "ground_control"
+                    "field_name": "ground_control" # NOTE
                   }
     quality_category = {
                     "type": "StringInFilter",
                     "config": ["standard"],
-                    "field_name": "quality_category"
+                    "field_name": "quality_category" # NOTE
                   }
     cloud_cover =  {
                      "type": "RangeFilter",
                      "field_name": "cloud_cover",
-                     "config": {"gte": 0, "lte": 0.5}
+                     "config": {"gte": 0, "lte": 0.5} # NOTE
                   }
     asset = {
             "type": "AssetFilter",
             "config": [
-                "analytic_sr", "analytic", "udm2"
+                "analytic_sr", "analytic", "udm2" # NOTE
             ]
         }
 
@@ -69,7 +69,7 @@ def setup_filter(coords, minyear, maxyear):
     permission = {
         "type":"PermissionFilter",
         "config":[
-            "assets:download"
+            "assets:download" # NOTE
             ]
         }
 
@@ -190,7 +190,7 @@ def main(argv):
     site_num = pandas.to_numeric(argv[0])
     
     
-    geometry_path = "~/geojson"
+    geometry_path = "~/geojson" # these are the site geometries
     min_year = 2016
     max_year = 2023
     output_dir = "~/rawImage"
@@ -214,7 +214,7 @@ def main(argv):
     # Setup the session
     session = requests.Session()
     # Authenticate
-    session.auth = (PLANET_API_KEY, "")
+    session.auth = (PLANET_API_KEY, "") # NOTE
     
     # Make a GET request to the Planet Data API
     res = session.get(base_url)
@@ -234,7 +234,7 @@ def main(argv):
     #paths_list = [paths_list[i] for i in [37,38,39,40]]
     
     #for file in paths_list:
-    file = paths_list[site_num]
+    file = paths_list[site_num] # this runs for one site, ie site_num
     if file.endswith(".geojson"):
             
             print("\n Processing file: {}".format(file))
@@ -260,7 +260,7 @@ def main(argv):
             
             geo = read_geometry(file_path)
             
-            for x in geo['features']:
+            for x in geo['features']: # get all geometry features, for each one
                 feature_name = x['properties']['f']
                 feature_coords = x['geometry']['coordinates']
                 
@@ -273,7 +273,7 @@ def main(argv):
                 request = {
                     "interval" : "year",
                     "filter" : filter,
-                    "item_types" : ["PSScene4Band"]
+                    "item_types" : ["PSScene4Band"] # NOTE
                     }
         
                 # Send the POST request to the API stats endpoint
@@ -338,7 +338,7 @@ def main(argv):
                 
                 print("\n Number of chunks: {}".format(len(chunks)))
                 
-                if(len(chunks) >= 80):
+                if(len(chunks) >= 80): # NOTE
                     sys.exit("{} Chunks which is greater than 80.  This will exceed order capacity".format(len(chunks)))
                 
                 #continue    
@@ -383,7 +383,7 @@ def main(argv):
                     order_name = "{}_chunk_{}_{}_{}".format(feature_name.replace(" ", "_"), count, min_year, max_year)
                     
                     
-                    if(check_existing_orders == "True"):
+                    if(check_existing_orders == "True"): # NOTE 
                         
                         print("\n Checking existing orders")
                         #orders_list = response.json()["orders"]

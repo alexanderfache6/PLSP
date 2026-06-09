@@ -136,3 +136,4 @@ for(yToDo in 1:length(phenYrs)){
   print(yToDo)
 }
 
+# NOTE 24 metric tif files per site per year

@@ -47,7 +47,7 @@ CheckSpike_MultiBand <- function(blue,red,vi, dates, pheno_pars){
     bTest2 <- bDiff2 > (0.03 * (1 + dDiff2/30))
     rTest2 <- rDiff2 < (1.5 * bDiff2)
     
-    majaTest <- bTest1 & rTest1 & bTest2 & rTest2
+    majaTest <- bTest1 & rTest1 & bTest2 & rTest2 # NOTE Method 1 — MAJA cloud detection
     
     dayFrac <- (dS[ind2]-dS[ind1]) / (dS[ind3]-dS[ind1])   #Calculate time fraction of date 1 to 2 compared to date 1 to 3
     fitVal <- eS[ind1] + (eS[ind3] - eS[ind1]) * dayFrac   #Calculate value at point 2 if a straight line is drawn from point 1 to 3.  
@@ -59,7 +59,7 @@ CheckSpike_MultiBand <- function(blue,red,vi, dates, pheno_pars){
     
     #look for negative spikes in vi
     eTest <- (dev > pheno_pars$minResid) & (abs(devRatio) > pheno_pars$spikeThresh) & (dDiff < pheno_pars$maxDistance)   
-    
+    # NOTE Method 2 — VI residual spike
     
     # Spikes in vi based on the double-differenced time series
     eDiff <- (eS[ind2] - eS[ind1]) - (eS[ind3] - eS[ind2])
@@ -70,7 +70,7 @@ CheckSpike_MultiBand <- function(blue,red,vi, dates, pheno_pars){
     MAD <- median(abs(eS[ind2]-Md))
 
     madTest <- eDiff < (Md-(z*MAD/0.6745)) | eDiff > (Md+(z*MAD/0.6745))
-    
+    # NOTE Method 3 — MAD double-difference
     
     ##
     check <- majaTest | eTest | madTest
@@ -95,11 +95,11 @@ Smooth_VI <- function(x, dates, pred_dates, weights, pheno_pars, dormant_value) 
     #Get index of pixels with good values
     ind <- !is.na(x)  
     # smooth with a spline to get continuous daily series
-    spl <- smooth.spline(dates[ind], x[ind], spar=pheno_pars$splineSpar, w=weights[ind])
+    spl <- smooth.spline(dates[ind], x[ind], spar=pheno_pars$splineSpar, w=weights[ind]) # NOTE splining
     # weighted version
-    xSmooth <- predict(spl, as.numeric(pred_dates))$y
+    xSmooth <- predict(spl, as.numeric(pred_dates))$y # NOTE evaluates spine at every date
     # screen and fill values less than the the dormant value
-    xSmooth[xSmooth < dormant_value] <- dormant_value
+    xSmooth[xSmooth < dormant_value] <- dormant_value # NOTE clamps spline above dormany value
     return(xSmooth)
 }
 
@@ -114,9 +114,9 @@ FindPeaks <- function(x, mag_order=T){
   # if mag_order is TRUE, peaks are returned in order of increasing magnitude (of x)
   d <- diff(x)
   d_code <- (d > 0) + (2 * (d < 0)) # 0=no change, 1=inc, 2=dec
-  peaks <- unlist(gregexpr("12", paste(d_code, collapse=""))) # no match is -1
+  peaks <- unlist(gregexpr("12", paste(d_code, collapse=""))) # no match is -1 # NOTE turns direction into string, finds 12 which is a peak
   if(peaks[1] == -1) peaks <- NULL
-  flat_peaks <- unlist(gregexpr("10+2", paste(d_code, collapse=""))) # no match is -1
+  flat_peaks <- unlist(gregexpr("10+2", paste(d_code, collapse=""))) # no match is -1 # NOTE flat top
   if(flat_peaks[1] == -1) flat_peaks <- NULL
   d_code_rle <- rle(d_code)
   flat_peaks <- flat_peaks + round(d_code_rle$l[match(flat_peaks, cumsum(d_code_rle$l)) + 1] / 2)
@@ -525,6 +525,7 @@ calculateWeights <- function(smoothMat_Masked, numDaysFit, numYrs, pheno_pars) {
 # Calculate pheno metrics for each pixel
 # Written by Douglas Bolton, and updated by Minkyu Moon  
 #---------------------------------------------------------------------
+# NOTE timeseries for individual pixel
 DoPhenologyPlanet <- function(blue, green, red, nir, dates, phenYrs, params, waterMask){
   
   # Despike, calculate dormant value, fill negative VI values with dormant value
@@ -533,14 +534,14 @@ DoPhenologyPlanet <- function(blue, green, red, nir, dates, phenYrs, params, wat
     pheno_pars <- params$phenology_parameters
     qa_pars    <- params$qa_parameters
     
-    blue <- blue/10000; green <- green/10000; red <- red/10000; nir <- nir/10000
-    vi   <- 2.5*(nir - red) / (nir + 2.4*red + 1)
+    blue <- blue/10000; green <- green/10000; red <- red/10000; nir <- nir/10000 # NOTE DN to SR
+    vi   <- 2.5*(nir - red) / (nir + 2.4*red + 1) # NOTE EVI2
     
     
     # Potential water
     if( sum(vi<0,na.rm=T)/sum(!is.na(vi)) > pheno_pars$sumNegVIthresh & waterMask > pheno_pars$waterOccuThreshLow ){
       return(rep(c(NA,rep(NA,10),4,rep(NA,10),4,NA),length(phenYrs)))} 
-    
+      # NOTE pixel is water, return NAs
     
     # Spikes check, and remove
     spikes     <- CheckSpike_MultiBand(blue, red, vi, dates, pheno_pars)
@@ -549,7 +550,7 @@ DoPhenologyPlanet <- function(blue, green, red, nir, dates, phenYrs, params, wat
     # Replace negative VIs with dormant value
     dormIms <- dates >= pheno_pars$dormStart & dates <= pheno_pars$dormEnd
     vi_dorm <- quantile(vi[dormIms & vi>0],probs=pheno_pars$dormantQuantile,na.rm=T)   # Calc vi dormant value using non-negative VIs
-    vi[vi < vi_dorm] <- vi_dorm
+    vi[vi < vi_dorm] <- vi_dorm # NOTE established floor for dormant values
     
     #
     splineStart <- as.Date(as.Date(paste0(phenYrs,'-01-01')) - pheno_pars$splineBuffer) 
@@ -585,15 +586,15 @@ DoPhenologyPlanet <- function(blue, green, red, nir, dates, phenYrs, params, wat
     
     ## Gap filling
     #Determine gaps that require filling
-    gDates <- dates[!is.na(vi)]  
+    gDates <- dates[!is.na(vi)] # NOTE good dates, ie vi is defined
     dDiff <- diff(gDates) > pheno_pars$gapLengthToFill     #Gaps greater than 20 days will be filled
-    dStart <- gDates[c(dDiff,FALSE)]
-    dEnd <- gDates[c(FALSE,dDiff)]
+    dStart <- gDates[c(dDiff,FALSE)] # NOTE start of gaps
+    dEnd <- gDates[c(FALSE,dDiff)] # NOTE end of gaps
     
     #Locate gaps in date vector
     fill_locations <- matrix(FALSE,length(all_dates))
     for (d in 1:length(dStart)) {
-      fill_locations[all_dates >= dStart[d] & all_dates < dEnd[d]] <- TRUE}
+      fill_locations[all_dates >= dStart[d] & all_dates < dEnd[d]] <- TRUE} # NOTE get dates in between start/end that are missing vi
     
     fill_dates <- all_dates[fill_locations]
     

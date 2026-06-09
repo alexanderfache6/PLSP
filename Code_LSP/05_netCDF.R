@@ -161,3 +161,4 @@ for(yy in 1:5){
   nc_close(ncout)
 }
 
+# NOTE create single year PLSP_.nc file with all metrics and metadata

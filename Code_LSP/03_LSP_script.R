@@ -78,6 +78,7 @@ phenYrs <- params$setup$phenStartYr:params$setup$phenEndYr
 
 pheno_mat <- matrix(NA,numPix,24*length(phenYrs))
 
+# NOTE for loaded site and chunk, calculate lsp per pixel
 for (i in 1:numPix){
 
   pheno_mat[i,] <- DoPhenologyPlanet(band1[i,],band2[i,],band3[i,],band4[i,],dates,phenYrs,params,waterMask[i])

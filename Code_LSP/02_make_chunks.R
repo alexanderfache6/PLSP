@@ -84,12 +84,15 @@ if (!dir.exists(ckDirTemp)) {dir.create(ckDirTemp)}
 # divede images into chunks, and save them as temporal files
 registerDoMC(params$setup$numCores)
 
+# NOTE iterate through all dates, get 4 bands
 foreach(i=1:length(dates)) %dopar%{
   band1 <- values(raster(files[i],1))
   band2 <- values(raster(files[i],2))
   band3 <- values(raster(files[i],3))
   band4 <- values(raster(files[i],4))
   
+  # NOTE slice pixels into 200 chunks, save date/chunk number to rda
+  # output is small chunk files containing 4 bands for a date
   foreach(cc=1:numCk) %dopar%{
     ckNum <- sprintf('%03d',cc)
     dirTemp <- paste0(ckDirTemp,ckNum)
@@ -112,6 +115,8 @@ foreach(i=1:length(dates)) %dopar%{
 
 ########################################
 # Load files for each chunk, merge then, and save 
+
+# NOTE load all dates for one chunk at a time and save as single rda
 foreach(cc=1:numCk) %dopar%{
   ckNum <- sprintf('%03d',cc)
   dirTemp <- paste0(ckDirTemp,ckNum)
