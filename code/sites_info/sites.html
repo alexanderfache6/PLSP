@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Map</title>
+</head>
+<body>
+
+
+<!-- Load require.js. Delete this if your page already loads require.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js" crossorigin="anonymous"></script>
+
+<script type="application/vnd.jupyter.widget-state+json">
+{
+  "version_major": 2,
+  "version_minor": 0,
+  "state": {
+    "20c374e26857452ab61c1d20abbb746e": {
+      "model_name": "LeafletAwesomeIconModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon_color": "blue",
+        "name": "tower-cell",
+        "options": [
+          "pm_ignore"
+        ],
+        "subitems": []
+      }
+    },
+    "286e4d5fe5164d1d9cf38e2fee05e286": {
+      "model_name": "LeafletAwesomeIconModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon_color": "green",
+        "marker_color": "green",
+        "name": "camera",
+        "options": [
+          "pm_ignore"
+        ],
+        "subitems": []
+      }
+    },
+    "2f39ae198e3b42c6a4f081d0117b7325": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "height": "500px"
+      }
+    },
+    "fb87c676b6d7433f8af189a9529a1190": {
+      "model_name": "LeafletMapStyleModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {}
+    },
+    "90a9a761efec4f92a219202b64dd3cde": {
+      "model_name": "LeafletMapStyleModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "cursor": "move"
+      }
+    },
+    "539af04f5cff408c8b3131b5bd4f7a40": {
+      "model_name": "LeafletTileLayerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "attribution": "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+        "base": true,
+        "min_zoom": 1,
+        "name": "Esri.WorldImagery",
+        "options": [
+          "attribution",
+          "bounds",
+          "detect_retina",
+          "max_native_zoom",
+          "max_zoom",
+          "min_native_zoom",
+          "min_zoom",
+          "no_wrap",
+          "pm_ignore",
+          "tile_size",
+          "tms",
+          "zoom_offset"
+        ],
+        "subitems": [],
+        "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+      }
+    },
+    "7f1809f63b4a4db891f5e6f8ca4d2b9b": {
+      "model_name": "LeafletMapStyleModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {}
+    },
+    "5284609c0ec14205bc72860eaf4dfab8": {
+      "model_name": "LeafletMapModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "_dom_classes": [],
+        "center": [
+          44,
+          -103
+        ],
+        "controls": [
+          "IPY_MODEL_5aab8adb9c634a4b9f0fd440af8e6004",
+          "IPY_MODEL_71272a0bf63e4656b5365830025babed",
+          "IPY_MODEL_26a52a25a09944a48fb8e5b76d0928e2"
+        ],
+        "crs": {
+          "name": "EPSG3857",
+          "custom": false
+        },
+        "default_style": "IPY_MODEL_fb87c676b6d7433f8af189a9529a1190",
+        "dragging_style": "IPY_MODEL_90a9a761efec4f92a219202b64dd3cde",
+        "layers": [
+          "IPY_MODEL_539af04f5cff408c8b3131b5bd4f7a40",
+          "IPY_MODEL_b6a7652122b64f7bb7aa8a5743c2e41f",
+          "IPY_MODEL_247012d8151f4697937114fec7c8e6ec",
+          "IPY_MODEL_23fbac4dfc6e4039a41c7dc445f763d9",
+          "IPY_MODEL_04f5290e70804b398b0ad14a5d7ed0b5",
+          "IPY_MODEL_3e010bf2ebdc4a48a1ec9b10c241113b",
+          "IPY_MODEL_dd35613757c4400fbcb45f31706e2be8",
+          "IPY_MODEL_6aa4528626174e7f9ee27a1d22014155",
+          "IPY_MODEL_a35f6a0535cf4f92bbcf88742e892a38",
+          "IPY_MODEL_367c80cc9adb4bb5b44699a2272d9c45",
+          "IPY_MODEL_77f19b319f6d4b618025666e79095069",
+          "IPY_MODEL_310883b14b0b4ea88b2c618a99869cfa",
+          "IPY_MODEL_c84478c7ba854068b74c08b9716e5984",
+          "IPY_MODEL_4fca917b5ee1458e99bf4f0b30540796",
+          "IPY_MODEL_b170e8d0dcbf4db2a068c99191cc21bc",
+          "IPY_MODEL_f85cccf11afa41bb85244389ce3e629a",
+          "IPY_MODEL_a21debf789124bfb8e78ccbe99aefe55",
+          "IPY_MODEL_661b4abac8ca499eb5cccd0b111235a4",
+          "IPY_MODEL_31c52edb062c4f0698a0d1534a62e8c1",
+          "IPY_MODEL_4b9e0650b9964db4bbaa323e43965b5e",
+          "IPY_MODEL_dcaa24b87c8a4ae9ab1e1de25d3a9888",
+          "IPY_MODEL_aae349e9006e4607bb883a5e5884835b"
+        ],
+        "layout": "IPY_MODEL_2f39ae198e3b42c6a4f081d0117b7325",
+        "options": [
+          "bounce_at_zoom_limits",
+          "box_zoom",
+          "center",
+          "close_popup_on_click",
+          "double_click_zoom",
+          "dragging",
+          "fullscreen",
+          "inertia",
+          "inertia_deceleration",
+          "inertia_max_speed",
+          "interpolation",
+          "keyboard",
+          "keyboard_pan_offset",
+          "keyboard_zoom_offset",
+          "max_zoom",
+          "min_zoom",
+          "prefer_canvas",
+          "scroll_wheel_zoom",
+          "tap",
+          "tap_tolerance",
+          "touch_zoom",
+          "world_copy_jump",
+          "zoom",
+          "zoom_animation_threshold",
+          "zoom_delta",
+          "zoom_snap"
+        ],
+        "panes": {},
+        "style": "IPY_MODEL_7f1809f63b4a4db891f5e6f8ca4d2b9b",
+        "zoom": 5.0
+      }
+    },
+    "5aab8adb9c634a4b9f0fd440af8e6004": {
+      "model_name": "LeafletZoomControlModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "options": [
+          "position",
+          "zoom_in_text",
+          "zoom_in_title",
+          "zoom_out_text",
+          "zoom_out_title"
+        ]
+      }
+    },
+    "71272a0bf63e4656b5365830025babed": {
+      "model_name": "LeafletAttributionControlModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "options": [
+          "position",
+          "prefix"
+        ],
+        "position": "bottomright"
+      }
+    },
+    "26a52a25a09944a48fb8e5b76d0928e2": {
+      "model_name": "LeafletScaleControlModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "options": [
+          "imperial",
+          "max_width",
+          "metric",
+          "position",
+          "update_when_idle"
+        ],
+        "position": "bottomleft"
+      }
+    },
+    "b6a7652122b64f7bb7aa8a5743c2e41f": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_20c374e26857452ab61c1d20abbb746e",
+        "location": [
+          31.7365,
+          -109.9419
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "popup": "IPY_MODEL_de36d164629747bfb05f98bd16c91f24",
+        "subitems": [],
+        "title": "Walnut Gulch Kendall Grasslands (US-Wkg)"
+      }
+    },
+    "eefd7b0c4928462a9a151db40b1cce9e": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "feddfe6c60144292b9f414436c522c82": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "de36d164629747bfb05f98bd16c91f24": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_eefd7b0c4928462a9a151db40b1cce9e",
+        "style": "IPY_MODEL_feddfe6c60144292b9f414436c522c82",
+        "value": "\n    <div style=\"font-family: Arial, sans-serif; font-size: 12px; min-width: 180px;\">\n        <b style=\"font-size: 13px;\">Flux: Walnut Gulch Kendall Grasslands (US-Wkg)</b><hr style=\"margin: 4px 0;\">\n        <b>Vegetation:</b> GRA<br>\n        <b>Base data:</b> 2004.0 - 2025.0<br>\n        <b>Flux data:</b> 2004.0 - 2024.0<br>\n        <hr style=\"margin: 4px 0;\">\n        <b>PhenoCam:</b> kendall<br>\n        <b>PhenoCam data:</b> 2012-07-06 - 2026-03-23\n    </div>\n    "
+      }
+    },
+    "247012d8151f4697937114fec7c8e6ec": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_286e4d5fe5164d1d9cf38e2fee05e286",
+        "location": [
+          31.73652,
+          -109.94185
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "subitems": [],
+        "title": "kendall"
+      }
+    },
+    "23fbac4dfc6e4039a41c7dc445f763d9": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_20c374e26857452ab61c1d20abbb746e",
+        "location": [
+          34.4255,
+          -105.8615
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "popup": "IPY_MODEL_342a6cb5170c47ac97e0f690ae644d49",
+        "subitems": [],
+        "title": "Willard Juniper Savannah (US-Wjs)"
+      }
+    },
+    "aea9282d01434e4bbb6ff131a36723b2": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "c1ced41568a9488db8ffba42424d7e41": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "342a6cb5170c47ac97e0f690ae644d49": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_aea9282d01434e4bbb6ff131a36723b2",
+        "style": "IPY_MODEL_c1ced41568a9488db8ffba42424d7e41",
+        "value": "\n    <div style=\"font-family: Arial, sans-serif; font-size: 12px; min-width: 180px;\">\n        <b style=\"font-size: 13px;\">Flux: Willard Juniper Savannah (US-Wjs)</b><hr style=\"margin: 4px 0;\">\n        <b>Vegetation:</b> SAV<br>\n        <b>Base data:</b> 2007.0 - 2025.0<br>\n        <b>Flux data:</b> 2007.0 - 2025.0<br>\n        <hr style=\"margin: 4px 0;\">\n        <b>PhenoCam:</b> junipersavannah<br>\n        <b>PhenoCam data:</b> 2020-10-27 - 2026-03-23\n    </div>\n    "
+      }
+    },
+    "04f5290e70804b398b0ad14a5d7ed0b5": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_286e4d5fe5164d1d9cf38e2fee05e286",
+        "location": [
+          34.4254,
+          -105.8615
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "subitems": [],
+        "title": "junipersavannah"
+      }
+    },
+    "3e010bf2ebdc4a48a1ec9b10c241113b": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_20c374e26857452ab61c1d20abbb746e",
+        "location": [
+          31.7438,
+          -110.0522
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "popup": "IPY_MODEL_86f43c24c61648b1ad99a8f7dac20ab8",
+        "subitems": [],
+        "title": "Walnut Gulch Lucky Hills Shrub (US-Whs)"
+      }
+    },
+    "7d300a08e98a4e95bf6d073628ca7ecf": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "f0718a3544ef4a51b2afd8eb68990bbb": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "86f43c24c61648b1ad99a8f7dac20ab8": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_7d300a08e98a4e95bf6d073628ca7ecf",
+        "style": "IPY_MODEL_f0718a3544ef4a51b2afd8eb68990bbb",
+        "value": "\n    <div style=\"font-family: Arial, sans-serif; font-size: 12px; min-width: 180px;\">\n        <b style=\"font-size: 13px;\">Flux: Walnut Gulch Lucky Hills Shrub (US-Whs)</b><hr style=\"margin: 4px 0;\">\n        <b>Vegetation:</b> OSH<br>\n        <b>Base data:</b> 2007.0 - 2025.0<br>\n        <b>Flux data:</b> 2007.0 - 2025.0<br>\n        <hr style=\"margin: 4px 0;\">\n        <b>PhenoCam:</b> luckyhills<br>\n        <b>PhenoCam data:</b> 2013-04-30 - 2026-03-23\n    </div>\n    "
+      }
+    },
+    "dd35613757c4400fbcb45f31706e2be8": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_286e4d5fe5164d1d9cf38e2fee05e286",
+        "location": [
+          31.7439,
+          -110.05202
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "subitems": [],
+        "title": "luckyhills"
+      }
+    },
+    "6aa4528626174e7f9ee27a1d22014155": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_20c374e26857452ab61c1d20abbb746e",
+        "location": [
+          31.8214,
+          -110.8661
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "popup": "IPY_MODEL_ac49098236234450b163a34b8841e688",
+        "subitems": [],
+        "title": "Santa Rita Mesquite (US-SRM)"
+      }
+    },
+    "80c2490ad3d0484f9132848b5decba9f": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "255e6ad0bd3142ff938bffa7f0f0079a": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "ac49098236234450b163a34b8841e688": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_80c2490ad3d0484f9132848b5decba9f",
+        "style": "IPY_MODEL_255e6ad0bd3142ff938bffa7f0f0079a",
+        "value": "\n    <div style=\"font-family: Arial, sans-serif; font-size: 12px; min-width: 180px;\">\n        <b style=\"font-size: 13px;\">Flux: Santa Rita Mesquite (US-SRM)</b><hr style=\"margin: 4px 0;\">\n        <b>Vegetation:</b> WSA<br>\n        <b>Base data:</b> 2004.0 - 2025.0<br>\n        <b>Flux data:</b> 2004.0 - 2025.0<br>\n        <hr style=\"margin: 4px 0;\">\n        <b>PhenoCam:</b> srm<br>\n        <b>PhenoCam data:</b> 2018-07-20 - 2026-03-23\n    </div>\n    "
+      }
+    },
+    "a35f6a0535cf4f92bbcf88742e892a38": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_286e4d5fe5164d1d9cf38e2fee05e286",
+        "location": [
+          31.8214,
+          -110.8661
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "subitems": [],
+        "title": "srm"
+      }
+    },
+    "367c80cc9adb4bb5b44699a2272d9c45": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_20c374e26857452ab61c1d20abbb746e",
+        "location": [
+          31.7894,
+          -110.8277
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "popup": "IPY_MODEL_2aba9a6a5a0c47a5aa75bdfe7eee331c",
+        "subitems": [],
+        "title": "Santa Rita Grassland (US-SRG)"
+      }
+    },
+    "61fbbd4077a64a498972e9999978365c": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "8372d7fddb7d45f7b683d7eea5df26cb": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "2aba9a6a5a0c47a5aa75bdfe7eee331c": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_61fbbd4077a64a498972e9999978365c",
+        "style": "IPY_MODEL_8372d7fddb7d45f7b683d7eea5df26cb",
+        "value": "\n    <div style=\"font-family: Arial, sans-serif; font-size: 12px; min-width: 180px;\">\n        <b style=\"font-size: 13px;\">Flux: Santa Rita Grassland (US-SRG)</b><hr style=\"margin: 4px 0;\">\n        <b>Vegetation:</b> GRA<br>\n        <b>Base data:</b> 2008.0 - 2025.0<br>\n        <b>Flux data:</b> 2008.0 - 2025.0<br>\n        <hr style=\"margin: 4px 0;\">\n        <b>PhenoCam:</b> srg<br>\n        <b>PhenoCam data:</b> 2019-09-04 - 2026-03-23\n    </div>\n    "
+      }
+    },
+    "77f19b319f6d4b618025666e79095069": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_286e4d5fe5164d1d9cf38e2fee05e286",
+        "location": [
+          31.7894,
+          -110.8276
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "subitems": [],
+        "title": "srg"
+      }
+    },
+    "310883b14b0b4ea88b2c618a99869cfa": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_20c374e26857452ab61c1d20abbb746e",
+        "location": [
+          34.3349,
+          -106.7442
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "popup": "IPY_MODEL_f1017952c7964ba2a82e816882a679d0",
+        "subitems": [],
+        "title": "Sevilleta shrubland (US-Ses)"
+      }
+    },
+    "a1ef81d5a139454396849be04784a583": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "c6a0ed55df354e6fb23c083148e1b996": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "f1017952c7964ba2a82e816882a679d0": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_a1ef81d5a139454396849be04784a583",
+        "style": "IPY_MODEL_c6a0ed55df354e6fb23c083148e1b996",
+        "value": "\n    <div style=\"font-family: Arial, sans-serif; font-size: 12px; min-width: 180px;\">\n        <b style=\"font-size: 13px;\">Flux: Sevilleta shrubland (US-Ses)</b><hr style=\"margin: 4px 0;\">\n        <b>Vegetation:</b> OSH<br>\n        <b>Base data:</b> 2007.0 - 2025.0<br>\n        <b>Flux data:</b> 2007.0 - 2025.0<br>\n        <hr style=\"margin: 4px 0;\">\n        <b>PhenoCam:</b> sevilletashrub<br>\n        <b>PhenoCam data:</b> 2014-10-29 - 2026-03-23\n    </div>\n    "
+      }
+    },
+    "c84478c7ba854068b74c08b9716e5984": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_286e4d5fe5164d1d9cf38e2fee05e286",
+        "location": [
+          34.33496,
+          -106.74447
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "subitems": [],
+        "title": "sevilletashrub"
+      }
+    },
+    "4fca917b5ee1458e99bf4f0b30540796": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_20c374e26857452ab61c1d20abbb746e",
+        "location": [
+          34.3623,
+          -106.7019
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "popup": "IPY_MODEL_fa10efb024ca436bbcfd6ac135369340",
+        "subitems": [],
+        "title": "Sevilleta grassland (US-Seg)"
+      }
+    },
+    "59cf0e40a697403082c438c8c5883d60": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "2766dbfa325144fc801170ea37150b5f": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "fa10efb024ca436bbcfd6ac135369340": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_59cf0e40a697403082c438c8c5883d60",
+        "style": "IPY_MODEL_2766dbfa325144fc801170ea37150b5f",
+        "value": "\n    <div style=\"font-family: Arial, sans-serif; font-size: 12px; min-width: 180px;\">\n        <b style=\"font-size: 13px;\">Flux: Sevilleta grassland (US-Seg)</b><hr style=\"margin: 4px 0;\">\n        <b>Vegetation:</b> GRA<br>\n        <b>Base data:</b> 2007.0 - 2025.0<br>\n        <b>Flux data:</b> 2007.0 - 2025.0<br>\n        <hr style=\"margin: 4px 0;\">\n        <b>PhenoCam:</b> sevilletagrass<br>\n        <b>PhenoCam data:</b> 2014-11-05 - 2026-03-23\n    </div>\n    "
+      }
+    },
+    "b170e8d0dcbf4db2a068c99191cc21bc": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_286e4d5fe5164d1d9cf38e2fee05e286",
+        "location": [
+          34.36044,
+          -106.70019
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "subitems": [],
+        "title": "sevilletagrass"
+      }
+    },
+    "f85cccf11afa41bb85244389ce3e629a": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_20c374e26857452ab61c1d20abbb746e",
+        "location": [
+          34.4384,
+          -106.2377
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "popup": "IPY_MODEL_0a73db81b7e94b84a430722e4341cce5",
+        "subitems": [],
+        "title": "Mountainair Pinyon-Juniper Woodland (US-Mpj)"
+      }
+    },
+    "dd90a14bc8e3422b810d3dbfad99c79f": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "bbe033dc1b164ce5a1e167619f8b581b": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "0a73db81b7e94b84a430722e4341cce5": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_dd90a14bc8e3422b810d3dbfad99c79f",
+        "style": "IPY_MODEL_bbe033dc1b164ce5a1e167619f8b581b",
+        "value": "\n    <div style=\"font-family: Arial, sans-serif; font-size: 12px; min-width: 180px;\">\n        <b style=\"font-size: 13px;\">Flux: Mountainair Pinyon-Juniper Woodland (US-Mpj)</b><hr style=\"margin: 4px 0;\">\n        <b>Vegetation:</b> WSA<br>\n        <b>Base data:</b> 2008.0 - 2025.0<br>\n        <b>Flux data:</b> 2008.0 - 2025.0<br>\n        <hr style=\"margin: 4px 0;\">\n        <b>PhenoCam:</b> usmpj<br>\n        <b>PhenoCam data:</b> 2013-09-20 - 2026-03-23\n    </div>\n    "
+      }
+    },
+    "a21debf789124bfb8e78ccbe99aefe55": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_286e4d5fe5164d1d9cf38e2fee05e286",
+        "location": [
+          34.43845,
+          -106.25436
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "subitems": [],
+        "title": "usmpj"
+      }
+    },
+    "661b4abac8ca499eb5cccd0b111235a4": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_20c374e26857452ab61c1d20abbb746e",
+        "location": [
+          39.0824,
+          -96.5603
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "popup": "IPY_MODEL_2b9b5afb48454fabab98ab6fc78328ee",
+        "subitems": [],
+        "title": "Konza Prairie LTER (KNZ) (US-Kon)"
+      }
+    },
+    "f7a2683a4ff8480a9da7d460a5aa6ae1": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "bb12c1d2fb32423892ac5bc3d5944c2c": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "2b9b5afb48454fabab98ab6fc78328ee": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_f7a2683a4ff8480a9da7d460a5aa6ae1",
+        "style": "IPY_MODEL_bb12c1d2fb32423892ac5bc3d5944c2c",
+        "value": "\n    <div style=\"font-family: Arial, sans-serif; font-size: 12px; min-width: 180px;\">\n        <b style=\"font-size: 13px;\">Flux: Konza Prairie LTER (KNZ) (US-Kon)</b><hr style=\"margin: 4px 0;\">\n        <b>Vegetation:</b> GRA<br>\n        <b>Base data:</b> 2004.0 - 2019.0<br>\n        <b>Flux data:</b> 2004.0 - 2019.0<br>\n        <hr style=\"margin: 4px 0;\">\n        <b>PhenoCam:</b> konza<br>\n        <b>PhenoCam data:</b> 2012-03-17 - 2019-12-18\n    </div>\n    "
+      }
+    },
+    "31c52edb062c4f0698a0d1534a62e8c1": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_286e4d5fe5164d1d9cf38e2fee05e286",
+        "location": [
+          39.0824,
+          -96.5603
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "subitems": [],
+        "title": "konza"
+      }
+    },
+    "4b9e0650b9964db4bbaa323e43965b5e": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_20c374e26857452ab61c1d20abbb746e",
+        "location": [
+          36.6058,
+          -97.4888
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "popup": "IPY_MODEL_82e9f32922b846fab4d15f9e64000923",
+        "subitems": [],
+        "title": "ARM Southern Great Plains site- Lamont (US-ARM)"
+      }
+    },
+    "fbb67e5cbf7849f0bd9b0df95ea14784": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "2b323d01a34b485db5ea9ce1bf9d4429": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "82e9f32922b846fab4d15f9e64000923": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_fbb67e5cbf7849f0bd9b0df95ea14784",
+        "style": "IPY_MODEL_2b323d01a34b485db5ea9ce1bf9d4429",
+        "value": "\n    <div style=\"font-family: Arial, sans-serif; font-size: 12px; min-width: 180px;\">\n        <b style=\"font-size: 13px;\">Flux: ARM Southern Great Plains site- Lamont (US-ARM)</b><hr style=\"margin: 4px 0;\">\n        <b>Vegetation:</b> CRO<br>\n        <b>Base data:</b> 2003.0 - 2025.0<br>\n        <b>Flux data:</b> 2003.0 - 2024.0<br>\n        <hr style=\"margin: 4px 0;\">\n        <b>PhenoCam:</b> southerngreatplains<br>\n        <b>PhenoCam data:</b> 2012-05-16 - 2026-03-23\n    </div>\n    "
+      }
+    },
+    "dcaa24b87c8a4ae9ab1e1de25d3a9888": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "icon": "IPY_MODEL_286e4d5fe5164d1d9cf38e2fee05e286",
+        "location": [
+          36.6058,
+          -97.4888
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "subitems": [],
+        "title": "southerngreatplains"
+      }
+    },
+    "aae349e9006e4607bb883a5e5884835b": {
+      "model_name": "LeafletPolygonModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "color": "blue",
+        "fill_color": "blue",
+        "fill_opacity": 0.1,
+        "locations": [
+          [
+            [
+              31.7814910017996,
+              -109.994712510874
+            ],
+            [
+              31.7814910017996,
+              -109.889087489126
+            ],
+            [
+              31.6915089982004,
+              -109.889087489126
+            ],
+            [
+              31.6915089982004,
+              -109.994712510874
+            ],
+            [
+              31.7814910017996,
+              -109.994712510874
+            ]
+          ],
+          [
+            [
+              34.4704910017996,
+              -105.915952483422
+            ],
+            [
+              34.4704910017996,
+              -105.807047516578
+            ],
+            [
+              34.3805089982004,
+              -105.807047516578
+            ],
+            [
+              34.3805089982004,
+              -105.915952483422
+            ],
+            [
+              34.4704910017996,
+              -105.915952483422
+            ]
+          ],
+          [
+            [
+              31.7887910017996,
+              -110.105016673341
+            ],
+            [
+              31.7887910017996,
+              -109.999383326659
+            ],
+            [
+              31.6988089982004,
+              -109.999383326659
+            ],
+            [
+              31.6988089982004,
+              -110.105016673341
+            ],
+            [
+              31.7887910017996,
+              -110.105016673341
+            ]
+          ],
+          [
+            [
+              31.8663910017996,
+              -110.918961014599
+            ],
+            [
+              31.8663910017996,
+              -110.813238985401
+            ],
+            [
+              31.7764089982004,
+              -110.813238985401
+            ],
+            [
+              31.7764089982004,
+              -110.918961014599
+            ],
+            [
+              31.8663910017996,
+              -110.918961014599
+            ]
+          ],
+          [
+            [
+              31.8343910017996,
+              -110.880542708782
+            ],
+            [
+              31.8343910017996,
+              -110.774857291218
+            ],
+            [
+              31.7444089982004,
+              -110.774857291218
+            ],
+            [
+              31.7444089982004,
+              -110.880542708782
+            ],
+            [
+              31.8343910017996,
+              -110.880542708782
+            ]
+          ],
+          [
+            [
+              34.3798910017996,
+              -106.798593602328
+            ],
+            [
+              34.3798910017996,
+              -106.689806397672
+            ],
+            [
+              34.2899089982004,
+              -106.689806397672
+            ],
+            [
+              34.2899089982004,
+              -106.798593602328
+            ],
+            [
+              34.3798910017996,
+              -106.798593602328
+            ]
+          ],
+          [
+            [
+              34.4072910017996,
+              -106.756311381849
+            ],
+            [
+              34.4072910017996,
+              -106.647488618151
+            ],
+            [
+              34.3173089982004,
+              -106.647488618151
+            ],
+            [
+              34.3173089982004,
+              -106.756311381849
+            ],
+            [
+              34.4072910017996,
+              -106.756311381849
+            ]
+          ],
+          [
+            [
+              34.4833910017996,
+              -106.292160888603
+            ],
+            [
+              34.4833910017996,
+              -106.183239111397
+            ],
+            [
+              34.3934089982004,
+              -106.183239111397
+            ],
+            [
+              34.3934089982004,
+              -106.292160888603
+            ],
+            [
+              34.4833910017996,
+              -106.292160888603
+            ]
+          ],
+          [
+            [
+              39.1273910017996,
+              -96.6181632602185
+            ],
+            [
+              39.1273910017996,
+              -96.5024367397815
+            ],
+            [
+              39.0374089982004,
+              -96.5024367397815
+            ],
+            [
+              39.0374089982004,
+              -96.6181632602185
+            ],
+            [
+              39.1273910017996,
+              -96.6181632602185
+            ]
+          ],
+          [
+            [
+              36.6507910017996,
+              -97.544751896314
+            ],
+            [
+              36.6507910017996,
+              -97.432848103686
+            ],
+            [
+              36.5608089982004,
+              -97.432848103686
+            ],
+            [
+              36.5608089982004,
+              -97.544751896314
+            ],
+            [
+              36.6507910017996,
+              -97.544751896314
+            ]
+          ]
+        ],
+        "options": [
+          "color",
+          "dash_array",
+          "draggable",
+          "fill",
+          "fill_color",
+          "fill_opacity",
+          "line_cap",
+          "line_join",
+          "no_clip",
+          "opacity",
+          "pm_ignore",
+          "pointer_events",
+          "smooth_factor",
+          "stroke",
+          "transform",
+          "weight"
+        ],
+        "subitems": [],
+        "weight": 2
+      }
+    }
+  }
+}
+</script>
+<script type="application/vnd.jupyter.widget-view+json">
+{"version_major": 2, "version_minor": 0, "model_id": "5284609c0ec14205bc72860eaf4dfab8"}
+</script>
+
+</body>
+</html>
