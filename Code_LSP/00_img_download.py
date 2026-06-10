@@ -15,7 +15,11 @@ import pathlib
 import time
 import errno
 import pandas
+from dotenv import load_dotenv
 
+from pathlib import Path
+
+load_dotenv()
 
 # Setup Planet Data API base URL
 base_url = "https://api.planet.com/data/v1"
@@ -189,11 +193,13 @@ def main(argv):
     
     site_num = pandas.to_numeric(argv[0])
     
-    
-    geometry_path = "~/geojson" # these are the site geometries
+    BASE_PATH = Path('/projectnb/planet/PLSP')
+
+
+    geometry_path = BASE_PATH / 'geojson' # these are the site geometries
     min_year = 2016
     max_year = 2023
-    output_dir = "~/rawImage"
+    output_dir = BASE_PATH / "rawImage"
     check_existing_orders="True"
     
     print("Input Params:")
@@ -205,16 +211,15 @@ def main(argv):
     
     
     
-    if(os.path.isdir(output_dir) == False):
-        sys.exit("{} does not exist.".format(output_dir))
+    # if(os.path.isdir(output_dir) == False):
+    #     sys.exit("{} does not exist.".format(output_dir))
     
-    #PLANET_API_KEY = os.getenv('PL_API_KEY')
-    PLANET_API_KEY = "API_KEY"
+    PLANET_API_KEY = os.getenv('PLANET_API_KEY')
     
     # Setup the session
     session = requests.Session()
     # Authenticate
-    session.auth = (PLANET_API_KEY, "") # NOTE
+    session.auth = (PLANET_API_KEY, "")
     
     # Make a GET request to the Planet Data API
     res = session.get(base_url)
