@@ -418,7 +418,7 @@ def main(argv):
                            "products":[
                               {  
                                  "item_ids":chunk,
-                                 "item_type":"PSScene4Band",
+                                 "item_type":"PSScene4Band", # NOTE \
                                   
                                  "product_bundle":"analytic_sr_udm2,analytic_sr"
                               }
