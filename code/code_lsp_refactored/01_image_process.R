@@ -57,8 +57,8 @@ geojsonDir <- params$setup$geojsonDir
 
 siteInfo <- GetSiteInfo(siteNumber, geojsonDir, params)
 
-imgDir <- siteInfo[[1]]
-strSite <- siteInfo[[2]]
+imgDir <- siteInfo[[1]] # in /raw
+strSite <- siteInfo[[2]] # site name
 print(paste(strSite, ";", imgDir))
 
 cLong <- siteInfo[[3]]
@@ -137,7 +137,7 @@ foreach(current_date = 1:length(uniqueDates)) %dopar% { # one parallel worker pe
     }
   }
 
-  # If the number of images that have 4 bands is more than zero,  load them and create a mosaiced image
+  # If the number of images that have 4 bands is more than zero,  load them and create a mosaic image
   if (length(valid4BandImages) > 0) {
     imgB <- vector("list", length(valid4BandImages))
 
@@ -216,7 +216,7 @@ foreach(current_date = 1:length(uniqueDates)) %dopar% { # one parallel worker pe
     temp3[[(length(valid4BandImages) + 1)]] <- imgBase
     temp4[[(length(valid4BandImages) + 1)]] <- imgBase
 
-    # Check their spatial infomation
+    # Check their spatial information
     for (i in 1:length(valid4BandImages)) {
       log <- try(compareRaster(temp1[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE)
       if (inherits(log, "try-error")) {
