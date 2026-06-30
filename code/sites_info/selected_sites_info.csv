@@ -1,10 +1,10 @@
-site_number,site_id,site_name,site_path
-US-Wkg,Walnut_Gulch_Kendall_Grasslands
-US-Wjs,Willard_Juniper_Savannah
+site_number,site_id,site_name
+,US-Wkg,Walnut_Gulch_Kendall_Grasslands
+,US-Wjs,Willard_Juniper_Savannah
 50,US-Mpj,Mountainair_Pinyon-Juniper_Woodland
 72,US-Ses,Santa_Rita_Grassland
 73,US-SRM,Santa_Rita_Mesquite
 75,US-Seg,Sevilleta_shrubland
 97,US-Whs,Walnut_Gulch_Lucky_Hills_Shrub
-US-Kon,
-US-ARM,ARM_Southern_Great_Plains_site-_Lamont
+,US-Kon,
+,US-ARM,ARM_Southern_Great_Plains_site-_Lamont

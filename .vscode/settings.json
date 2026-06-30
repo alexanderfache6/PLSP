@@ -1,0 +1,5 @@
+{
+  "r.lsp.diagnostics": true,
+  "r.lsp.path": "/usr/bin/R",
+  "cSpell.words": ["PLSP"]
+}
