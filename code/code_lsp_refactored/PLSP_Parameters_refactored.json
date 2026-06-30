@@ -5,15 +5,16 @@
     "workDir": "/projectnb/planet/PLSP/",
     "logDir": "/projectnb/planet/PLSP/runLogs/",
     "geojsonDir": "/projectnb/planet/PLSP/geojson/",
-    "dataDir": "/projectnb/planet/PLSP/raw",
-    "dataDir2": "/projectnb/modislc/users/fache/data/planet/raw",
-    "outDir": "/projectnb/planet/PLSP/Img_cliped/",
+    "dataDir": "/projectnb/modislc/users/fache/data/planet/raw",
+    "outDir": "/projectnb/modislc/users/fache/data/planet/Img_clipped/",
     "rScripts": "/projectnb/planet/PLSP/GitHub/PlanetLSP/data_paper/",
-    "rFunctions": "/projectnb/planet/PLSP/GitHub/PlanetLSP/data_paper/PLSP_Functions.R",
+    "rFunctions": "/projectnb/modislc/users/fache/src/PLSP/PLSP_Functions.R",
     "productTable": "/projectnb/planet/PLSP/GitHub/PlanetLSP/data_paper/PLSP_Layers.csv",
     "water": "/projectnb/planet/PLSP/water/",
     "numChunks": 200,
-    "numCores": 28
+    "numCores": 28,
+    "neon": "FALSE",
+    "amflx": "FALSE"
   },
   "phenology_parameters": {
     "vegetation_index": "evi2",
