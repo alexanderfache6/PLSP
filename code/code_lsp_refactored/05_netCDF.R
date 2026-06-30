@@ -18,12 +18,13 @@
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 library(raster)
-library(rgdal)
-library(gdalUtils)
+# library(rgdal)
+# library(gdalUtils)
 library(rgeos)
 library(maptools)
 library(rasterVis)
 library(ncdf4)
+library(sf)
 
 ########################################
 args <- commandArgs()
@@ -124,7 +125,7 @@ for (yy in 1:5) {
 
   ## Write the projection info for the transverse_mercator variable
   # Get projection in wkt format
-  wkt <- showWKT(projection(baseImage), morphToESRI = FALSE)
+  wkt <- showWKT(projection(baseImage), morphToESRI = FALSE) # TODO replace with sf equivalent st_crs(baseImage)$wkt
   # Need to pull the central meridian from the wkt
   spt <- unlist(strsplit(gsub("]", "", wkt), ","))
   central_meridian <- as.numeric(spt[which(spt == "PARAMETER[\"central_meridian\"") + 1])

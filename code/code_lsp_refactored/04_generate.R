@@ -18,8 +18,8 @@
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 library(raster)
-library(rgdal)
-library(gdalUtils)
+# library(rgdal)
+# library(gdalUtils)
 library(rjson)
 
 
