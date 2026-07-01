@@ -8,7 +8,7 @@
     "dataDir": "/projectnb/modislc/users/fache/data/planet/raw",
     "outDir": "/projectnb/modislc/users/fache/data/planet/Img_clipped/",
     "rScripts": "/projectnb/planet/PLSP/GitHub/PlanetLSP/data_paper/",
-    "rFunctions": "/projectnb/modislc/users/fache/src/PLSP/PLSP_Functions.R",
+    "rFunctions": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/PLSP_Functions_refactored.R",
     "productTable": "/projectnb/planet/PLSP/GitHub/PlanetLSP/data_paper/PLSP_Layers.csv",
     "water": "/projectnb/planet/PLSP/water/",
     "numChunks": 200,
