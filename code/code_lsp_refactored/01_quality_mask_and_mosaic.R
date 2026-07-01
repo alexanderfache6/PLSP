@@ -91,7 +91,7 @@ dd <- substr(fileBasenamesSR, 7, 8)
 datesAll <- as.Date(paste(mm, dd, yy, sep = "/"), "%m/%d/%y")
 uniqueDates <- unique(datesAll) # gets unique dates where data was downloaded
 
-print("length(uniqueDates):", length(uniqueDates))
+print(paste("length(uniqueDates):", length(uniqueDates)))
 
 
 ########################################
@@ -124,8 +124,8 @@ if (!dir.exists(outputDirSiteMosaic)) {
 }
 
 ## Do a loop for each date
-# foreach(currentDate = 1:length(uniqueDates)) %dopar% { # runs one parallel worker per date # TODO
-foreach(currentDate = 1:5)
+# foreach(currentDate = 1:length(uniqueDates)) %dopar% { # runs one parallel worker per date
+foreach(currentDate = 1:5) %dopar% # TODO Error: object 'currentDate' not found
   # Find images for current date
   currentDateStr <- paste0(substr(uniqueDates[currentDate], 1, 4), substr(uniqueDates[currentDate], 6, 7), substr(uniqueDates[currentDate], 9, 10))
   print(paste("currentDateStr:", currentDateStr))
