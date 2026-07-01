@@ -6,7 +6,7 @@
 # check character substr for dates,  file types
 
 # OUTPUT
-# is mosaic 4 band raster for each date in outDir with name format YYYYMMDD_cliped_mosaic.tif
+# is mosaic 4 band raster for each date in outputDir with name format YYYYMMDD_cliped_mosaic.tif
 
 
 # NOTE
@@ -36,7 +36,7 @@ library(raster)
 library(sp)
 library(rjson)
 library(geojsonR)
-library(doMC)
+library(doMC) # Provides a parallel backend for the %dopar% function using the multicore functionality of the parallel package.
 library(doParallel)
 
 ########################################
@@ -97,39 +97,42 @@ print(length(uniqueDates))
 ########################################
 ## Image process
 ## Set output directory for base image
-outDir <- params$setup$outDir
-outDirSite <- paste0(outDir, strSite)
-if (!dir.exists(outDir)) {
-  dir.create(outDir)
-  print(paste("created:", outDir))
+outputDir <- params$setup$outputDir
+outputDirSite <- paste0(outputDir, strSite)
+if (!dir.exists(outputDir)) {
+  dir.create(outputDir)
+  print(paste("created:", outputDir))
 }
-if (!dir.exists(outDirSite)) {
-  dir.create(outDirSite)
-  print(paste("created:", outDirSite))
+if (!dir.exists(outputDirSite)) {
+  dir.create(outputDirSite)
+  print(paste("created:", outputDirSite))
 }
 
 ## Create site shapefile and base image
 siteWindow <- GetSiteShp(filePathsSR, cLong, cLat)
-imgBase <- GetBaseImg(filePathsSR, siteWindow, outDirSite, save = TRUE)
+imgBase <- GetBaseImg(filePathsSR, siteWindow, outputDirSite, save = TRUE)
 
 
 ##
-registerDoMC(params$setup$numCores)
+registerDoMC(cores=params$setup$numCores) # register the multicore parallel backend with the foreach package
 
 # Output directory for mosaic images
-outDirSiteMosaic <- paste0(outDirSite, "/mosaic")
-if (!dir.exists(outDirSiteMosaic)) {
-  dir.create(outDirSiteMosaic)
-  print(paste("created:", outDirSiteMosaic))
+outputDirSiteMosaic <- paste0(outputDirSite, "/mosaic")
+if (!dir.exists(outputDirSiteMosaic)) {
+  dir.create(outputDirSiteMosaic)
+  print(paste("created:", outputDirSiteMosaic))
 }
 
 ## Do a loop for each date
-# foreach(currentDate = 1:length(uniqueDates)) %dopar% { # one parallel worker per date
-
-currentDate <- 1
+# foreach(currentDate = 1:length(uniqueDates)) %dopar% { # runs one parallel worker per date # TODO
 
 # Find images for current date
-sameDateImages <- which(substr(fileBasenamesSR, 1, 8) == paste0(substr(uniqueDates[currentDate], 1, 4), substr(uniqueDates[currentDate], 6, 7), substr(uniqueDates[currentDate], 9, 10)))
+currentDate <- 1 # TODO
+currentDateStr <- paste0(substr(uniqueDates[currentDate], 1, 4), substr(uniqueDates[currentDate], 6, 7), substr(uniqueDates[currentDate], 9, 10))
+print(paste("currentDateStr: ", currentDateStr))
+
+sameDateImages <- which(substr(fileBasenamesSR, 1, 8) == currentDateStr)
+print(paste("length(sameDateImages): ", length(sameDateImages)))
 
 # Find images that have all 4 PlanetScope bands
 valid4BandImages <- c()
@@ -153,7 +156,10 @@ for (currentSameDateImageIdx in 1:length(sameDateImages)) {
   }
 }
 
-# If the number of images that have 4 bands is more than zero,  load them and create a mosaic image
+# If the number of images that have 4 bands is more than zero, load them and create a mosaic image
+print(paste("length(valid4BandImages): ", length(valid4BandImages)))
+
+
 if (length(valid4BandImages) > 0) {
   imgB <- vector("list", length(valid4BandImages))
 
@@ -176,123 +182,153 @@ if (length(valid4BandImages) > 0) {
     # 20250625_183211_39_24b7_3B_udm2_clip.tif
 
 
+    
+
+    # TODO check masking, clouds still appear
+
+
+
     imgP <- vector("list", numBand)
     for (currentBand in 1:numBand) {
+      print(paste("currentSceneId: ", currentSceneId, " | current band: ", currentBand))
       imgT <- raster::raster(filePathsSR[ii], band = currentBand)
       imgT <- raster::crop(imgT, siteWindow)
 
       if (length(which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)) == 1 & length(which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)) == 0) {
+        print("UDM1 = 1, UDM2 = 0")
         # only UDM quality mask exists
+        log <- try(
+          {
+            udmT <- raster::raster(filePathsUDM[which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)]) # load raster
+            udmT <- raster::crop(udmT, siteWindow) # crop to site extent
+          },
+          silent = TRUE
+        )
+        if (inherits(log, "try-error")) {
+          next # if error in quality mask, skip image
+        } else {
+          imgT[udmT > 0] <- NA # A value of zero indicates a "good" imagery pixel
+          # values > 0 are unusable, set to NA
+        }
+      } else if (length(which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)) == 1 & length(which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)) == 1) {
+        print("UDM1 = 1, UDM2 = 1")
+        # UDM and UDM2 quality mask exist
         log <- try(
           {
             udmT <- raster::raster(filePathsUDM[which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)])
             udmT <- raster::crop(udmT, siteWindow)
+          },
+          silent = TRUE
+        )
+        if (inherits(log, "try-error")) {
+          imgT <- imgT # don't skip if issue in UDM1, check UDM1 next
+        } else {
+          imgT[udmT > 0] <- NA
+        }
+        log <- try(
+          {
+            udm2T <- raster::raster(filePathsUDM2[which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)])
+            udm2T <- raster::crop(udm2T, siteWindow)
+          },
+          silent = TRUE
+        )
+        if (inherits(log, "try-error")) {
+          imgT <- imgT # TODO if error don't modify image, inherit from UDM1. what if both have an issue?? this is not addressed
+        } else {
+          imgT[udm2T != 1] <- NA  # set imgT pixels to NA if the udm2T mask != 1
+          # udm2T == 1 means the pixel has a clear sky https://docs.planet.com/data/imagery/udm/#udm21-product-bands
+        }
+      } else if (length(which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)) == 0 & length(which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)) == 1) {
+        print("UDM1 = 0, UDM2 = 1")
+        log <- try(
+          {
+            udm2T <- raster::raster(filePathsUDM2[which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)])
+            udm2T <- raster::crop(udm2T, siteWindow)
           },
           silent = TRUE
         )
         if (inherits(log, "try-error")) {
           next
         } else {
-          imgT[udmT > 0] <- NA
-        }
-      } else if (length(which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)) == 1 & length(which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)) == 1) {
-        # use UDM1 and UDM 2quality mask
-        log <- try(
-          {
-            udmT <- raster::raster(filePathsUDM[which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)])
-            udmT <- raster::crop(udmT, siteWindow)
-          },
-          silent = TRUE
-        )
-        if (inherits(log, "try-error")) {
-          imgT <- imgT
-        } else {
-          imgT[udmT > 0] <- NA
-        }
-        log <- try(
-          {
-            udm2T <- raster(filePathsUDM2[which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)])
-            udm2T <- crop(udm2T, siteWindow)
-          },
-          silent = TRUE
-        )
-        if (inherits(log, "try-error")) {
-          imgT <- imgT
-        } else {
           imgT[udm2T != 1] <- NA
         }
+      } else {
+        print("UDM1 = 0, UDM2 = 0")
+        print("---------- ERROR no quality mask applied ----------")
       }
-      imgP[[currentBand]] <- imgT # current band masked raster
+
+      imgP[[currentBand]] <- imgT # add current band raster that has been quality checked
     }
 
     imgB[[currentValidImageIdx]] <- brick(imgP) # builds 4 band image for scene
   }
 
-  temp1 <- vector("list", (length(valid4BandImages) + 1))
-  temp2 <- vector("list", (length(valid4BandImages) + 1))
-  temp3 <- vector("list", (length(valid4BandImages) + 1))
-  temp4 <- vector("list", (length(valid4BandImages) + 1))
-  for (i in 1:length(valid4BandImages)) {
-    temp1[[i]] <- raster::raster(imgB[[i]], 1) # band 1
-    temp2[[i]] <- raster::raster(imgB[[i]], 2) # band 2
-    temp3[[i]] <- raster::raster(imgB[[i]], 3) # band 3
-    temp4[[i]] <- raster::raster(imgB[[i]], 4) # band 4
+
+
+  validImagesBand1 <- vector("list", (length(valid4BandImages) + 1))
+  validImagesBand2 <- vector("list", (length(valid4BandImages) + 1))
+  validImagesBand3 <- vector("list", (length(valid4BandImages) + 1))
+  validImagesBand4 <- vector("list", (length(valid4BandImages) + 1))
+  for (i in 1:length(valid4BandImages)) { # separate individual bands and combine across valid images
+    validImagesBand1[[i]] <- raster::raster(imgB[[i]], 1) # band 1
+    validImagesBand2[[i]] <- raster::raster(imgB[[i]], 2) # band 2
+    validImagesBand3[[i]] <- raster::raster(imgB[[i]], 3) # band 3
+    validImagesBand4[[i]] <- raster::raster(imgB[[i]], 4) # band 4
   }
-  temp1[[(length(valid4BandImages) + 1)]] <- imgBase
-  temp2[[(length(valid4BandImages) + 1)]] <- imgBase
-  temp3[[(length(valid4BandImages) + 1)]] <- imgBase
-  temp4[[(length(valid4BandImages) + 1)]] <- imgBase
+  validImagesBand1[[(length(valid4BandImages) + 1)]] <- imgBase # TODO why add base image, I think fall through if no pixels for a particular date??
+  validImagesBand2[[(length(valid4BandImages) + 1)]] <- imgBase
+  validImagesBand3[[(length(valid4BandImages) + 1)]] <- imgBase
+  validImagesBand4[[(length(valid4BandImages) + 1)]] <- imgBase
 
   # Check their spatial information
   for (i in 1:length(valid4BandImages)) {
-    log <- try(raster::compareRaster(temp1[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE)
+    log <- try(raster::compareRaster(validImagesBand1[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE) # have the same crs, resolutions
     if (inherits(log, "try-error")) {
-      temp1[[i]] <- raster::projectRaster(temp1[[i]], imgBase)
+      validImagesBand1[[i]] <- raster::projectRaster(validImagesBand1[[i]], imgBase)
     }
 
-    log <- try(raster::compareRaster(temp2[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE)
+    log <- try(raster::compareRaster(validImagesBand2[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE)
     if (inherits(log, "try-error")) {
-      temp2[[i]] <- raster::projectRaster(temp2[[i]], imgBase)
+      validImagesBand2[[i]] <- raster::projectRaster(validImagesBand2[[i]], imgBase)
     }
 
-    log <- try(raster::compareRaster(temp3[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE)
+    log <- try(raster::compareRaster(validImagesBand3[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE)
     if (inherits(log, "try-error")) {
-      temp3[[i]] <- raster::projectRaster(temp3[[i]], imgBase)
+      validImagesBand3[[i]] <- raster::projectRaster(validImagesBand3[[i]], imgBase)
     }
 
-    log <- try(raster::compareRaster(temp4[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE)
+    log <- try(raster::compareRaster(validImagesBand4[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE)
     if (inherits(log, "try-error")) {
-      temp4[[i]] <- raster::projectRaster(temp4[[i]], imgBase)
+      validImagesBand4[[i]] <- raster::projectRaster(validImagesBand4[[i]], imgBase)
     }
   }
-  temp1$fun <- mean # add function mean
-  temp2$fun <- mean
-  temp3$fun <- mean
-  temp4$fun <- mean
-  temp1$na.rm <- TRUE
-  temp2$na.rm <- TRUE
-  temp3$na.rm <- TRUE
-  temp4$na.rm <- TRUE
+  # prep bands for aggregation, add mean function, and na.rm
+  validImagesBand1$fun <- mean
+  validImagesBand2$fun <- mean
+  validImagesBand3$fun <- mean
+  validImagesBand4$fun <- mean
+  validImagesBand1$na.rm <- TRUE
+  validImagesBand2$na.rm <- TRUE
+  validImagesBand3$na.rm <- TRUE
+  validImagesBand4$na.rm <- TRUE
   # for mosaic, fun and na.rm are named arguments controlling how overlapping pixels are combined
-  rasterBand1 <- do.call(raster::mosaic, temp1) # (function,  list of arguments),  calls mosaic on each raster individually
-  rasterBand2 <- do.call(raster::mosaic, temp2) # do.call() allows for variable number of arguments
-  rasterBand3 <- do.call(raster::mosaic, temp3)
-  rasterBand4 <- do.call(raster::mosaic, temp4)
+  rasterBand1 <- do.call(raster::mosaic, validImagesBand1) # (function,  list of arguments),  calls mosaic on each raster individually
+  rasterBand2 <- do.call(raster::mosaic, validImagesBand2) # do.call() allows for variable number of arguments
+  rasterBand3 <- do.call(raster::mosaic, validImagesBand3)
+  rasterBand4 <- do.call(raster::mosaic, validImagesBand4)
 
-  # Brick bands
+  # Brick bands ie create multi layer raster object
   combined4BandRaster <- raster::brick(rasterBand1, rasterBand2, rasterBand3, rasterBand4)
 
   # Save
-  outFile <- paste0(outDirSiteMosaic, "/", substr(uniqueDates[currentDate], 1, 4), substr(uniqueDates[currentDate], 6, 7), substr(uniqueDates[currentDate], 9, 10), "_cliped_mosaic.tif")
-  writeRaster(combined4BandRaster, filename = outFile, format = "GTiff", overwrite = TRUE)
+  outFile <- paste0(outputDirSiteMosaic, "/", substr(uniqueDates[currentDate], 1, 4), substr(uniqueDates[currentDate], 6, 7), substr(uniqueDates[currentDate], 9, 10), "_cliped_mosaic.tif")
+  raster::writeRaster(combined4BandRaster, filename = outFile, format = "GTiff", overwrite = TRUE)
 
   print(paste("saved:", outFile))
 }
 # }
 
-# Check the length of output - number of unique mosaics and number of unique dates
-print(paste("number of mosaics created:", length(list.files(path = outDirSiteMosaic))))
+# Check the length of output
+# number of unique mosaics should equal number of unique dates (1 mosaic per day)
+print(paste("number of mosaics created:", length(list.files(path = outputDirSiteMosaic))))
 print(paste("number of unique dates:", length(uniqueDates)))
-
-
-# TODO check masking, clouds still appear
