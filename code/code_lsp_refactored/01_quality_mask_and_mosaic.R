@@ -114,7 +114,7 @@ imgBase <- GetBaseImg(filePathsSR, siteWindow, outputDirSite, save = TRUE)
 
 
 ##
-registerDoMC(cores=params$setup$numCores) # register the multicore parallel backend with the foreach package
+registerDoMC(cores = params$setup$numCores) # register the multicore parallel backend with the foreach package
 
 # Output directory for mosaic images
 outputDirSiteMosaic <- paste0(outputDirSite, "/mosaic")
@@ -125,14 +125,14 @@ if (!dir.exists(outputDirSiteMosaic)) {
 
 ## Do a loop for each date
 # foreach(currentDate = 1:length(uniqueDates)) %dopar% { # runs one parallel worker per date
-foreach(currentDate = 1:5) %dopar% # TODO Error: object 'currentDate' not found
+foreach(currentDate = 1:5) %dopar% { # TODO Error: object 'currentDate' not found
   # Find images for current date
   currentDateStr <- paste0(substr(uniqueDates[currentDate], 1, 4), substr(uniqueDates[currentDate], 6, 7), substr(uniqueDates[currentDate], 9, 10))
   print(paste("currentDateStr:", currentDateStr))
-  
+
   sameDateImages <- which(substr(fileBasenamesSR, 1, 8) == currentDateStr)
   print(paste("length(sameDateImages):", length(sameDateImages)))
-  
+
   # Find images that have all 4 PlanetScope bands
   valid4BandImages <- c()
   for (currentSameDateImageIdx in 1:length(sameDateImages)) {
@@ -154,20 +154,20 @@ foreach(currentDate = 1:5) %dopar% # TODO Error: object 'currentDate' not found
       }
     }
   }
-  
+
   # If the number of images that have 4 bands is more than zero, load them and create a mosaic image
   print(paste(length(valid4BandImages), "/", length(sameDateImages), "valid 4Band images"))
-  
-  
+
+
   if (length(valid4BandImages) > 0) {
     imgB <- vector("list", length(valid4BandImages))
-  
+
     for (currentValidImageIdx in 1:length(valid4BandImages)) { # get each individual scene
       ii <- valid4BandImages[currentValidImageIdx]
-  
+
       img <- raster::raster(filePathsSR[ii])
       numBand <- raster::nbands(img)
-  
+
       # get scene id to find paired UDM files
       currentSceneId <- substr(fileBasenamesSR[ii], 1, unlist(gregexpr("3B", fileBasenamesSR[ii])) - 2)
       currentSceneIdLength <- nchar(currentSceneId)
@@ -179,20 +179,18 @@ foreach(currentDate = 1:5) %dopar% # TODO Error: object 'currentDate' not found
       # ex2 files
       # 20250625_183211_39_24b7_3B_AnalyticMS_SR_clip.tif
       # 20250625_183211_39_24b7_3B_udm2_clip.tif
-  
-  
-      
-  
+
+
       # NOTE check masking, clouds still appear
       # this was because there was no UDM1=0 & UDM2=1 condition, new images don't have UDM1
-  
-  
+
+
       imgP <- vector("list", numBand)
       for (currentBand in 1:numBand) {
         print(paste("currentSceneId:", currentSceneId, "| currentBand:", currentBand))
         imgT <- raster::raster(filePathsSR[ii], band = currentBand)
         imgT <- raster::crop(imgT, siteWindow)
-  
+
         if (length(which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)) == 1 & length(which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)) == 0) {
           print("UDM1 = 1, UDM2 = 0")
           # only UDM quality mask exists
@@ -234,11 +232,23 @@ foreach(currentDate = 1:5) %dopar% # TODO Error: object 'currentDate' not found
           if (inherits(log, "try-error")) {
             imgT <- imgT # TODO if error don't modify image, inherit from UDM1. what if both have an issue?? this is not addressed
           } else {
-            imgT[udm2T != 1] <- NA  # set imgT pixels to NA if the udm2T mask != 1
+            imgT[udm2T != 1] <- NA # set imgT pixels to NA if the udm2T mask != 1
             # udm2T == 1 means the pixel has a clear sky https://docs.planet.com/data/imagery/udm/#udm21-product-bands
           }
         } else if (length(which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)) == 0 & length(which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)) == 1) {
           print("UDM1 = 0, UDM2 = 1")
+          log <- try(
+            {
+              udmT <- raster(filePathsUDM2[which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)], band = 8) # band 8 holds old UDM mask
+              udmT <- crop(udmT, siteWin)
+            },
+            silent = TRUE
+          )
+          if (inherits(log, "try-error")) {
+            next
+          } else {
+            imgT[udmT > 0] <- NA
+          }
           log <- try(
             {
               udm2T <- raster::raster(filePathsUDM2[which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)])
@@ -247,7 +257,7 @@ foreach(currentDate = 1:5) %dopar% # TODO Error: object 'currentDate' not found
             silent = TRUE
           )
           if (inherits(log, "try-error")) {
-            next
+            imgT <- imgT
           } else {
             imgT[udm2T != 1] <- NA
           }
@@ -255,15 +265,13 @@ foreach(currentDate = 1:5) %dopar% # TODO Error: object 'currentDate' not found
           print("UDM1 = 0, UDM2 = 0")
           print("---------- ERROR no quality mask applied ----------")
         }
-  
+
         imgP[[currentBand]] <- imgT # add current band raster that has been quality checked
       }
-  
+
       imgB[[currentValidImageIdx]] <- brick(imgP) # builds 4 band image for scene
     }
-  
-  
-  
+
     validImagesBand1 <- vector("list", (length(valid4BandImages) + 1))
     validImagesBand2 <- vector("list", (length(valid4BandImages) + 1))
     validImagesBand3 <- vector("list", (length(valid4BandImages) + 1))
@@ -278,24 +286,24 @@ foreach(currentDate = 1:5) %dopar% # TODO Error: object 'currentDate' not found
     validImagesBand2[[(length(valid4BandImages) + 1)]] <- imgBase
     validImagesBand3[[(length(valid4BandImages) + 1)]] <- imgBase
     validImagesBand4[[(length(valid4BandImages) + 1)]] <- imgBase
-  
+
     # Check their spatial information
     for (i in 1:length(valid4BandImages)) {
       log <- try(raster::compareRaster(validImagesBand1[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE) # have the same crs, resolutions
       if (inherits(log, "try-error")) {
         validImagesBand1[[i]] <- raster::projectRaster(validImagesBand1[[i]], imgBase)
       }
-  
+
       log <- try(raster::compareRaster(validImagesBand2[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE)
       if (inherits(log, "try-error")) {
         validImagesBand2[[i]] <- raster::projectRaster(validImagesBand2[[i]], imgBase)
       }
-  
+
       log <- try(raster::compareRaster(validImagesBand3[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE)
       if (inherits(log, "try-error")) {
         validImagesBand3[[i]] <- raster::projectRaster(validImagesBand3[[i]], imgBase)
       }
-  
+
       log <- try(raster::compareRaster(validImagesBand4[[i]], imgBase, extent = FALSE, rowcol = FALSE), silent = TRUE)
       if (inherits(log, "try-error")) {
         validImagesBand4[[i]] <- raster::projectRaster(validImagesBand4[[i]], imgBase)
@@ -315,14 +323,14 @@ foreach(currentDate = 1:5) %dopar% # TODO Error: object 'currentDate' not found
     rasterBand2 <- do.call(raster::mosaic, validImagesBand2) # do.call() allows for variable number of arguments
     rasterBand3 <- do.call(raster::mosaic, validImagesBand3)
     rasterBand4 <- do.call(raster::mosaic, validImagesBand4)
-  
+
     # Brick bands ie create multi layer raster object
     combined4BandRaster <- raster::brick(rasterBand1, rasterBand2, rasterBand3, rasterBand4)
-  
+
     # Save
     outFile <- paste0(outputDirSiteMosaic, "/", substr(uniqueDates[currentDate], 1, 4), substr(uniqueDates[currentDate], 6, 7), substr(uniqueDates[currentDate], 9, 10), "_clipped_mosaic.tif")
     raster::writeRaster(combined4BandRaster, filename = outFile, format = "GTiff", overwrite = TRUE)
-  
+
     print(paste("saved:", outFile))
   }
 } # end %dopar%

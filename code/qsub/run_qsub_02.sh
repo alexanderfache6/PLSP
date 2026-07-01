@@ -10,11 +10,8 @@
 #$ -e /projectnb/modislc/users/fache/logs/planet/
 # error log
 
-# #$ -m ae
-# #$ fache@bu.edu
-
 siteNum=$1
-Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/01_quality_mask_and_mosaic.R
+Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/02_create_chunks.R # NOTE
 
 echo "Submitting $Rfile with site number $siteNum"
 
@@ -23,4 +20,4 @@ module load R
 R --vanilla --args $siteNum < $Rfile
 
 # run in any directory with:
-# qsub qsub_01.sh <siteNum>
+# qsub run_qsub_02.sh <siteNum>

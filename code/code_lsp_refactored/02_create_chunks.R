@@ -17,9 +17,10 @@
 # qsub -V -pe omp 28 -l h_rt=12:00:00 run_02.sh numSite
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
+library(sp)
 library(raster)
-# library(rgdal)
-# library(gdalUtils)
+library(terra)
+library(sf)
 
 library(rjson)
 library(geojsonR)
