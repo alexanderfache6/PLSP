@@ -36,7 +36,7 @@ library(raster)
 library(sp)
 library(rjson)
 library(geojsonR)
-library(doMC) # Provides a parallel backend for the %dopar% function using the multicore functionality of the parallel package.
+# library(doMC) # Provides a parallel backend for the %dopar% function using the multicore functionality of the parallel package.
 library(doParallel)
 
 ########################################
@@ -113,8 +113,7 @@ siteWindow <- GetSiteShp(filePathsSR, cLong, cLat)
 imgBase <- GetBaseImg(filePathsSR, siteWindow, outputDirSite, save = TRUE)
 
 
-##
-registerDoMC(cores = params$setup$numCores) # register the multicore parallel backend with the foreach package
+
 
 # Output directory for mosaic images
 outputDirSiteMosaic <- paste0(outputDirSite, "/mosaic")
@@ -123,9 +122,25 @@ if (!dir.exists(outputDirSiteMosaic)) {
   print(paste("created:", outputDirSiteMosaic))
 }
 
-## Do a loop for each date
-# foreach(currentDate = 1:length(uniqueDates)) %dopar% { # runs one parallel worker per date
-foreach(currentDate = 1:5) %dopar% { # TODO Error: object 'currentDate' not found
+
+# registerDoMC(cores = params$setup$numCores) # register the multicore parallel backend with the foreach package
+cluster <- makeCluster(params$setup$numCores)
+registerDoParallel(cluster)
+clusterEvalQ(cluster, {
+  library(raster)
+  library(sp)
+})
+
+clusterExport(cluster, varlist = c(
+  "filePathsSR", "filePathsUDM", "filePathsUDM2",
+  "fileBasenamesSR", "fileBasenamesUDM", "fileBasenamesUDM2",
+  "uniqueDates", "imgBase", "siteWindow", "outputDirSiteMosaic"
+))
+
+
+# runs one parallel worker per date
+foreach(currentDate = 1:length(uniqueDates)) %dopar% {
+# foreach(currentDate = 1:5) %dopar% {
   # Find images for current date
   currentDateStr <- paste0(substr(uniqueDates[currentDate], 1, 4), substr(uniqueDates[currentDate], 6, 7), substr(uniqueDates[currentDate], 9, 10))
   print(paste("currentDateStr:", currentDateStr))
@@ -239,8 +254,8 @@ foreach(currentDate = 1:5) %dopar% { # TODO Error: object 'currentDate' not foun
           print("UDM1 = 0, UDM2 = 1")
           log <- try(
             {
-              udmT <- raster(filePathsUDM2[which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)], band = 8) # band 8 holds old UDM mask
-              udmT <- crop(udmT, siteWin)
+              udmT <- raster::raster(filePathsUDM2[which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)], band = 8) # band 8 holds old UDM mask when UDM1 doesn't exist
+              udmT <- raster::crop(udmT, siteWindow)
             },
             silent = TRUE
           )
@@ -269,7 +284,7 @@ foreach(currentDate = 1:5) %dopar% { # TODO Error: object 'currentDate' not foun
         imgP[[currentBand]] <- imgT # add current band raster that has been quality checked
       }
 
-      imgB[[currentValidImageIdx]] <- brick(imgP) # builds 4 band image for scene
+      imgB[[currentValidImageIdx]] <- raster::brick(imgP) # builds 4 band image for scene
     }
 
     validImagesBand1 <- vector("list", (length(valid4BandImages) + 1))
@@ -282,7 +297,7 @@ foreach(currentDate = 1:5) %dopar% { # TODO Error: object 'currentDate' not foun
       validImagesBand3[[i]] <- raster::raster(imgB[[i]], 3) # band 3
       validImagesBand4[[i]] <- raster::raster(imgB[[i]], 4) # band 4
     }
-    validImagesBand1[[(length(valid4BandImages) + 1)]] <- imgBase # TODO why add base image, I think fall through if no pixels for a particular date??
+    validImagesBand1[[(length(valid4BandImages) + 1)]] <- imgBase # TODO why add base image, I think fallback if no pixels for a particular date??
     validImagesBand2[[(length(valid4BandImages) + 1)]] <- imgBase
     validImagesBand3[[(length(valid4BandImages) + 1)]] <- imgBase
     validImagesBand4[[(length(valid4BandImages) + 1)]] <- imgBase
@@ -335,7 +350,9 @@ foreach(currentDate = 1:5) %dopar% { # TODO Error: object 'currentDate' not foun
   }
 } # end %dopar%
 
+stopCluster(cluster)
+
 # Check the length of output
 # number of unique mosaics should equal number of unique dates (1 mosaic per day)
-print(paste("number of mosaics created:", length(list.files(path = outputDirSiteMosaic))))
+print(paste("number of mosaics created:", length(list.files(path = outputDirSiteMosaic, pattern = glob2rx("*_clipped_mosaic.tif")))))
 print(paste("number of unique dates:", length(uniqueDates)))
