@@ -7,6 +7,7 @@
     "geojsonDir": "/projectnb/planet/PLSP/geojson/",
     "dataDir": "/projectnb/modislc/users/fache/data/planet/raw",
     "outDir": "/projectnb/modislc/users/fache/data/planet/mosaics/",
+    "chunkDir": "/projectnb/modislc/users/fache/data/planet/chunks/",
     "rScripts": "/projectnb/planet/PLSP/GitHub/PlanetLSP/data_paper/",
     "rFunctions": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/PLSP_Functions_refactored.R",
     "productTable": "/projectnb/planet/PLSP/GitHub/PlanetLSP/data_paper/PLSP_Layers.csv",

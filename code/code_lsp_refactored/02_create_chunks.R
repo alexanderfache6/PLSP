@@ -14,7 +14,7 @@
 # R --vanilla < ~/02_make_chunks.R $1
 #
 # example submission command using default parameters:
-# qsub -V -pe omp 28 -l h_rt=12:00:00 run_02.sh numSite
+# qsub -V -pe omp 28 -l h_rt=12:00:00 run_02.sh siteNumber
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 library(sp)
@@ -25,138 +25,156 @@ library(sf)
 library(rjson)
 library(geojsonR)
 
-library(doMC)
+# library(doMC)
 library(doParallel)
 
 ########################################
 args <- commandArgs()
 print(args)
 
-numSite <- as.numeric(args[3])
-# numSite <- 51
-
+siteNumber <- as.numeric(args[4])
+# siteNumber <- 103 # NOTE temp when running in RStudio
 
 ########################################
 ## Load parameters
-params <- fromJSON(file = "~/PLSP_Parameters.json")
+params <- fromJSON(file = "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/PLSP_Parameters_refactored.json")
 source(params$setup$rFunctions)
 
 
 ########################################
 ## Load mosaiced images
-strSite <- list.dirs(params$setup$outDir, full.names = FALSE, recursive = FALSE)[numSite]
-print(strSite)
+geojsonDir <- params$setup$geojsonDir
 
-imgDir <- paste0(params$setup$outDir, strSite, "/mosaic")
-print(imgDir)
+siteInfo <- GetSiteInfo(siteNumber, geojsonDir, params)
+strSite <- siteInfo[[2]] # site name
 
+siteMosaicDir <- paste0(params$setup$outDir, strSite, "/mosaic")
+print(siteMosaicDir)
 
 ########################################
-dfiles <- list.files(path = imgDir, pattern = glob2rx("*mosaic.tif"))
-files <- list.files(path = imgDir, pattern = glob2rx("*mosaic.tif"), full.names = TRUE)
+fileNamesMosaic <- list.files(path = siteMosaicDir, pattern = glob2rx("*mosaic.tif"))
+filePathsMosaic <- list.files(path = siteMosaicDir, pattern = glob2rx("*mosaic.tif"), full.names = TRUE)
 
 # Get dates
-yy <- substr(dfiles, 3, 4)
-mm <- substr(dfiles, 5, 6)
-dd <- substr(dfiles, 7, 8)
-dates <- as.Date(paste(mm, "/", dd, "/", yy, sep = ""), "%m/%d/%y")
+yy <- substr(fileNamesMosaic, 3, 4)
+mm <- substr(fileNamesMosaic, 5, 6)
+dd <- substr(fileNamesMosaic, 7, 8)
+datesAll <- as.Date(paste(mm, dd, yy, sep = "/"), "%m/%d/%y")
 
-print(length(dates))
+print(length(datesAll))
 
 
 # Divide mosaiced images into chunks
 imgBase <- raster(paste0(params$setup$outDir, strSite, "/base_image.tif"))
 
-numCk <- params$setup$numChunks # 200
-chunk <- length(imgBase) %/% numCk
+numberOfChunks <- params$setup$numChunks # 200
+
+chunkSize <- length(imgBase) %/% numberOfChunks
+print(paste("numberOfChunks:", numberOfChunks, ", chunkSize:", chunkSize))
 
 # Output directory
-ckDir <- paste0(params$setup$outDir, strSite, "/chunk")
-if (!dir.exists(ckDir)) {
-  dir.create(ckDir)
+chunkDir <- paste0(params$setup$chunkDir, strSite)
+if (!dir.exists(chunkDir)) {
+  dir.create(chunkDir, recursive = TRUE)
+  print(paste("created:", chunkDir))
 }
 
 # Directory for temporal outputs (which will be deleted at the end of the process)
-ckDirTemp <- paste0(params$setup$outDir, strSite, "/chunk/temp")
-if (!dir.exists(ckDirTemp)) {
-  dir.create(ckDirTemp)
+chunkDirTemp <- paste0(params$setup$chunkDi, strSite, "/temp")
+if (!dir.exists(chunkDirTemp)) {
+  dir.create(chunkDirTemp, recursive = TRUE)
+  print(paste("created:", chunkDirTemp))
 }
 
 
 ########################################
-# For each image corresponded to each date,
-# divede images into chunks, and save them as temporal files
-registerDoMC(params$setup$numCores)
+# save chunks as temporal files
+
+cluster <- makeCluster(params$setup$numCores)
+registerDoParallel(cluster)
+clusterEvalQ(cluster, {
+  library(raster)
+  library(sp)
+})
+
+clusterExport(cluster, varlist = c("numberOfChunks", "chunkSize", "chunkDir", "chunkDirTemp"))
+
 
 # NOTE iterate through all dates, get 4 bands
-foreach(i = 1:length(dates)) %dopar% {
-  band1 <- values(raster(files[i], 1))
-  band2 <- values(raster(files[i], 2))
-  band3 <- values(raster(files[i], 3))
-  band4 <- values(raster(files[i], 4))
+foreach(i = 1:length(datesAll)) %dopar% {
+  # get bands for current date
+  band1 <- values(raster::raster(filePathsMosaic[i], 1))
+  band2 <- values(raster::raster(filePathsMosaic[i], 2))
+  band3 <- values(raster::raster(filePathsMosaic[i], 3))
+  band4 <- values(raster::raster(filePathsMosaic[i], 4))
 
   # NOTE slice pixels into 200 chunks, save date/chunk number to rda
   # output is small chunk files containing 4 bands for a date
-  foreach(cc = 1:numCk) %dopar% {
-    ckNum <- sprintf("%03d", cc)
-    dirTemp <- paste0(ckDirTemp, ckNum)
+  # create chunks for current date
+  foreach(currentChunk = 1:numberOfChunks) %dopar% {
+  # foreach(currentChunk = 1:numberOfChunks) %do% {
+    currentChunkStringified <- sprintf("%03d", currentChunk)
+    dirTemp <- paste0(chunkDirTemp, '/', currentChunkStringified)
     if (!dir.exists(dirTemp)) {
       dir.create(dirTemp)
     }
 
-    if (cc == numCk) {
-      chunks <- c((chunk * (cc - 1) + 1):length(imgBase))
+    if (currentChunk == numberOfChunks) {
+      chunkPixelIndices <- c((chunkSize * (currentChunk - 1) + 1):length(imgBase)) # at last chunk, include remainder of pixels
     } else {
-      chunks <- c((chunk * (cc - 1) + 1):(chunk * cc))
+      chunkPixelIndices <- c((chunkSize * (currentChunk - 1) + 1):(chunkSize * currentChunk))
     }
-    b1 <- band1[chunks]
-    b2 <- band2[chunks]
-    b3 <- band3[chunks]
-    b4 <- band4[chunks]
+    b1 <- band1[chunkPixelIndices]
+    b2 <- band2[chunkPixelIndices]
+    b3 <- band3[chunkPixelIndices]
+    b4 <- band4[chunkPixelIndices]
 
     save(b1, b2, b3, b4, file = paste0(dirTemp, "/", yy[i], mm[i], dd[i], ".rda"))
+    print(paste("saved:", paste0(dirTemp, "/", yy[i], mm[i], dd[i], ".rda")))
   }
+  print(paste("done with date:", datesAll[i]))
 }
 
 
 ########################################
 # Load files for each chunk, merge then, and save
+# load all dates for one chunk at a time and save as single rda
 
-# NOTE load all dates for one chunk at a time and save as single rda
-foreach(cc = 1:numCk) %dopar% {
-  ckNum <- sprintf("%03d", cc)
-  dirTemp <- paste0(ckDirTemp, ckNum)
-  files <- list.files(dirTemp, full.names = TRUE)
 
-  if (cc == numCk) {
-    chunks <- c((chunk * (cc - 1) + 1):length(imgBase))
+foreach(currentChunk = 1:numberOfChunks) %dopar% {
+  currentChunkStringified <- sprintf("%03d", currentChunk)
+  dirTemp <- paste0(chunkDirTemp, '/', currentChunkStringified)
+  currentChunkAllDateFiles <- list.files(dirTemp, full.names = TRUE)
+
+  if (currentChunk == numberOfChunks) {
+    chunkPixelIndices <- c((chunkSize * (currentChunk - 1) + 1):length(imgBase))
   } else {
-    chunks <- c((chunk * (cc - 1) + 1):(chunk * cc))
+    chunkPixelIndices <- c((chunkSize * (currentChunk - 1) + 1):(chunkSize * currentChunk))
   }
-
-  if (length(files) == length(dates)) {
-    band1 <- matrix(NA, length(chunks), length(dates))
-    band2 <- matrix(NA, length(chunks), length(dates))
-    band3 <- matrix(NA, length(chunks), length(dates))
-    band4 <- matrix(NA, length(chunks), length(dates))
-    for (i in 1:length(dates)) {
-      load(files[i])
+  
+  # check that the same number of chunks as dates were created
+  if (length(currentChunkAllDateFiles) == length(datesAll)) {
+    band1 <- matrix(NA, length(chunkPixelIndices), length(datesAll)) # rows are number of pixels, columnds are dates
+    band2 <- matrix(NA, length(chunkPixelIndices), length(datesAll))
+    band3 <- matrix(NA, length(chunkPixelIndices), length(datesAll))
+    band4 <- matrix(NA, length(chunkPixelIndices), length(datesAll))
+    for (i in 1:length(datesAll)) { # load each date and assign to chunk column
+      load(currentChunkAllDateFiles[i])
 
       band1[, i] <- b1
       band2[, i] <- b2
       band3[, i] <- b3
       band4[, i] <- b4
     }
-    # Save
-    save(band1, band2, band3, band4, dates,
-      file = paste0(ckDir, "/chunk_", ckNum, ".rda")
-    )
+    # Save chunk - subset of pixels across all dates
+    save(band1, band2, band3, band4, datesAll, file = paste0(chunkDir, "/chunk_", currentChunkStringified, ".rda"))
+    print(paste("saved:", paste0(chunkDir, "/chunk_", currentChunkStringified, ".rda")))
   } else {
-    print("No good!")
+    print(paste("---------- failed on chunk number:", currentChunk, "----------"))
   }
 }
 
 
 ########################################
 ## Remove temporary files
-system(paste0("rm -r ", ckDirTemp))
+# system(paste0("rm -r ", chunkDirTemp))
