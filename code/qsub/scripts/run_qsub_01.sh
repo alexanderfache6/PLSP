@@ -3,7 +3,7 @@
 # export current environment variables into job
 #$ -pe omp 8
 # request multiple cores
-#$ -l h_rt=4:00:00
+#$ -l h_rt=8:00:00
 # hard time limit
 #$ -o /projectnb/modislc/users/fache/logs/planet/
 # output log

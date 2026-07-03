@@ -352,7 +352,22 @@ foreach(currentDate = 1:length(uniqueDates)) %dopar% {
 
 stopCluster(cluster)
 
-# Check the length of output
 # number of unique mosaics should equal number of unique dates (1 mosaic per day)
 print(paste("number of mosaics created:", length(list.files(path = outputDirSiteMosaic, pattern = glob2rx("*_clipped_mosaic.tif")))))
 print(paste("number of unique dates:", length(uniqueDates)))
+
+
+# get stats per year
+cat(sprintf("%-6s| %-18s| %-18s| %-18s\n", "year", "# unique dates", "# mosaics created", "# missing mosaics"))
+for (yr in 2016:2026) {
+  yearDates <- uniqueDates[format(uniqueDates, "%Y") == as.character(yr)]
+  nDates <- length(yearDates)
+
+  if (nDates > 0) {
+    yearFiles <- list.files(path = outputDirSiteMosaic, pattern = glob2rx(paste0(yr, "*_clipped_mosaic.tif")))
+    nMosaics <- length(yearFiles)
+    nMissing <- nDates - nMosaics
+
+    cat(sprintf("%-6s| %-18s| %-18s| %-18s\n", yr, nDates, nMosaics, nMissing))
+  }
+}
