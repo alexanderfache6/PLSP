@@ -97,7 +97,7 @@ print(paste("length(uniqueDates):", length(uniqueDates)))
 ########################################
 ## Image process
 ## Set output directory for base image
-outputDir <- params$setup$outDir
+outputDir <- params$setup$mosaicsDir
 outputDirSite <- paste0(outputDir, strSite)
 if (!dir.exists(outputDir)) {
   dir.create(outputDir)
@@ -140,7 +140,7 @@ clusterExport(cluster, varlist = c(
 
 # runs one parallel worker per date
 foreach(currentDate = 1:length(uniqueDates)) %dopar% {
-# foreach(currentDate = 1:5) %dopar% {
+  # foreach(currentDate = 1:5) %dopar% {
   # Find images for current date
   currentDateStr <- paste0(substr(uniqueDates[currentDate], 1, 4), substr(uniqueDates[currentDate], 6, 7), substr(uniqueDates[currentDate], 9, 10))
   print(paste("currentDateStr:", currentDateStr))
@@ -206,7 +206,7 @@ foreach(currentDate = 1:length(uniqueDates)) %dopar% {
         imgT <- raster::raster(filePathsSR[ii], band = currentBand)
         imgT <- raster::crop(imgT, siteWindow)
 
-        if (length(which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)) == 1 & length(which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)) == 0) {
+        if (length(which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)) == 1 && length(which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)) == 0) {
           print("UDM1 = 1, UDM2 = 0")
           # only UDM quality mask exists
           log <- try(
@@ -222,7 +222,7 @@ foreach(currentDate = 1:length(uniqueDates)) %dopar% {
             imgT[udmT > 0] <- NA # A value of zero indicates a "good" imagery pixel
             # values > 0 are unusable, set to NA
           }
-        } else if (length(which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)) == 1 & length(which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)) == 1) {
+        } else if (length(which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)) == 1 && length(which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)) == 1) {
           print("UDM1 = 1, UDM2 = 1")
           # UDM and UDM2 quality mask exist
           log <- try(
@@ -250,7 +250,7 @@ foreach(currentDate = 1:length(uniqueDates)) %dopar% {
             imgT[udm2T != 1] <- NA # set imgT pixels to NA if the udm2T mask != 1
             # udm2T == 1 means the pixel has a clear sky https://docs.planet.com/data/imagery/udm/#udm21-product-bands
           }
-        } else if (length(which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)) == 0 & length(which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)) == 1) {
+        } else if (length(which(substr(fileBasenamesUDM, 1, currentSceneIdLength) == currentSceneId)) == 0 && length(which(substr(fileBasenamesUDM2, 1, currentSceneIdLength) == currentSceneId)) == 1) {
           print("UDM1 = 0, UDM2 = 1")
           log <- try(
             {

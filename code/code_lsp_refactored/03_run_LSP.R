@@ -14,12 +14,13 @@
 # R --vanilla < ~/03_LSP_script.R $1
 #
 # example submission command using default parameters:
-# qsub -V -l h_rt=12:00:00 run_03.sh numSite chunk
+# qsub -V -l h_rt=12:00:00 run_03.sh siteNumber chunk
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
+library(sp)
 library(raster)
-# library(rgdal)
-# library(gdalUtils)
+library(terra)
+library(sf)
 
 library(rjson)
 library(geojsonR)
@@ -32,64 +33,69 @@ library(doParallel)
 args <- commandArgs()
 print(args)
 
-numSite <- as.numeric(substr(args[3], 1, 3)) # site
-cc <- as.numeric(substr(args[3], 4, 6)) # chunk number; 1-200
-# numSite <- 5; cc <- 50
+siteNumber <- as.numeric(substr(args[3], 1, 3)) # site
+currentChunk <- as.numeric(substr(args[3], 4, 6)) # chunk number; 1-200
+# siteNumber <- 5; currentChunk <- 50
 
 
 ########################################
 ## Load parameters
-params <- fromJSON(file = "~/PLSP_Parameters.json")
+params <- fromJSON(file = "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/PLSP_Parameters_refactored.json")
 source(params$setup$rFunctions)
 
 
 ########################################
 ## Get site name, image directory and coordinate
-strSite <- list.dirs(params$setup$outDir, full.names = FALSE, recursive = FALSE)[numSite]
-print(strSite)
+geojsonDir <- params$setup$geojsonDir
 
-ckDir <- paste0(params$setup$outDir, strSite, "/chunk")
-print(ckDir)
+siteInfo <- GetSiteInfo(siteNumber, geojsonDir, params)
+strSite <- siteInfo[[2]] # site name
+
+
+siteChunksDir <- paste0(params$setup$chunksDir, strSite, "/chunk")
+print(siteChunksDir)
 
 ## Load chunk image
-ckNum <- sprintf("%03d", cc)
-file <- list.files(path = ckDir, pattern = glob2rx(paste0("*", ckNum, ".rda")), full.names = TRUE)
-
-load(file)
+chunkNumberStringified <- sprintf("%03d", currentChunk)
+currentChunkFile <- list.files(path = siteChunksDir, pattern = glob2rx(paste0("*", chunkNumberStringified, ".rda")), full.names = TRUE)
+load(currentChunkFile) # this loads band1, band2, band3, band4, dates from .rda
 
 
 ## Load water mask
-waterRater <- raster(paste0(params$setup$outDir, strSite, "/water_mask_30_1.tif"))
+waterRater <- raster(paste0(params$setup$outDir, strSite, "/water_mask_30_1.tif")) # TODO
 
-numCk <- params$setup$numChunks
-chunk <- length(waterRater) %/% numCk
-if (cc == numCk) {
-  chunks <- c((chunk * (cc - 1) + 1):length(waterRater))
+numberOfChunks <- params$setup$numChunks
+chunkSize <- length(waterRater) %/% numberOfChunks
+if (currentChunk == numberOfChunks) {
+  chunkPixelIndices <- c((chunkSize * (currentChunk - 1) + 1):length(waterRater))
 } else {
-  chunks <- c((chunk * (cc - 1) + 1):(chunk * cc))
+  chunkPixelIndices <- c((chunkSize * (currentChunk - 1) + 1):(chunkSize * currentChunk))
 }
-waterMask <- values(waterRater)[chunks]
+waterMask <- values(waterRater)[chunkPixelIndices]
 
 
 ##########################################
 # Estimate phenometrics
-numPix <- dim(band1)[1]
-phenYrs <- params$setup$phenStartYr:params$setup$phenEndYr
+numberOfBandPixels <- dim(band1)[1]
+phenoYears <- params$setup$phenStartYr:params$setup$phenEndYr
 
-pheno_mat <- matrix(NA, numPix, 24 * length(phenYrs))
+phenoResultsMatrix <- matrix(NA, numberOfBandPixels, 24 * length(phenoYears)) # each pixel gets 24 output metrics per year
 
 # NOTE for loaded site and chunk, calculate lsp per pixel
-for (i in 1:numPix) {
-  pheno_mat[i, ] <- DoPhenologyPlanet(band1[i, ], band2[i, ], band3[i, ], band4[i, ], dates, phenYrs, params, waterMask[i])
-
-  if (i %% 10000 == 0) print(i)
+for (i in 1:numberOfBandPixels) {
+  phenoResultsMatrix[i, ] <- DoPhenologyPlanet(band1[i, ], band2[i, ], band3[i, ], band4[i, ], dates, phenoYears, params, waterMask[i])
+  if (i %% 10000 == 0) {
+    print(paste("pixel:", i))
+  }
 }
 
 
 # Save outputs
-ckPheDir <- paste0(params$setup$outDir, strSite, "/chunk_phe")
-if (!dir.exists(ckPheDir)) {
-  dir.create(ckPheDir)
+phenologyChunkDir <- paste0(params$setup$mosaicsDir, strSite, "/chunk_phe")
+if (!dir.exists(phenologyChunkDir)) {
+  dir.create(phenologyChunkDir)
+  print(paste("created:", phenologyChunkDir))
 }
 
-save(pheno_mat, file = paste0(ckPheDir, "/chunk_phe_", ckNum, ".rda"))
+save(phenoResultsMatrix, file = paste0(phenologyChunkDir, "/chunk_phe_", chunkNumberStringified, ".rda"))
+print(paste("saved:", paste0(phenologyChunkDir, "/chunk_phe_", chunkNumberStringified, ".rda")))

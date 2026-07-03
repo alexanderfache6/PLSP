@@ -48,7 +48,7 @@ geojsonDir <- params$setup$geojsonDir
 siteInfo <- GetSiteInfo(siteNumber, geojsonDir, params)
 strSite <- siteInfo[[2]] # site name
 
-siteMosaicDir <- paste0(params$setup$outDir, strSite, "/mosaic")
+siteMosaicDir <- paste0(params$setup$mosaicsDir, strSite, "/mosaic")
 print(siteMosaicDir)
 
 ########################################
@@ -65,7 +65,7 @@ print(length(datesAll))
 
 
 # Divide mosaiced images into chunks
-imgBase <- raster(paste0(params$setup$outDir, strSite, "/base_image.tif"))
+imgBase <- raster(paste0(params$setup$mosaicsDir, strSite, "/base_image.tif"))
 
 numberOfChunks <- params$setup$numChunks # 200
 
@@ -73,14 +73,14 @@ chunkSize <- length(imgBase) %/% numberOfChunks
 print(paste("numberOfChunks:", numberOfChunks, ", chunkSize:", chunkSize))
 
 # Output directory
-chunkDir <- paste0(params$setup$chunkDir, strSite)
-if (!dir.exists(chunkDir)) {
-  dir.create(chunkDir, recursive = TRUE)
-  print(paste("created:", chunkDir))
+outputSiteChunksDir <- paste0(params$setup$chunksDir, strSite)
+if (!dir.exists(outputSiteChunksDir)) {
+  dir.create(outputSiteChunksDir, recursive = TRUE)
+  print(paste("created:", outputSiteChunksDir))
 }
 
 # Directory for temporal outputs (which will be deleted at the end of the process)
-chunkDirTemp <- paste0(params$setup$chunkDi, strSite, "/temp")
+chunkDirTemp <- paste0(params$setup$chunksDir, strSite, "/temp")
 if (!dir.exists(chunkDirTemp)) {
   dir.create(chunkDirTemp, recursive = TRUE)
   print(paste("created:", chunkDirTemp))
@@ -97,7 +97,7 @@ clusterEvalQ(cluster, {
   library(sp)
 })
 
-clusterExport(cluster, varlist = c("numberOfChunks", "chunkSize", "chunkDir", "chunkDirTemp"))
+clusterExport(cluster, varlist = c("numberOfChunks", "chunkSize", "chunksDir", "chunkDirTemp"))
 
 
 # NOTE iterate through all dates, get 4 bands
@@ -112,9 +112,8 @@ foreach(i = 1:length(datesAll)) %dopar% {
   # output is small chunk files containing 4 bands for a date
   # create chunks for current date
   foreach(currentChunk = 1:numberOfChunks) %dopar% {
-  # foreach(currentChunk = 1:numberOfChunks) %do% {
     currentChunkStringified <- sprintf("%03d", currentChunk)
-    dirTemp <- paste0(chunkDirTemp, '/', currentChunkStringified)
+    dirTemp <- paste0(chunkDirTemp, "/", currentChunkStringified)
     if (!dir.exists(dirTemp)) {
       dir.create(dirTemp)
     }
@@ -143,7 +142,7 @@ foreach(i = 1:length(datesAll)) %dopar% {
 
 foreach(currentChunk = 1:numberOfChunks) %dopar% {
   currentChunkStringified <- sprintf("%03d", currentChunk)
-  dirTemp <- paste0(chunkDirTemp, '/', currentChunkStringified)
+  dirTemp <- paste0(chunkDirTemp, "/", currentChunkStringified)
   currentChunkAllDateFiles <- list.files(dirTemp, full.names = TRUE)
 
   if (currentChunk == numberOfChunks) {
@@ -151,7 +150,7 @@ foreach(currentChunk = 1:numberOfChunks) %dopar% {
   } else {
     chunkPixelIndices <- c((chunkSize * (currentChunk - 1) + 1):(chunkSize * currentChunk))
   }
-  
+
   # check that the same number of chunks as dates were created
   if (length(currentChunkAllDateFiles) == length(datesAll)) {
     band1 <- matrix(NA, length(chunkPixelIndices), length(datesAll)) # rows are number of pixels, columnds are dates
@@ -167,8 +166,8 @@ foreach(currentChunk = 1:numberOfChunks) %dopar% {
       band4[, i] <- b4
     }
     # Save chunk - subset of pixels across all dates
-    save(band1, band2, band3, band4, datesAll, file = paste0(chunkDir, "/chunk_", currentChunkStringified, ".rda"))
-    print(paste("saved:", paste0(chunkDir, "/chunk_", currentChunkStringified, ".rda")))
+    save(band1, band2, band3, band4, datesAll, file = paste0(outputSiteChunksDir, "/chunk_", currentChunkStringified, ".rda"))
+    print(paste("saved:", paste0(outputSiteChunksDir, "/chunk_", currentChunkStringified, ".rda")))
   } else {
     print(paste("---------- failed on chunk number:", currentChunk, "----------"))
   }
