@@ -21,7 +21,7 @@
 USER=$1
 DAYS=$2
 DATE=$(date +%Y%m%d)
-OUTFILE="qacct_${USER}_${DAYS}days_${DATE}.csv"
+OUTFILE="qacct_${USER}_${DAYS}D_${DATE}.csv"
 
 echo "[running] qacct -o $USER -j -d $DAYS > $OUTFILE"
 
