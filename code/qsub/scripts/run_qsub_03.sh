@@ -13,18 +13,16 @@
 #$ -l mem_per_core=16G
 
 siteNumber=$1
-Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/02_create_chunks.R
+chunkNumber=$2
+Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/03_run_LSP.R
 
-echo "Submitting $Rfile with site number $siteNumber"
+echo "Submitting $Rfile with site number $siteNumber for chunk $chunkNumber"
 
 module load R
 
-R --vanilla --args $siteNumber < $Rfile
+R --vanilla --args $siteNumber $chunkNumber < $Rfile
 
 
 # USAGE
 # run with
-# qsub run_qsub_02.sh <siteNumber>
-
-
-# NOTE for 1 site for 1 year (ex 274 dates) takes about XXXX of run time (excluding queue wait time)
+# qsub run_qsub_03.sh <siteNumber> <chunkNumber>

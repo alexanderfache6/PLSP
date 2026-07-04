@@ -1,3 +1,6 @@
+# NOTE waterMask check removed from all
+
+
 #=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # 
 # A High Spatial Resolution Land Surface Phenology Dataset for AmeriFlux and NEON Sites
@@ -375,7 +378,7 @@ GetSegMetrics <- function(seg, x_smooth, x_raw, smooth_dates, raw_dates){
 # Returning evi maximum, evi amplitude, evi area and number of observation
 # Written by Douglas Bolton, and adapted by Minkyu Moon  
 #----------------------------------------------------------
-annualMetrics <- function(viSub, dateSub, smoothed_vi, pred_dates, yr, pheno_pars, vi_dorm, waterMask) {
+annualMetrics <- function(viSub, dateSub, smoothed_vi, pred_dates, yr, pheno_pars, vi_dorm) { #, waterMask) {
   out <- c(NA,rep(NA,10),4,rep(NA,10),4,NA)
   try({
     inyear <- as.numeric(format(dateSub,'%Y')) == yr
@@ -392,10 +395,10 @@ annualMetrics <- function(viSub, dateSub, smoothed_vi, pred_dates, yr, pheno_par
     if((seg_max > 10000 | seg_max < 0 | seg_amp > 10000 | seg_amp < 0) ){
       return(out)
       
-    }else if(vi_dorm < pheno_pars$VIdormThresh & seg_amp < (pheno_pars$VIampThreshHigh*10000) & waterMask > pheno_pars$waterOccuThreshHigh){
+    }else if(vi_dorm < pheno_pars$VIdormThresh & seg_amp < (pheno_pars$VIampThreshHigh*10000)) { # & waterMask > pheno_pars$waterOccuThreshHigh){
       return(out)
       
-    }else if(vi_dorm < pheno_pars$VIdormThresh & seg_amp < (pheno_pars$VIampThreshLow*10000) & waterMask > pheno_pars$waterOccuThreshLow){
+    }else if(vi_dorm < pheno_pars$VIdormThresh & seg_amp < (pheno_pars$VIampThreshLow*10000)) { # & waterMask > pheno_pars$waterOccuThreshLow){
       return(out)
       
     }else{
@@ -526,7 +529,7 @@ calculateWeights <- function(smoothMat_Masked, numDaysFit, numYrs, pheno_pars) {
 # Written by Douglas Bolton, and updated by Minkyu Moon  
 #---------------------------------------------------------------------
 # NOTE timeseries for individual pixel
-DoPhenologyPlanet <- function(blue, green, red, nir, dates, phenYrs, params, waterMask){
+DoPhenologyPlanet <- function(blue, green, red, nir, dates, phenYrs, params) { #, waterMask){
   
   # Despike, calculate dormant value, fill negative VI values with dormant value
   log <- try({    
@@ -539,7 +542,7 @@ DoPhenologyPlanet <- function(blue, green, red, nir, dates, phenYrs, params, wat
     
     
     # Potential water
-    if( sum(vi<0,na.rm=T)/sum(!is.na(vi)) > pheno_pars$sumNegVIthresh & waterMask > pheno_pars$waterOccuThreshLow ){
+    if( sum(vi<0,na.rm=T)/sum(!is.na(vi)) > pheno_pars$sumNegVIthresh) { # & waterMask > pheno_pars$waterOccuThreshLow ){
       return(rep(c(NA,rep(NA,10),4,rep(NA,10),4,NA),length(phenYrs)))} 
       # NOTE pixel is water, return NAs
     
@@ -729,21 +732,21 @@ DoPhenologyPlanet <- function(blue, green, red, nir, dates, phenYrs, params, wat
       ################################################
       #Fit phenology
       peaks <- FindPeaks(smoothed_vi)
-      if (all(is.na(peaks))) {outAll <- c(outAll,annualMetrics(viSub,dateSub,smoothed_vi,pred_dates,phenYrs[y],pheno_pars,vi_dorm,waterMask));next}
+      if (all(is.na(peaks))) {outAll <- c(outAll,annualMetrics(viSub,dateSub,smoothed_vi,pred_dates,phenYrs[y],pheno_pars,vi_dorm));next} # waterMask parameter removed
       
       #Find full segments
       full_segs <- GetSegs(peaks, smoothed_vi, pheno_pars)
-      if (is.null(full_segs)) {outAll <- c(outAll,annualMetrics(viSub,dateSub,smoothed_vi,pred_dates,phenYrs[y],pheno_pars,vi_dorm,waterMask));next}
+      if (is.null(full_segs)) {outAll <- c(outAll,annualMetrics(viSub,dateSub,smoothed_vi,pred_dates,phenYrs[y],pheno_pars,vi_dorm));next} # waterMask parameter removed
       
       #Only keep segments with peaks within year *****
       full_segs <- full_segs[inYear[sapply(full_segs, "[[", 2)] ]  #check if peaks are in the year
-      if (length(full_segs)==0) {outAll <- c(outAll,annualMetrics(viSub,dateSub,smoothed_vi,pred_dates,phenYrs[y],pheno_pars,vi_dorm,waterMask));next}
+      if (length(full_segs)==0) {outAll <- c(outAll,annualMetrics(viSub,dateSub,smoothed_vi,pred_dates,phenYrs[y],pheno_pars,vi_dorm));next} # waterMask parameter removed
       
       #Get PhenoDates
       pheno_dates <- GetPhenoDates(full_segs, smoothed_vi, pred_dates, pheno_pars)
       phen <- unlist(pheno_dates, use.names=F)
       phen <- phen - as.numeric(as.Date(paste0((as.numeric(phenYrs[y])-1),'-12-31')))
-      if (all(is.na(phen))) {outAll <- c(outAll,annualMetrics(viSub,dateSub,smoothed_vi,pred_dates,phenYrs[y],pheno_pars,vi_dorm,waterMask));next}
+      if (all(is.na(phen))) {outAll <- c(outAll,annualMetrics(viSub,dateSub,smoothed_vi,pred_dates,phenYrs[y],pheno_pars,vi_dorm));next} # waterMask parameter removed
       
       #EVI layers
       seg_metrics <- lapply(full_segs, GetSegMetrics,smoothed_vi,viSub,pred_dates,dateSub) #full segment metrics
@@ -766,10 +769,10 @@ DoPhenologyPlanet <- function(blue, green, red, nir, dates, phenYrs, params, wat
         outAll <- c(outAll,c(NA,rep(NA,10),4,rep(NA,10),4,NA));next}
       
       # Filter for potential water
-      if(vi_dorm < pheno_pars$VIdormThresh & seg_amp[theOrd[1]] < (pheno_pars$VIampThreshHigh*10000) & waterMask > pheno_pars$waterOccuThreshHigh){
+      if(vi_dorm < pheno_pars$VIdormThresh & seg_amp[theOrd[1]] < (pheno_pars$VIampThreshHigh*10000)) { # & waterMask > pheno_pars$waterOccuThreshHigh){
         outAll <- c(outAll,c(NA,rep(NA,10),4,rep(NA,10),4,NA));next}
       
-      if(vi_dorm < pheno_pars$VIdormThresh & seg_amp[theOrd[1]] < (pheno_pars$VIampThreshLow*10000) & waterMask > pheno_pars$waterOccuThreshLow){
+      if(vi_dorm < pheno_pars$VIdormThresh & seg_amp[theOrd[1]] < (pheno_pars$VIampThreshLow*10000)) { # & waterMask > pheno_pars$waterOccuThreshLow){
         outAll <- c(outAll,c(NA,rep(NA,10),4,rep(NA,10),4,NA));next}
       
       
@@ -788,7 +791,7 @@ DoPhenologyPlanet <- function(blue, green, red, nir, dates, phenYrs, params, wat
       
       
       ################################################
-      if(numCyc == 0){outAll <- c(outAll,annualMetrics(viSub,dateSu,smoothed_vi,pred_dates,phenYrs[y],pheno_pars,vi_dorm,waterMask));next}
+      if(numCyc == 0){outAll <- c(outAll,annualMetrics(viSub,dateSu,smoothed_vi,pred_dates,phenYrs[y],pheno_pars,vi_dorm));next} # waterMask parameter removed
       
       if(numRecords == 1) {
         out <- c(1,phen,seg_max,seg_amp,seg_int,qual_1,c(rep(NA,10),4),numObs)

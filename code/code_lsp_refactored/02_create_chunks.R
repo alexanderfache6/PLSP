@@ -81,7 +81,7 @@ if (!dir.exists(outputSiteChunksDir)) {
   dir.create(outputSiteChunksDir, recursive = TRUE) # creates /planet/chunks/site
   print(paste("created:", outputSiteChunksDir))
 } else {
-  print(paste("existing:", outputSiteChunksDir))
+  print(paste("exists:", outputSiteChunksDir))
 }
 
 # Directory for temporal outputs (which will be deleted at the end of the process)
@@ -90,7 +90,7 @@ if (!dir.exists(chunkDirTemp)) {
   dir.create(chunkDirTemp, recursive = TRUE) # creates /planet/chunks/site/temp
   print(paste("created:", chunkDirTemp))
 } else {
-  print(paste("existing:", chunkDirTemp))
+  print(paste("exists:", chunkDirTemp))
 }
 
 
@@ -167,7 +167,7 @@ foreach(currentChunk = 1:numberOfChunks) %dopar% {
     band3 <- matrix(NA, length(chunkPixelIndices), length(datesAll))
     band4 <- matrix(NA, length(chunkPixelIndices), length(datesAll))
     for (i in 1:length(datesAll)) { # load each date and assign to chunk column
-      load(currentChunkAllDateFiles[i])
+      load(currentChunkAllDateFiles[i], verbose = TRUE)
 
       band1[, i] <- b1
       band2[, i] <- b2

@@ -12,19 +12,19 @@
 
 #$ -l mem_per_core=16G
 
-siteNum=$1
+siteNumber=$1
 Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/01_quality_mask_and_mosaic.R
 
-echo "Submitting $Rfile with site number $siteNum"
+echo "Submitting $Rfile with site number $siteNumber"
 
 module load R
 
-R --vanilla --args $siteNum < $Rfile
+R --vanilla --args $siteNumber < $Rfile
 
 
 # USAGE
 # run with
-# qsub run_qsub_01.sh <siteNum>
+# qsub run_qsub_01.sh <siteNumber>
 
 
 # NOTE for 1 site for 1 year (ex 274 dates) takes about 30min of run time (excluding queue wait time)
