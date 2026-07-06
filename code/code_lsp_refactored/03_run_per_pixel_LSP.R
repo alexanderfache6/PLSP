@@ -27,7 +27,6 @@ library(geojsonR)
 
 library(doParallel)
 
-
 ########################################
 args <- commandArgs()
 print(args)
@@ -72,7 +71,7 @@ print(paste("numberOfChunks:", numberOfChunks))
 
 ########################################
 ## Setup parallel cluster
-cluster <- makeCluster(params$setup$numCores)
+cluster <- makeCluster(as.numeric(Sys.getenv("NSLOTS")))
 registerDoParallel(cluster)
 clusterEvalQ(cluster, {
   library(raster)
@@ -100,7 +99,7 @@ foreach(currentChunk = 1:numberOfChunks) %dopar% {
   currentChunkFile <- list.files(path = siteChunksDir, pattern = glob2rx(paste0("*", currentChunkStringified, ".rda")), full.names = TRUE)
   log <- try(load(currentChunkFile, verbose = TRUE), silent = TRUE) # this loads band1, band2, band3, band4, dates from .rda
   if (inherits(log, "try-error")) {
-    print(paste("---------- failed  to load chunk", strSite, currentChunkStringified, "----------"))
+    print(paste("---------- failed to load chunk", strSite, currentChunkStringified, "----------"))
     return(NULL)
   }
 
