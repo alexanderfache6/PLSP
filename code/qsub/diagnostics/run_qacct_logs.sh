@@ -3,20 +3,9 @@
 # Saves SGE job accounting data to CSV
 #
 # Usage:
-#   ./qacct_to_csv.sh username days
-#   ./qacct_to_csv.sh fache 7
+#   ./run_qacct_logs.sh username days
+#   ./run_qacct_logs.sh fache 7
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
-
-
-
-# exit_status
-# 0 - success
-# 1 - general R error
-# 137 killed by signal, maxvmem, walltime
-
-
-
 
 USER=$1
 DAYS=$2

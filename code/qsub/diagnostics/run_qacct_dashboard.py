@@ -1,20 +1,11 @@
 #!/usr/bin/env python3
 """
-qacct_dashboard.py
-Interactive dashboard from SGE qacct CSV:
-  1. Horizontal stacked bar (Gantt-style): queue wait (qsub->start, yellow)
-     + run time (start->end, green), back to back, x-axis = duration,
-     with a dot at the end of each bar colored by exit_status
-  2. Bar chart: ru_* fields + cpu/mem/io/iow/maxvmem/arid vs jobnumber (dropdown to switch field)
-  3. Pie chart: distribution of categorical fields (dropdown to switch field)
-
 Usage:
-
     module load miniconda
     conda activate LCSC
 
-    python qacct_dashboard.py qacct_fache_7days_20260702.csv
-    python qacct_dashboard.py qacct_fache_7days_20260702.csv --out report.html
+    python run_qacct_dashboard.py qacct_fache_7days_20260702.csv
+    python run_qacct_dashboard.py qacct_fache_7days_20260702.csv
 """
 
 import argparse
@@ -25,8 +16,8 @@ import pandas as pd
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-PIE_FIELDS = ["jobname", "owner", "group", "project", "department", "account", "qname", "hostname"]
-EXTRA_NUMERIC_FIELDS = ["cpu", "mem", "io", "iow", "maxvmem", "arid"]
+PIE_FIELDS = ["jobname", "owner", "group", "project", "department", "account", "qname", "hostname", "granted_pe"]
+EXTRA_NUMERIC_FIELDS = ["slots", "cpu", "mem", "io", "iow", "maxvmem", "arid", "exit_status", "failed"]
 
 EXIT_STATUS_LABELS = {
     0: "0 = success",
@@ -47,8 +38,7 @@ UNIT_MULTIPLIERS = {"K": 1 / (1024 * 1024), "M": 1 / 1024, "G": 1, "T": 1024}
 
 def parse_args():
     p = argparse.ArgumentParser(description="Interactive qacct dashboard")
-    p.add_argument("csv_file", help="Path to CSV produced by qacct_to_csv.sh")
-    p.add_argument("--out", default=None, help="Output HTML file (default: <csv_file>_dashboard.html)")
+    p.add_argument("csv_file", help="Path to CSV produced by run_qacct_logs.sh")
     return p.parse_args()
 
 
@@ -102,10 +92,8 @@ def main():
     except FileNotFoundError:
         sys.exit(f"Error: file not found: {args.csv_file}")
 
-    # derive output filename from the input csv name if --out wasn't given
-    if args.out is None:
-        stem = os.path.splitext(os.path.basename(args.csv_file))[0]
-        args.out = f"{stem}_dashboard.html"
+    stem = os.path.splitext(os.path.basename(args.csv_file))[0]
+    outFile = f"{stem}_dashboard.html"
 
     if "jobnumber" not in df.columns:
         sys.exit("Error: CSV has no 'jobnumber' column")
@@ -113,6 +101,13 @@ def main():
     df["jobnumber"] = pd.to_numeric(df["jobnumber"], errors="coerce")
     df = df.dropna(subset=["jobnumber"]).sort_values("jobnumber").reset_index(drop=True)
     x_labels = df["jobnumber"].astype(int).astype(str).tolist()
+
+    # combined "jobnumber (jobname)" labels for Panel 1's y-axis only
+    if "jobname" in df.columns:
+        jobnames = df["jobname"].fillna("").astype(str)
+        y_labels_combined = [f"{jn} ({name})" if name else jn for jn, name in zip(x_labels, jobnames)]
+    else:
+        y_labels_combined = x_labels
 
     # ---------- Panel 1: exit_status (used as dots on the Gantt bars) ----------
     have_exit_status = "exit_status" in df.columns
@@ -161,7 +156,8 @@ def main():
     wait_hover = [fmt_duration(h) for h in wait_hours]
     run_hover = [fmt_duration(h) for h in run_hours]
 
-    y_category_order = list(reversed(x_labels))
+    y_category_order = list(reversed(y_labels_combined))
+
 
     # ---------- Build figure: 3 rows ----------
     # row1: combined Gantt bar + exit_status dots (full width)
@@ -187,7 +183,7 @@ def main():
     # --- Panel 1: stacked horizontal bar (queue wait + run time), back to back ---
     fig.add_trace(
         go.Bar(
-            x=wait_hours, y=x_labels, orientation="h",
+            x=wait_hours, y=y_labels_combined, orientation="h",
             name="Queue wait (qsub→start)",
             legendgroup="timeline",
             legendgrouptitle_text="timeline segments",
@@ -199,7 +195,7 @@ def main():
     )
     fig.add_trace(
         go.Bar(
-            x=run_hours, y=x_labels, orientation="h",
+            x=run_hours, y=y_labels_combined, orientation="h",
             name="Run time (start→end)",
             legendgroup="timeline",
             marker_color="#4CAF50",
@@ -216,13 +212,12 @@ def main():
             mask = df["exit_status"] == status
             fig.add_trace(
                 go.Scatter(
-                    x=total_hours[mask], y=[x_labels[j] for j in mask[mask].index],
+                    x=total_hours[mask], y=[y_labels_combined[j] for j in mask[mask].index],
                     mode="markers",
                     name=exit_status_label(status),
                     legendgroup="exit_status",
                     legendgrouptitle_text="exit_status",
-                    marker=dict(size=10, color=PALETTE[i % len(PALETTE)],
-                                line=dict(width=1, color="white")),
+                    marker=dict(size=10, color=PALETTE[i % len(PALETTE)], line=dict(width=1, color="white")),
                     hovertemplate="jobnumber=%{y}<br>exit_status=" + exit_status_label(status) + "<extra></extra>",
                 ),
                 row=1, col=1,
@@ -231,7 +226,7 @@ def main():
 
     fig.update_yaxes(categoryorder="array", categoryarray=y_category_order, row=1, col=1)
     fig.update_xaxes(title_text="duration (hours)", row=1, col=1)
-    fig.update_yaxes(title_text="jobnumber", row=1, col=1)
+    fig.update_yaxes(title_text="jobnumber (jobname)", row=1, col=1)
 
     # --- Spacer row (row 2): hide its axes entirely, dropdowns live here ---
     fig.update_xaxes(visible=False, row=2, col=1)
@@ -263,6 +258,9 @@ def main():
                 values=counts.values.tolist(),
                 name=field,
                 visible=(field == default_pie),
+                sort=True,
+                rotation=0,
+                direction='clockwise',
                 hovertemplate="%{label}: %{value} jobs (%{percent})<extra></extra>",
                 showlegend=False,
             ),
@@ -302,8 +300,8 @@ def main():
         margin=dict(t=100),
     )
 
-    fig.write_html(args.out)
-    print(f"Wrote dashboard to {args.out}")
+    fig.write_html(outFile)
+    print(f"Wrote dashboard to {outFile}")
     if have_exit_status:
         print(f"  Panel 1 (gantt+dots): queue wait + run time per job, {len(unique_statuses)} distinct exit_status values")
     print(f"  Panel 2 (bar):     {len(bar_fields)} fields ({len(ru_fields)} ru_*, {len(extra_fields)} extra), {len(df)} jobs")

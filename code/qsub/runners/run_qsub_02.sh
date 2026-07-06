@@ -13,7 +13,7 @@
 #$ -l mem_per_core=16G
 
 siteNumber=$1
-Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/02_create_chunks.R
+Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/02_create_timeseries_chunks.R
 
 echo "Submitting $Rfile with site number $siteNumber"
 

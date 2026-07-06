@@ -1,9 +1,9 @@
 #!/bin/bash
 #$ -V
 # export current environment variables into job
-#$ -pe omp 8
+#$ -pe omp 4
 # request multiple cores
-#$ -l h_rt=4:00:00
+#$ -l h_rt=24:00:00
 # hard time limit
 #$ -o /projectnb/modislc/users/fache/logs/planet/
 # output log
@@ -11,9 +11,10 @@
 # error log
 
 #$ -l mem_per_core=16G
+# allocated memory per worker, assigned to SGE NSLOTS
 
 siteNumber=$1
-Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/03_run_LSP.R
+Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/04_generate_geotiff_product_layers.R
 
 echo "Submitting $Rfile with site number $siteNumber"
 
@@ -24,4 +25,4 @@ R --vanilla --args $siteNumber < $Rfile
 
 # USAGE
 # run with
-# qsub run_qsub_03.sh <siteNumber>
+# qsub run_qsub_04.sh <siteNumber>
