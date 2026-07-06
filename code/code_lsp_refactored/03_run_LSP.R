@@ -91,7 +91,7 @@ print(paste("dim(phenoResultsMatrix):", paste(dim(phenoResultsMatrix), collapse 
 
 # NOTE for loaded site and chunk (represents single physical patch), calculate lsp per pixel across all days
 for (i in 1:numberOfPixelsPerBand) {
-  phenoResultsMatrix[i, ] <- DoPhenologyPlanet(band1[i, ], band2[i, ], band3[i, ], band4[i, ], datesAll, phenoYears, params) #, waterMask[i])
+  phenoResultsMatrix[i, ] <- DoPhenologyPlanet(band1[i, ], band2[i, ], band3[i, ], band4[i, ], datesAll, phenoYears, params) # , waterMask[i])
   if (i %% 10000 == 0) {
     print(paste("pixel:", i))
   }
