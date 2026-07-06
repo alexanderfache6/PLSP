@@ -10,6 +10,8 @@
     "chunksDir": "/projectnb/modislc/users/fache/data/planet/chunks/",
     "phenologyDir": "/projectnb/modislc/users/fache/data/planet/phenology/",
     "phenologyGeotiffDir": "/projectnb/modislc/users/fache/data/planet/phenologyGeotiff/",
+    "netCDFStageDir": "/projectnb/modislc/users/fache/data/planet/PLSP_stage_nc/",
+    "netCDFProductionDir": "/projectnb/modislc/users/fache/data/planet/PLSP_production_nc/",
     "rScripts": "/projectnb/planet/PLSP/GitHub/PlanetLSP/data_paper/",
     "rFunctions": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/PLSP_Functions_refactored.R",
     "productTable": "/projectnb/modislc/users/fache/src/PLSP/PLSP_Layers.csv",

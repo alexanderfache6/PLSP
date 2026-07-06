@@ -17,45 +17,51 @@
 # qsub -V -pe omp 2 -l h_rt=12:00:00 run_05.sh numSite
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
+library(sp)
 library(raster)
-# library(rgdal)
-# library(gdalUtils)
-library(rgeos)
-library(maptools)
+library(terra)
+library(sf)
 library(rasterVis)
 library(ncdf4)
-library(sf)
+library(rjson)
 
 ########################################
 args <- commandArgs()
 print(args)
 
-numSite <- as.numeric(substr(args[3], 1, 3))
-# numSite <- 5
+# siteNumber <- as.numeric(args[4])
+siteNumber <- 103 # NOTE temp when running in RStudio
+print(paste("siteNumber:", siteNumber))
 
 ########################################
-params <- fromJSON(file = "~/PLSP_Parameters.json")
+## Load parameters
+params <- fromJSON(file = "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/PLSP_Parameters_refactored.json")
 source(params$setup$rFunctions)
 
 ########################################
-## Get site name, image directory and coordinate
-strSite <- list.dirs(params$setup$outDir, full.names = FALSE, recursive = FALSE)[numSite]
-print(strSite)
+inBase <- params$setup$phenologyGeotiffDir
+outBase <- params$setup$netCDFStageDir
+print(paste("inBase:", inBase))
+print(paste("outBase:", outBase))
 
+if (!dir.exists(outBase)) {
+  dir.create(outBase)
+  print(paste("created:", outBase))
+} else {
+  print(paste("exists:", outBase))
+}
 
-########################################
-inBase <- paste0(params$setup$workDir, "Product_GeoTiff/")
-outBase <- paste0(params$setup$workDir, "Product_netCDF/")
+geojsonDir <- params$setup$geojsonDir
 
-sites <- list.dirs(inBase, recursive = FALSE, full.names = FALSE)
-site <- sites[ss]
-print(site)
+siteInfo <- GetSiteInfo(siteNumber, geojsonDir, params)
+strSite <- siteInfo[[2]] # site name
+print(paste("strSite:", strSite))
 
 ########################################
 # Get product layers info
-productTable <- read.csv("~/PLSP_Layers.csv", header = TRUE, stringsAsFactors = FALSE)
+productTable <- read.csv("/projectnb/modislc/users/fache/src/PLSP/PLSP_Layers.csv", header = TRUE, stringsAsFactors = FALSE)
 # Get a base image to pull raster info from
-baseImage <- raster(paste0(params$setup$outDir, strSite, "/base_image.tif"))
+baseImage <- raster(paste0(params$setup$mosaicsDir, strSite, "/base_image.tif"))
 
 ########################################
 # Get extent, and then define pixel centers in the x and y direction
