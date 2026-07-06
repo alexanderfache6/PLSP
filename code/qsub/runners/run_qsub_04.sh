@@ -9,12 +9,13 @@
 # output log
 #$ -e /projectnb/modislc/users/fache/logs/planet/
 # error log
-
 #$ -l mem_per_core=16G
 # allocated memory per worker, assigned to SGE NSLOTS
+#$ -m ea
+# send an email when the job ends or is aborted
 
 siteNumber=$1
-Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/04_generate_geotiff_product_layers.R
+Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/04_generate_geotiff_layers.R.R
 
 echo "Submitting $Rfile with site number $siteNumber"
 
