@@ -15,7 +15,6 @@
     "productTable": "/projectnb/modislc/users/fache/src/PLSP/PLSP_Layers.csv",
     "water": "/projectnb/planet/PLSP/water/",
     "numChunks": 200,
-    "numCores": 8,
     "neon": "FALSE",
     "amflx": "FALSE"
   },

@@ -123,8 +123,7 @@ if (!dir.exists(outputDirSiteMosaic)) {
 }
 
 
-# registerDoMC(cores = params$setup$numCores) # register the multicore parallel backend with the foreach package
-cluster <- makeCluster(params$setup$numCores)
+cluster <- makeCluster(as.numeric(Sys.getenv("NSLOTS")))
 registerDoParallel(cluster)
 clusterEvalQ(cluster, {
   library(raster)
