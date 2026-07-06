@@ -95,8 +95,7 @@ if (!dir.exists(chunkDirTemp)) {
 
 ########################################
 # save chunks as temporal files
-
-cluster <- makeCluster(params$setup$numCores)
+cluster <- makeCluster(as.numeric(Sys.getenv("NSLOTS")))
 registerDoParallel(cluster)
 clusterEvalQ(cluster, {
   library(raster)
