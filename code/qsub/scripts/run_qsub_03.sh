@@ -13,16 +13,15 @@
 #$ -l mem_per_core=16G
 
 siteNumber=$1
-chunkNumber=$2
 Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/03_run_LSP.R
 
-echo "Submitting $Rfile with site number $siteNumber for chunk $chunkNumber"
+echo "Submitting $Rfile with site number $siteNumber"
 
 module load R
 
-R --vanilla --args $siteNumber $chunkNumber < $Rfile
+R --vanilla --args $siteNumber < $Rfile
 
 
 # USAGE
 # run with
-# qsub run_qsub_03.sh <siteNumber> <chunkNumber>
+# qsub run_qsub_03.sh <siteNumber>

@@ -25,7 +25,6 @@ library(sf)
 library(rjson)
 library(geojsonR)
 
-# library(doMC)
 library(doParallel)
 
 ########################################
