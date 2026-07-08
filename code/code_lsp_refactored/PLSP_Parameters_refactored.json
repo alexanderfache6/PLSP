@@ -1,6 +1,6 @@
 {
   "setup": {
-    "phenStartYr": 2023,
+    "phenStartYr": 2022,
     "phenEndYr": 2025,
     "workDir": "/projectnb/planet/PLSP/",
     "logDir": "/projectnb/planet/PLSP/runLogs/",
@@ -41,7 +41,7 @@
       0.15
     ],
     "dormantQuantile": 0.05,
-    "dormStart": "2023-01-01",
+    "dormStart": "2022-01-01",
     "dormEnd": "2025-12-31",
     "spikeThresh": 2,
     "minResid": 0.1,
