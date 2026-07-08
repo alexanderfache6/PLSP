@@ -1,3 +1,6 @@
+# USAGE job just doesn't start, queue error?? run manually in 4 core RStudio with no problem
+
+
 # NOTE creates 24 layer/metric tif phenologyChunkFiles per site per year
 # groups together phenology_chunk files into single raster
 
@@ -25,13 +28,14 @@ library(raster)
 library(terra)
 library(sf)
 library(rjson)
+library(geojsonR) # could not find function "FROM_GeoJson"
 
 ########################################
-args <- commandArgs()
-print(args)
+# args <- commandArgs()
+# print(args)
 
-siteNumber <- as.numeric(args[4])
-# siteNumber <- 103 # NOTE temp when running in RStudio
+# siteNumber <- as.numeric(args[4])
+siteNumber <- 105 # NOTE temp when running in RStudio
 print(paste("siteNumber:", siteNumber))
 
 ########################################
@@ -70,14 +74,14 @@ print(paste("chunkSize:", chunkSize))
 # Save
 phenologyGeotiffDir <- paste0(params$setup$phenologyGeotiffDir, strSite) # creates /planet/phenologyGeotiff/site/
 if (!dir.exists(phenologyGeotiffDir)) {
-  dir.create(phenologyGeotiffDir)
+  dir.create(phenologyGeotiffDir, recursive = TRUE)
   print(paste("created:", phenologyGeotiffDir))
 } else {
   print(paste("exists:", phenologyGeotiffDir))
 }
 
 for (currentYearIdx in 1:length(phenoYears)) {
-  print(paste("[", phenoYears[currentYearIdx], "]", "starting"))
+  print(paste("[", phenoYears[currentYearIdx], "]", "started"))
 
   layer01 <- matrix(NA, numberOfPixels, 1)
   layer02 <- matrix(NA, numberOfPixels, 1)
@@ -106,8 +110,9 @@ for (currentYearIdx in 1:length(phenoYears)) {
   print(paste("[", phenoYears[currentYearIdx], "]", "layers created"))
 
   for (currentChunk in 1:numberOfChunks) {
+    currentChunkStringified <- sprintf("%03d", currentChunk)
     currentChunkFile <- paste0(phenologyChunkDir, "/chunk_phenology_", currentChunkStringified, ".rda")
-    log <- try(load(currentChunkFile, verbose = TRUE), silent = FALSE) # loads phenoResultsMatrix from 03_run_LSP.R
+    log <- try(load(currentChunkFile, verbose = FALSE), silent = FALSE) # loads phenoResultsMatrix from 03_run_LSP.R
     if (inherits(log, "try-error")) {
       print(paste("[", phenoYears[currentYearIdx], "]", "error loading chunk", currentChunkFile))
       next
@@ -211,5 +216,13 @@ for (currentYearIdx in 1:length(phenoYears)) {
   raster::writeRaster(raster23, filename = paste0(phenologyGeotiffYearDir, "/23_", phenoYears[currentYearIdx], "_", productTable$short_name[23], ".tif"), format = "GTiff", overwrite = TRUE)
   raster::writeRaster(raster24, filename = paste0(phenologyGeotiffYearDir, "/24_", phenoYears[currentYearIdx], "_", productTable$short_name[24], ".tif"), format = "GTiff", overwrite = TRUE)
 
-  print(paste(phenoYears[currentYearIdx], "complete"))
+  print(paste("[", phenoYears[currentYearIdx], "]", "completed"))
+}
+
+# get stats per year
+cat(sprintf("%-6s| %-18s| %-18s\n", "year", "# tif files created", "# tif files expected"))
+for (yearIdx in 1:length(phenoYears)) {
+  tifFiles <- list.files(path = paste0(phenologyGeotiffDir, "/", phenoYears[yearIdx]), pattern = glob2rx(paste0("*.tif")))
+  numTifFiles <- length(tifFiles)
+  cat(sprintf("%-6s| %-18s| %-18s\n", phenoYears[yearIdx], numTifFiles, 24))
 }
