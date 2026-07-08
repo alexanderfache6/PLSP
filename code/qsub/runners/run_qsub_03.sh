@@ -28,4 +28,5 @@ R --vanilla --args $siteNumber < $Rfile
 # run with
 # qsub run_qsub_03.sh <siteNumber>
 
+
 # NOTE each chunk takes ~30min per core at omp 28 4GB for 3 years of LSP for 200 chunks, ~8 batches so ~4 hours

@@ -3,14 +3,16 @@
 # export current environment variables into job
 #$ -pe omp 8
 # request multiple cores
-#$ -l h_rt=4:00:00
+#$ -l h_rt=12:00:00
 # hard time limit
 #$ -o /projectnb/modislc/users/fache/logs/planet/
 # output log
 #$ -e /projectnb/modislc/users/fache/logs/planet/
 # error log
-
 #$ -l mem_per_core=16G
+# allocated memory per worker, assigned to SGE NSLOTS
+#$ -m ea
+# send an email when the job ends or is aborted
 
 siteNumber=$1
 Rfile=/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/02_create_timeseries_chunks.R
