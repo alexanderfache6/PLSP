@@ -1,0 +1,6 @@
+method,min_cluster_size,n_clusters,noise_fraction,dbcv
+hdbscan,100,0,1.0,0
+hdbscan,250,0,1.0,0
+hdbscan,500,0,1.0,0
+hdbscan,1000,0,1.0,0
+hdbscan,2000,0,1.0,0
