@@ -27,6 +27,3 @@ R --vanilla --args $siteNumber < $Rfile
 # USAGE
 # run with
 # qsub run_qsub_02.sh <siteNumber>
-
-
-# NOTE for 1 site for 1 year (ex 274 dates) takes about XXXX of run time (excluding queue wait time)

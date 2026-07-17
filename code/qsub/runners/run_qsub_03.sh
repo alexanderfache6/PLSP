@@ -1,7 +1,7 @@
 #!/bin/bash
 #$ -V
 # export current environment variables into job
-#$ -pe omp 28
+#$ -pe omp 32
 # request multiple cores
 #$ -l h_rt=24:00:00
 # hard time limit
