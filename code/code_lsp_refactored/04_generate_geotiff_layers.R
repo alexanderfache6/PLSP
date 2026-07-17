@@ -35,13 +35,19 @@ library(geojsonR) # could not find function "FROM_GeoJson"
 # print(args)
 
 # siteNumber <- as.numeric(args[4])
-siteNumber <- 105 # NOTE temp when running in RStudio
+siteNumber <- 103 # NOTE temp when running in RStudio
 print(paste("siteNumber:", siteNumber))
 
 ########################################
 ## Load parameters
-params <- fromJSON(file = "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/PLSP_Parameters_refactored.json")
+paramsFile <- "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/PLSP_Parameters_refactored.json"
+params <- fromJSON(file = paramsFile)
 source(params$setup$rFunctions)
+
+print("========================================")
+print(paste("[PLSP_Parameters_refactored.json] file:", paramsFile))
+print(readLines(paramsFile, warn = FALSE)) # NOTE suppresses missing blank line in json
+print("========================================")
 
 productTable <- read.csv(params$setup$productTable, header = TRUE, stringsAsFactors = FALSE)
 phenoYears <- params$setup$phenStartYr:params$setup$phenEndYr

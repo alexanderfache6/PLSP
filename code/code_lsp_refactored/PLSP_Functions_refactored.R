@@ -556,9 +556,9 @@ DoPhenologyPlanet <- function(blue, green, red, nir, dates, phenYrs, params) { #
     vi[vi < vi_dorm] <- vi_dorm # NOTE established floor for dormant values
     
     #
-    splineStart <- as.Date(as.Date(paste0(phenYrs,'-01-01')) - pheno_pars$splineBuffer) 
+    splineStart <- as.Date(as.Date(paste0(phenYrs,'-01-01')) - pheno_pars$splineBuffer) # NOTE phenology spline starts 185 days from prior year
     numDaysFit  <- 365 + (pheno_pars$splineBuffer * 2)    
-    splineEnd   <- splineStart+(numDaysFit-1)
+    splineEnd   <- splineStart+(numDaysFit-1) # NOTE spline end is 365 days plus 2*buffer, so two years worth
     all_dates   <- seq(min(splineStart), max(splineEnd), by="day")
     
     daysVec <- 1:numDaysFit

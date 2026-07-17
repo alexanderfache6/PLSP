@@ -6,6 +6,7 @@
     "logDir": "/projectnb/planet/PLSP/runLogs/",
     "geojsonDir": "/projectnb/planet/PLSP/geojson/",
     "dataDir": "/projectnb/modislc/users/fache/data/planet/raw",
+    "dataDir2": "/projectnb/planet/PLSP/raw",
     "mosaicsDir": "/projectnb/modislc/users/fache/data/planet/mosaics/",
     "chunksDir": "/projectnb/modislc/users/fache/data/planet/chunks/",
     "phenologyDir": "/projectnb/modislc/users/fache/data/planet/phenology/",

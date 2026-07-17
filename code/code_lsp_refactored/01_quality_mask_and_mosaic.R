@@ -45,12 +45,18 @@ print(args)
 
 siteNumber <- as.numeric(args[4])
 # siteNumber <- 103 # NOTE temp when running in RStudio
+print(paste("siteNumber:", siteNumber))
 
 ########################################
 ## Load parameters
-
-params <- fromJSON(file = "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/PLSP_Parameters_refactored.json")
+paramsFile <- "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/PLSP_Parameters_refactored.json"
+params <- fromJSON(file = paramsFile)
 source(params$setup$rFunctions)
+
+print("========================================")
+print(paste("[PLSP_Parameters_refactored.json] file:", paramsFile))
+print(readLines(paramsFile))
+print("========================================")
 
 ########################################
 ## Get site name,  image directory and coordinate
@@ -60,23 +66,46 @@ siteInfo <- GetSiteInfo(siteNumber, geojsonDir, params)
 
 imgDir <- siteInfo[[1]] # in /raw
 strSite <- siteInfo[[2]] # site name
-print(paste(strSite, ";", imgDir))
+print(paste(strSite))
 
 cLong <- siteInfo[[3]]
 cLat <- siteInfo[[4]]
 print(paste(cLong, ";", cLat))
 
+imgDir <- dir(path=params$setup$dataDir,pattern=glob2rx(paste0('*',strSite,'*')),full.names=T)
+imgDir2 <- dir(path=params$setup$dataDir2,pattern=glob2rx(paste0('*',strSite,'*')),full.names=T)
+print(paste("imgDir:", imgDir))
+print(paste("imgDir2:", imgDir2))
+
 ########################################
 ## Get list of files
 # NOTE returns file names as of imgDir root, ex "data/0a1d0344-0a1d-4e57-8396-cafc75345c38/PSScene/20250625_183211_39_24b7_3B_AnalyticMS_SR_clip.tif"
-fileNamesSR <- list.files(path = imgDir, pattern = glob2rx("*MS_SR*.tif"), recursive = TRUE)
-fileNamesUDM <- list.files(path = imgDir, pattern = glob2rx("*_DN_udm*.tif"), recursive = TRUE)
-fileNamesUDM2 <- list.files(path = imgDir, pattern = glob2rx("*_udm2*.tif"), recursive = TRUE)
+fileNamesSR <- c(
+  list.files(path = imgDir, pattern = glob2rx("*MS_SR*.tif"), recursive = TRUE),
+  list.files(path = imgDir2, pattern = glob2rx("*MS_SR*.tif"), recursive = TRUE)
+)
+fileNamesUDM <- c(
+  list.files(path = imgDir, pattern = glob2rx("*_DN_udm*.tif"), recursive = TRUE),
+  list.files(path = imgDir2, pattern = glob2rx("*_DN_udm*.tif"), recursive = TRUE)
+)
+fileNamesUDM2 <- c(
+  list.files(path = imgDir, pattern = glob2rx("*_udm2*.tif"), recursive = TRUE),
+  list.files(path = imgDir2, pattern = glob2rx("*_udm2*.tif"), recursive = TRUE)
+)
 
 # NOTE directory path is prepended to the file names
-filePathsSR <- list.files(path = imgDir, pattern = glob2rx("*MS_SR*.tif"), recursive = TRUE, full.names = TRUE)
-filePathsUDM <- list.files(path = imgDir, pattern = glob2rx("*_DN_udm*.tif"), recursive = TRUE, full.names = TRUE)
-filePathsUDM2 <- list.files(path = imgDir, pattern = glob2rx("*_udm2*.tif"), recursive = TRUE, full.names = TRUE)
+filePathsSR <- c(
+  list.files(path = imgDir, pattern = glob2rx("*MS_SR*.tif"), recursive = TRUE, full.names = TRUE),
+  list.files(path = imgDir2, pattern = glob2rx("*MS_SR*.tif"), recursive = TRUE, full.names = TRUE)
+)
+filePathsUDM <- c(
+  list.files(path = imgDir, pattern = glob2rx("*_DN_udm*.tif"), recursive = TRUE, full.names = TRUE),
+  list.files(path = imgDir2, pattern = glob2rx("*_DN_udm*.tif"), recursive = TRUE, full.names = TRUE)
+)
+filePathsUDM2 <- c(
+  list.files(path = imgDir, pattern = glob2rx("*_udm2*.tif"), recursive = TRUE, full.names = TRUE),
+  list.files(path = imgDir2, pattern = glob2rx("*_udm2*.tif"), recursive = TRUE, full.names = TRUE)
+)
 
 # strip path to accommodate PSScene4Band and PSScene
 ## Get dates

@@ -37,8 +37,14 @@ print(paste("siteNumber:", siteNumber))
 
 ########################################
 ## Load parameters
-params <- fromJSON(file = "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/PLSP_Parameters_refactored.json")
+paramsFile <- "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_refactored/PLSP_Parameters_refactored.json"
+params <- fromJSON(file = paramsFile)
 source(params$setup$rFunctions)
+
+print("========================================")
+print(paste("[PLSP_Parameters_refactored.json] file:", paramsFile))
+print(readLines(paramsFile))
+print("========================================")
 
 ########################################
 ## Get site name, image directory and coordinate
