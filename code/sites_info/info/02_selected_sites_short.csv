@@ -1,0 +1,10 @@
+site_full,site_id,site_name,plsp_number,(f)latitude,(f)longitude,phenocam,(p)latitude,(p)longitude
+US-ARM_ARM_Southern_Great_Plains_site,US-ARM,ARM_Southern_Great_Plains_site,,36.6058,-97.4888,southerngreatplains,36.6058,-97.4888
+US-Mpj_Mountainair_Pinyon-Juniper_Woodland,US-Mpj,Mountainair_Pinyon-Juniper_Woodland,,34.4382,-106.2385,usmpj,34.43845,-106.25436
+US-xKZ_NEON_Konza_Prairie_Biological_Station,US-xKZ,NEON_Konza_Prairie_Biological_Station,,39.1008,-96.5631,konza,39.0824,-96.5603
+US-SRG_Santa_Rita_Grassland,US-SRG,Santa_Rita_Grassland,,31.7894,-110.8277,srg,31.7894,-110.8276
+US-SRM_Santa_Rita_Mesquite,US-SRM,Santa_Rita_Mesquite,,31.8214,-110.8661,srm,31.8214,-110.8661
+US-Ses_Sevilleta_shrubland,US-Ses,Sevilleta_shrubland,,34.335,-106.7448,sevilletashrub,34.33496,-106.74447
+US-Wkg_Walnut_Gulch_Kendall_Grasslands,US-Wkg,Walnut_Gulch_Kendall_Grasslands,103.0,31.7365,-109.9419,kendall,31.73652,-109.94185
+US-Whs_Walnut_Gulch_Lucky_Hills_Shrub,US-Whs,Walnut_Gulch_Lucky_Hills_Shrub,,31.7438,-110.0522,luckyhills,31.7439,-110.05202
+US-Wjs_Willard_Juniper_Savannah,US-Wjs,Willard_Juniper_Savannah,105.0,34.4258,-105.8617,junipersavannah,34.4254,-105.8615
