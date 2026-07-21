@@ -2,41 +2,42 @@
   "site_id": "Walnut_Gulch_Kendall_Grasslands",
   "run_name": "Walnut_Gulch_Kendall_Grasslands_phenology_clustering_v1",
   "script_path": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering",
-  "data_path": "/projectnb/modislc/users/fache/data/planet/phenologyGeotiff/Walnut_Gulch_Kendall_Grasslands/2023",
+  "data_path": "/projectnb/modislc/users/fache/data/planet/phenologyGeotiff/Walnut_Gulch_Kendall_Grasslands",
+  "year": "2023",
   "metric_layers": [
     {
       "name": "OGI",
-      "path": "02_2023_OGI.tif"
+      "path": "02_YYYY_OGI.tif"
     },
     {
       "name": "50PCGI",
-      "path": "03_2023_50PCGI.tif"
+      "path": "03_YYYY_50PCGI.tif"
     },
     {
       "name": "OGMx",
-      "path": "04_2023_OGMx.tif"
+      "path": "04_YYYY_OGMx.tif"
     },
     {
       "name": "Peak",
-      "path": "05_2023_Peak.tif"
+      "path": "05_YYYY_Peak.tif"
     },
     {
       "name": "OGD",
-      "path": "06_2023_OGD.tif"
+      "path": "06_YYYY_OGD.tif"
     },
     {
       "name": "50PCGD",
-      "path": "07_2023_50PCGD.tif"
+      "path": "07_YYYY_50PCGD.tif"
     },
     {
       "name": "OGmn",
-      "path": "08_2023_OGMn.tif"
+      "path": "08_YYYY_OGMn.tif"
     }
   ],
   "qa_layers": [
     {
       "name": "NumCycles",
-      "path": "01_2023_NumCycles.tif",
+      "path": "01_YYYY_NumCycles.tif",
       "valid_range": [
         1,
         99
@@ -44,7 +45,7 @@
     },
     {
       "name": "QA",
-      "path": "12_2023_QA.tif",
+      "path": "12_YYYY_QA.tif",
       "valid_range": [
         1,
         3
@@ -123,6 +124,16 @@
     },
     "step08": {
       "clustering_results": "08_clustering_results.pkl"
+    },
+    "step09": {
+      "cluster_map_plot": "09_cluster_map.png",
+      "cluster_map_geotiff": "09_cluster_map.tif",
+      "cluster_metric_boxplots_plot": "09_cluster_metric_boxplots.png",
+      "metric_cluster_boxplots_plot": "09_metric_cluster_boxplots.png"
     }
+  },
+  "visualization": {
+    "method": "kmeans",
+    "selection_criterion": "silhouette"
   }
 }

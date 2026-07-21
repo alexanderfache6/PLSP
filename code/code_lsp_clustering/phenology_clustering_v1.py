@@ -11,7 +11,8 @@ import matplotlib
 matplotlib.use("Agg")  # non-interactive backend, safe for HPC/headless runs
 import matplotlib.pyplot as plt
 import numpy as np
-
+import time
+from matplotlib.colors import ListedColormap, BoundaryNorm
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
@@ -19,7 +20,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 import hdbscan
 from hdbscan.validity import validity_index
-
+from hdbscan import approximate_predict
 
 def build_config_path(config_filename):
     cwd = Path(os.getcwd())
@@ -33,13 +34,16 @@ def load_config(config_path):
 
 
 def resolve_paths(config):
-    root = Path(config["data_path"])
+    year = config['year']
+    root = Path(config["data_path"]) / year
     for layer in config["metric_layers"]:
         p = Path(layer["path"])
         layer["path"] = str(p) if p.is_absolute() else str(root / p)
+        layer["path"] = layer["path"].replace('YYYY', year)
     for layer in config["qa_layers"]:
         p = Path(layer["path"])
         layer["path"] = str(p) if p.is_absolute() else str(root / p)
+        layer["path"] = layer["path"].replace('YYYY', year)
     return config
 
 
@@ -50,7 +54,7 @@ def build_output_dir(config):
     return results_dir
 
 
-def load_metric_stack(metric_layers):
+def load_metric_stack(metric_layers,):
     bands = []
     names = []
     profile = None
@@ -105,7 +109,7 @@ def stratified_grid_sample(mask, cell_size_px, samples_per_cell, random_seed):
 
 def preprocess(X, feature_names, scaling="standard"):
     X = X.copy()
- 
+
     if scaling == "standard":
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
@@ -426,9 +430,236 @@ def plot_hdbscan_validity(csv_path, out_dir, filename):
     return out_path
 
 
+def predict_full_raster(metrics_stack, qa_mask, model, scaler, method="kmeans"):
+    """
+    Applies a fitted model to every valid (QA-passing, non-NaN) pixel in the raster.
+    Returns a 2D array same shape as qa_mask, with cluster labels; -1 = masked/invalid pixel.
+    """
+    rows, cols = np.where(qa_mask)
+    X_all = metrics_stack[rows, cols, :]
+    X_all_scaled = scaler.transform(X_all)
+
+    if method == "hdbscan":
+        labels, _ = approximate_predict(model, X_all_scaled)
+    else:
+        labels = model.predict(X_all_scaled)
+
+    label_map = np.full(qa_mask.shape, -1, dtype=np.int16) # -1 where no data
+    label_map[rows, cols] = labels # assign clusters to pixels
+    return label_map
+
+
+def plot_cluster_map(label_map, out_dir, filename, title="Phenology Cluster Map", cmap_name="Pastel2"):
+    """
+    Renders a spatial map of cluster assignments for a single site/year.
+    Masked/invalid pixels (-1) are shown in light gray.
+    """
+    unique_labels = sorted(set(label_map.flatten()) - {-1}) # remove masked as a cluster label
+    n_clusters = len(unique_labels)
+
+    cmap = plt.get_cmap(cmap_name, max(n_clusters, 1))
+    colors = [cmap(i) for i in range(n_clusters)]
+    colors_full = ["#2A2A2A"] + colors
+
+    display_map = np.where(label_map == -1, 0, label_map + 1)  # shift so -1 -> 0, clusters -> 1..n
+    bounds = np.arange(-0.5, n_clusters + 1.5, 1)
+    listed_cmap = ListedColormap(colors_full)
+    norm = BoundaryNorm(bounds, listed_cmap.N)
+
+    fig, ax = plt.subplots(figsize=(10, 10))
+    im = ax.imshow(display_map, cmap=listed_cmap, norm=norm, interpolation="nearest")
+    ax.set_title(title)
+    ax.set_xlabel("col pxs")
+    ax.set_ylabel("row pxs")
+
+    cbar = fig.colorbar(im, ax=ax, ticks=range(0, n_clusters + 1), shrink=0.8)
+    cbar.ax.set_yticklabels(["masked"] + [f"cluster {c}" for c in unique_labels])
+
+    fig.tight_layout()
+    out_path = out_dir / filename
+    fig.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+    print(f"Saved cluster map to {out_path}")
+    return out_path
+
+
+def write_cluster_geotiff(label_map, profile, out_path):
+    """
+    Writes cluster labels as a GeoTIFF, preserving CRS/transform from the original metric layers.
+    """
+    out_profile = profile.copy()
+    out_profile.update(dtype=rasterio.int16, count=1, nodata=-1)
+    with rasterio.open(out_path, "w", **out_profile) as dst:
+        dst.write(label_map, 1)
+    print(f"Saved cluster GeoTIFF to {out_path}")
+
+
+def list_available_models(all_results):
+    """
+    Prints every fitted model config available in all_results (as loaded from
+    clustering_results.pkl), so a specific one can be chosen manually via config
+    rather than auto-selected by a single metric.
+    """
+    print("\nAvailable models:")
+    print(f"{'method':<10} {'k / min_cluster_size':<22} {'silhouette':<12} "
+          f"{'davies_bouldin':<16} {'calinski_harabasz':<18} {'inertia_or_bic / dbcv'}")
+    print("-" * 100)
+
+    for method, results in all_results.items():
+        for r in results:
+            k_or_mcs = r.get("k", r.get("min_cluster_size"))
+            sil = r.get("silhouette", r.get("dbcv"))
+            dbi = r.get("davies_bouldin", "")
+            ch = r.get("calinski_harabasz", "")
+            extra = r.get("inertia_or_bic", r.get("n_clusters", ""))
+
+            sil_str = f"{sil:.4f}" if isinstance(sil, (int, float)) and not np.isnan(sil) else str(sil)
+            dbi_str = f"{dbi:.4f}" if isinstance(dbi, (int, float)) else str(dbi)
+            ch_str = f"{ch:.2f}" if isinstance(ch, (int, float)) else str(ch)
+            extra_str = f"{extra:.2f}" if isinstance(extra, (int, float)) else str(extra)
+
+            print(f"{method:<10} {str(k_or_mcs):<22} {sil_str:<12} {dbi_str:<16} {ch_str:<18} {extra_str}")
+
+
+def get_model_by_key(all_results, method, k_or_mcs):
+    """
+    Retrieves a specific fitted model/result dict from all_results by method + k (or min_cluster_size).
+    """
+    results = all_results[method]
+    key_name = "k" if method in ("kmeans", "gmm") else "min_cluster_size"
+    matches = [r for r in results if r[key_name] == k_or_mcs]
+    if not matches:
+        available = [r[key_name] for r in results]
+        raise ValueError(f"No {method} result found for {key_name}={k_or_mcs}. Available: {available}")
+    return matches[0]
+
 def step_header(step):
     print(f"\n[{step}] {'='*40}")
 
+
+
+def plot_cluster_metric_boxplots(metrics_stack, label_map, feature_names, out_dir, filename, title):
+    """
+    For each cluster, plots one row containing a single axis with side-by-side boxplots
+    (one box per metric, in DOY units) for every pixel assigned to that cluster.
+    Top row: vertical bar chart of pixel count per cluster.
+    Uses ALL pixels in label_map (no subsampling).
+
+    metrics_stack: (rows, cols, n_metrics) raw DOY values
+    label_map: (rows, cols) cluster assignments, -1 = masked/invalid
+    feature_names: list of metric names, in the same order as metrics_stack's last axis
+    """
+    unique_labels = sorted(set(label_map.flatten()) - {-1})
+    n_clusters = len(unique_labels)
+    n_metrics = len(feature_names)
+
+    # pixel counts per cluster (for top bar chart)
+    counts = [int(np.sum(label_map == c)) for c in unique_labels]
+
+    fig = plt.figure(figsize=(max(10, n_metrics * 1.5), 3 + 2.2 * n_clusters))
+    gs = fig.add_gridspec(n_clusters + 1, 1, height_ratios=[1.2] + [2] * n_clusters, hspace=0.6)
+
+    # --- Top row: pixel count per cluster ---
+    ax_top = fig.add_subplot(gs[0])
+    ax_top.bar([str(c) for c in unique_labels], counts, color="tab:blue")
+    ax_top.set_ylabel("Pixel Count")
+    ax_top.set_xlabel("Cluster")
+    ax_top.set_title("Pixel Count per Cluster")
+    for i, cnt in enumerate(counts):
+        ax_top.text(i, cnt, f"{cnt:,}", ha="center", va="bottom", fontsize=8)
+    ax_top.grid(alpha=0.3, axis="y")
+
+    # --- One row per cluster: single axis, 7 side-by-side boxplots ---
+    for row_idx, cluster_id in enumerate(unique_labels):
+        ax = fig.add_subplot(gs[row_idx + 1])
+        cluster_mask = (label_map == cluster_id)
+        cluster_pixels = metrics_stack[cluster_mask, :]  # shape: (n_pixels_in_cluster, n_metrics)
+
+        box_data = [cluster_pixels[:, m] for m in range(n_metrics)]
+        bp = ax.boxplot(box_data, tick_labels=feature_names, showfliers=False, patch_artist=True)
+
+        for patch in bp["boxes"]:
+            patch.set_facecolor("tab:orange")
+            patch.set_alpha(0.6)
+
+        ax.set_ylabel("DOY")
+        ax.set_ylim(0, 365)
+        ax.set_title(f"Cluster {cluster_id}")
+        ax.grid(alpha=0.3, axis="y")
+
+    fig.suptitle(title, fontsize=14, y=1.0)
+    fig.tight_layout()
+
+    out_path = out_dir / filename
+    fig.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+    print(f"Saved cluster metric boxplots to {out_path}")
+    return out_path
+
+def plot_metric_cluster_boxplots(metrics_stack, label_map, feature_names, out_dir, filename,
+                                   title="Phenology Metric Distributions by Cluster (Pivoted)"):
+    """
+    Pivoted version: one row per METRIC. Within each row, one boxplot per cluster,
+    so the same metric can be compared side-by-side across all clusters.
+    Top row: vertical bar chart of pixel count per cluster (shared reference for all rows below).
+    Uses ALL pixels in label_map (no subsampling).
+
+    metrics_stack: (rows, cols, n_metrics) raw DOY values
+    label_map: (rows, cols) cluster assignments, -1 = masked/invalid
+    feature_names: list of metric names, in the same order as metrics_stack's last axis
+    """
+    unique_labels = sorted(set(label_map.flatten()) - {-1})
+    n_clusters = len(unique_labels)
+    n_metrics = len(feature_names)
+
+    counts = [int(np.sum(label_map == c)) for c in unique_labels]
+    cluster_tick_labels = [str(c) for c in unique_labels]
+
+    fig = plt.figure(figsize=(max(8, n_clusters * 1.3), 3 + 2.2 * n_metrics))
+    gs = fig.add_gridspec(n_metrics + 1, 1, height_ratios=[1.2] + [2] * n_metrics, hspace=0.6)
+
+    # --- Top row: pixel count per cluster ---
+    ax_top = fig.add_subplot(gs[0])
+    ax_top.bar(cluster_tick_labels, counts, color="tab:blue")
+    ax_top.set_ylabel("Pixel Count")
+    ax_top.set_xlabel("Cluster")
+    ax_top.set_title("Pixel Count per Cluster")
+    for i, cnt in enumerate(counts):
+        ax_top.text(i, cnt, f"{cnt:,}", ha="center", va="bottom", fontsize=8)
+    ax_top.grid(alpha=0.3, axis="y")
+
+    # --- One row per metric: single axis, one boxplot per cluster ---
+    for row_idx, metric_name in enumerate(feature_names):
+        ax = fig.add_subplot(gs[row_idx + 1])
+
+        box_data = []
+        for cluster_id in unique_labels:
+            cluster_mask = (label_map == cluster_id)
+            box_data.append(metrics_stack[cluster_mask, row_idx])
+
+        bp = ax.boxplot(box_data, tick_labels=cluster_tick_labels, showfliers=False, patch_artist=True)
+
+        for patch in bp["boxes"]:
+            patch.set_facecolor("tab:green")
+            patch.set_alpha(0.6)
+
+        ax.set_ylabel("DOY")
+        # ax.set_ylim(0, 365)
+        ax.set_xlabel("Cluster")
+        ax.set_title(f"{metric_name}")
+        ax.grid(alpha=0.3, axis="y")
+
+    fig.suptitle(title, fontsize=14, y=1.0)
+    fig.tight_layout()
+
+    out_path = out_dir / filename
+    fig.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+    print(f"Saved pivoted metric/cluster boxplots to {out_path}")
+    return out_path
 
 def main(config_filename):
     STEP = "step00"
@@ -457,96 +688,133 @@ def main(config_filename):
     qa_mask &= ~nodata_mask # NOTE and qa mask and not NAN data mask
     print(f"{qa_mask.shape=}")
 
-    # 3. stratified grid sample
-    STEP = "step03"
-    step_header(STEP)
-    config_sampling = config["sampling"]
-    sampled_rows, sampled_cols = stratified_grid_sample(qa_mask, config_sampling["cell_size_px"], config_sampling["samples_per_cell"], config_sampling["random_seed"])
-    X_sampled_metrics_raw = metrics_stack[sampled_rows, sampled_cols, :]
-    print(f"Sampled {X_sampled_metrics_raw.shape[0]} pixels from {qa_mask.sum()} valid pixels ({qa_mask.sum() / qa_mask.size:.1%} of tile is valid).")
+    # # 3. stratified grid sample
+    # STEP = "step03"
+    # step_header(STEP)
+    # config_sampling = config["sampling"]
+    # sampled_rows, sampled_cols = stratified_grid_sample(qa_mask, config_sampling["cell_size_px"], config_sampling["samples_per_cell"], config_sampling["random_seed"])
+    # X_sampled_metrics_raw = metrics_stack[sampled_rows, sampled_cols, :]
+    # print(f"Sampled {X_sampled_metrics_raw.shape[0]} pixels from {qa_mask.sum()} valid pixels ({qa_mask.sum() / qa_mask.size:.1%} of tile is valid).")
 
-    if config["output"]["save_sample_table"]:
-        df = pd.DataFrame(X_sampled_metrics_raw, columns=feature_names)
-        df["row"] = sampled_rows
-        df["col"] = sampled_cols
-        file_name = out_dir / config_results[STEP]["stratified_grid_samples"]
-        df.to_csv(file_name, index=False)
-        print(f"saved: {file_name}")
+    # if config["output"]["save_sample_table"]:
+    #     df = pd.DataFrame(X_sampled_metrics_raw, columns=feature_names)
+    #     df["row"] = sampled_rows
+    #     df["col"] = sampled_cols
+    #     file_name = out_dir / config_results[STEP]["stratified_grid_samples"]
+    #     df.to_csv(file_name, index=False)
+    #     print(f"saved: {file_name}")
 
-    # 4. preprocessing
-    STEP = "step04"
-    step_header(STEP)
-    config_preprocessing = config["preprocessing"]
-    X_scaled, scaler, feature_names_out = preprocess(X_sampled_metrics_raw, feature_names, scaling=config_preprocessing["scaling"])
-    if config["output"]["save_scaler"] and scaler is not None:
-        file_name = out_dir / config_results[STEP]["scaler"]
-        with open(file_name, "wb") as f:
-            pickle.dump(scaler, f)
-        print(f"saved: {file_name}")
+    # # 4. preprocessing
+    # STEP = "step04"
+    # step_header(STEP)
+    # config_preprocessing = config["preprocessing"]
+    # X_scaled, scaler, feature_names_out = preprocess(X_sampled_metrics_raw, feature_names, scaling=config_preprocessing["scaling"])
+    # if config["output"]["save_scaler"] and scaler is not None:
+    #     file_name = out_dir / config_results[STEP]["scaler"]
+    #     with open(file_name, "wb") as f:
+    #         pickle.dump(scaler, f)
+    #     print(f"saved: {file_name}")
 
-    # 5. PCA diagnostic
-    STEP = "step05"
-    step_header(STEP)
-    pca_results = None
-    if config["pca"]["run"]:
-        pca_results = run_pca_diagnostic(X_scaled, feature_names_out, config["pca"]["n_components"])
+    # # 5. PCA diagnostic
+    # STEP = "step05"
+    # step_header(STEP)
+    # pca_results = None
+    # if config["pca"]["run"]:
+    #     pca_results = run_pca_diagnostic(X_scaled, feature_names_out, config["pca"]["n_components"])
 
-        corr_path = out_dir / config_results[STEP]["feature_correlation_matrix"]
-        np.savetxt(corr_path, pca_results["feature_correlation_matrix"], delimiter=",", header=",".join(feature_names_out), comments="")
-        print(f"saved: {corr_path}")
+    #     corr_path = out_dir / config_results[STEP]["feature_correlation_matrix"]
+    #     np.savetxt(corr_path, pca_results["feature_correlation_matrix"], delimiter=",", header=",".join(feature_names_out), comments="")
+    #     print(f"saved: {corr_path}")
 
-        plot_pca_diagnostics(pca_results, out_dir, config_results[STEP]["pca_feature_importance_plot"])
-        print("Explained variance ratio by PC:", pca_results["explained_variance_ratio"])
+    #     plot_pca_diagnostics(pca_results, out_dir, config_results[STEP]["pca_feature_importance_plot"])
+    #     print("Explained variance ratio by PC:", pca_results["explained_variance_ratio"])
 
-    # 6. clustering sweeps
-    STEP = "step06"
-    step_header(STEP)
-    config_clustering = config["clustering"]
-    # all_results = {}
-    # if "kmeans" in config_clustering["methods"]:
-    #     all_results["kmeans"] = evaluate_kmeans_gmm(X_scaled, config_clustering["kmeans"]["k_range"], method="kmeans")
-    # if "gmm" in config_clustering["methods"]:
-    #     all_results["gmm"] = evaluate_kmeans_gmm(X_scaled, config_clustering["gmm"]["k_range"], method="gmm", covariance_type=config_clustering["gmm"]["covariance_type"])
-    # if "hdbscan" in config_clustering["methods"]:
-    #     all_results["hdbscan"] = evaluate_hdbscan(X_scaled, config_clustering["hdbscan"]["min_cluster_sizes"], config_clustering["hdbscan"]["min_samples"])
+    # # # 6. clustering sweeps
+    # # STEP = "step06"
+    # # step_header(STEP)
+    # # config_clustering = config["clustering"]
+    # # # all_results = {}
+    # # # if "kmeans" in config_clustering["methods"]:
+    # # #     all_results["kmeans"] = evaluate_kmeans_gmm(X_scaled, config_clustering["kmeans"]["k_range"], method="kmeans")
+    # # # if "gmm" in config_clustering["methods"]:
+    # # #     all_results["gmm"] = evaluate_kmeans_gmm(X_scaled, config_clustering["gmm"]["k_range"], method="gmm", covariance_type=config_clustering["gmm"]["covariance_type"])
+    # # # if "hdbscan" in config_clustering["methods"]:
+    # # #     all_results["hdbscan"] = evaluate_hdbscan(X_scaled, config_clustering["hdbscan"]["min_cluster_sizes"], config_clustering["hdbscan"]["min_samples"])
 
-    # 7. save summary tables
-    STEP = "step07"
-    step_header(STEP)
-    # for method, results in all_results.items():
-    #     summary = [{k: v for k, v in r.items() if k not in ("model", "labels")} for r in results]
-    #     summary_key = f"{method}_validity_summary"
-    #     summary_path = out_dir / config_results[STEP][summary_key]
-    #     pd.DataFrame(summary).to_csv(summary_path, index=False)
-    #     print(f"saved: {summary_path}")
+    # # # 7. save summary tables
+    # # STEP = "step07"
+    # # step_header(STEP)
+    # # # for method, results in all_results.items():
+    # # #     summary = [{k: v for k, v in r.items() if k not in ("model", "labels")} for r in results]
+    # # #     summary_key = f"{method}_validity_summary"
+    # # #     summary_path = out_dir / config_results[STEP][summary_key]
+    # # #     pd.DataFrame(summary).to_csv(summary_path, index=False)
+    # # #     print(f"saved: {summary_path}")
 
-    if "kmeans" in config_clustering["methods"]:
-        summary_path = out_dir / config_results[STEP]["kmeans_validity_summary"]
-        plot_kmeans_validity(summary_path, out_dir, config_results[STEP]["kmeans_validity_plot"])
-        plot_kmeans_normalized_consensus(summary_path, out_dir, config_results[STEP]["kmeans_consensus_plot"])
+    # # # if "kmeans" in config_clustering["methods"]:
+    # # #     summary_path = out_dir / config_results[STEP]["kmeans_validity_summary"]
+    # # #     plot_kmeans_validity(summary_path, out_dir, config_results[STEP]["kmeans_validity_plot"])
+    # # #     plot_kmeans_normalized_consensus(summary_path, out_dir, config_results[STEP]["kmeans_consensus_plot"])
 
-    if "gmm" in config_clustering["methods"]:
-        summary_path = out_dir / config_results[STEP]["gmm_validity_summary"]
-        plot_gmm_validity(summary_path, out_dir, config_results[STEP]["gmm_validity_plot"])
-        plot_gmm_normalized_consensus(summary_path, out_dir, config_results[STEP]["gmm_consensus_plot"])
+    # # # if "gmm" in config_clustering["methods"]:
+    # # #     summary_path = out_dir / config_results[STEP]["gmm_validity_summary"]
+    # # #     plot_gmm_validity(summary_path, out_dir, config_results[STEP]["gmm_validity_plot"])
+    # # #     plot_gmm_normalized_consensus(summary_path, out_dir, config_results[STEP]["gmm_consensus_plot"])
 
-    if "hdbscan" in config_clustering["methods"]:
-        summary_path = out_dir / config_results[STEP]["hdbscan_validity_summary"]
-        plot_hdbscan_validity(summary_path, out_dir, config_results[STEP]["hdbscan_validity_plot"])
+    # # # if "hdbscan" in config_clustering["methods"]:
+    # # #     summary_path = out_dir / config_results[STEP]["hdbscan_validity_summary"]
+    # # #     plot_hdbscan_validity(summary_path, out_dir, config_results[STEP]["hdbscan_validity_plot"])
 
     # # 8. pickle full results for later full-raster prediction
     # STEP = "step08"
     # step_header(STEP)
-    # if config["output"]["save_model"]:
-    #     file_name = out_dir / config_results[STEP]["clustering_results"]
-    #     with open(file_name, "wb") as f:
-    #         pickle.dump(all_results, f)
-    #     print(f"saved: {file_name}")
+    # # if config["output"]["save_model"]:
+    # #     file_name = out_dir / config_results[STEP]["clustering_results"]
+    # #     with open(file_name, "wb") as f:
+    # #         pickle.dump(all_results, f)
+    # #     print(f"saved: {file_name}")
+
+    # with open(out_dir / config_results[STEP]["clustering_results"], 'rb') as f:
+    #     all_results = pickle.load(f)
+    # # list_available_models(all_results)
+
+    # STEP = "step09"
+    # step_header(STEP)
+
+    # config_visualization = config["visualization"]
+    # method_to_visualize = config_visualization["method"]
+    # k_or_mcs = 5
+
+    # chosen_result = get_model_by_key(all_results, method_to_visualize, k_or_mcs)
+    # print(f"Using {method_to_visualize} with k/mcs={k_or_mcs}")
+
+    # with open(out_dir / config_results["step04"]["scaler"], "rb") as f:
+    #     scaler_loaded = pickle.load(f)
+
+    # print('predicting')
+    # start = time.time()
+    # label_map = predict_full_raster(metrics_stack, qa_mask, chosen_result["model"], scaler_loaded, method=method_to_visualize)
+    # print(f'duration {(time.time() - start):.3f} sec')
+
+    # print('mapping')
+    # start = time.time()
+    # plot_cluster_map(label_map, out_dir, config_results[STEP]["cluster_map_plot"], title=f"{config['site_id']} ({method_to_visualize.upper()}, k={k_or_mcs})")
+    # print(f'duration {(time.time() - start):.3f} sec')
+
+    # print('writing geotiff')
+    # start = time.time()
+    # write_cluster_geotiff(label_map, profile, out_dir / config_results[STEP]["cluster_map_geotiff"])
+    # print(f'duration {(time.time() - start):.3f} sec')
+
+    # print('generating stats')
+    # start = time.time()
+    # plot_cluster_metric_boxplots(metrics_stack, label_map, feature_names, out_dir, config_results[STEP]["cluster_metric_boxplots_plot"], title=f"{config['site_id']} ({method_to_visualize.upper()}, k={k_or_mcs}) metric distribution")
+    # plot_metric_cluster_boxplots(metrics_stack, label_map, feature_names, out_dir, config_results[STEP]["metric_cluster_boxplots_plot"], title=f"{config['site_id']} ({method_to_visualize.upper()}, k={k_or_mcs}) metric distribution")
+    # print(f'duration {(time.time() - start):.3f} sec')
 
     print('done')
 
 if __name__ == "__main__":
-    import sys
     if len(sys.argv) < 2:
         raise ValueError("Usage: python phenology_clustering.py <config_filename.json>")
     main(sys.argv[1])
