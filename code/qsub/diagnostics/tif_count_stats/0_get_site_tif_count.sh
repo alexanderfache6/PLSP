@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ##
-# Usage: ./get_site_tif_counts.sh <site_name> <mode>
+# Usage: ./0_get_site_tif_count.sh <site_name> <mode>
 #   <mode> must be either "new" or "archive"
 #
 # Given a site name, looks in the appropriate base directory (recursively,
@@ -9,7 +9,7 @@
 # and aggregates counts of files per year/month, sorted ascending,
 # filling in any missing months (between the earliest and latest
 # found) with a count of 0. Writes result as CSV: year,month,count
-# to a file named <site_name>_monthly_tif_counts_<MODE>.csv
+# to a file named <site_name>_monthly_tif_count_<MODE>.csv
 
 set -euo pipefail
 
@@ -42,7 +42,7 @@ case "$MODE_LC" in
 esac
 
 if [[ ! -d "$BASE_DIR" ]]; then
-    echo "Error: directory '$BASE_DIR' does not exist." >&2
+    echo "Directory does not exist: $BASE_DIR" >&2
     exit 1
 fi
 
@@ -53,7 +53,7 @@ trap 'rm -f "$TMP_FILE"' EXIT
 # Walk each subdirectory under BASE_DIR, announce it, then find .tif files
 # directly within it (maxdepth 1 since we're doing the recursion ourselves).
 while IFS= read -r -d '' dir; do
-    echo "\nchecking directory: $dir"
+    # echo "\nchecking directory: $dir"
 
     find "$dir" -maxdepth 1 -type f -iname "*.tif" -print0 | \
     while IFS= read -r -d '' file; do
@@ -126,5 +126,5 @@ declare -A yearly_counts
     done
 } > "$YEARLY_OUTPUT_FILE"
 
-echo "Done. Monthly counts written to: $MONTHLY_OUTPUT_FILE"
-echo "Done. Yearly counts written to: $YEARLY_OUTPUT_FILE"
+echo "Monthly counts written to: $MONTHLY_OUTPUT_FILE"
+echo "Yearly counts written to:  $YEARLY_OUTPUT_FILE"
