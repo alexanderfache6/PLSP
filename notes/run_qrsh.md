@@ -1,0 +1,1 @@
+qrsh -pe omp 4 -P modislc
