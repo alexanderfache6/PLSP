@@ -1,147 +1,191 @@
 {
-    "site_id": "WKG",
-    "site_name": "Walnut_Gulch_Kendall_Grasslands",
-    "years": [
-        "2023"
-    ],
-    "run_number": 1,
-    "method": "unsupervised",
-    "script_path": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering",
-    "output_path": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results",
-    "data_path": "/projectnb/modislc/users/fache/data/planet/phenologyGeotiff/",
-    "metric_layers": [
-        {
-            "path": "02_{year}_OGI.tif"
-        },
-        {
-            "path": "03_{year}_50PCGI.tif"
-        },
-        {
-            "path": "04_{year}_OGMx.tif"
-        },
-        {
-            "path": "05_{year}_Peak.tif"
-        },
-        {
-            "path": "06_{year}_OGD.tif"
-        },
-        {
-            "path": "07_{year}_50PCGD.tif"
-        },
-        {
-            "path": "08_{year}_OGMn.tif"
-        }
-    ],
-    "derived_features": [
-        {
-            "name": "DurGU",
-            "description": "duration of greenness increase",
-            "metric1": "OGMx",
-            "metric2": "OGI",
-            "operation": "-"
-        },
-        {
-            "name": "DurGD",
-            "description": "duration of greenness decrease",
-            "metric1": "OGMn",
-            "metric2": "OGD",
-            "operation": "-"
-        },
-        {
-            "name": "LOS",
-            "description": "length of growing season",
-            "metric1": "OGMn",
-            "metric2": "OGI",
-            "operation": "-"
-        }
-    ],
-    "qa": {
-        "fill_value": 32767,
-        "logic": "AND",
-        "layers": [
-            {
-                "path": "01_{year}_NumCycles.tif",
-                "valid_range": [
-                    1,
-                    1
-                ]
-            },
-            {
-                "path": "12_{year}_QA.tif",
-                "valid_range": [
-                    1,
-                    2
-                ]
-            }
-        ]
+  "site_id": "WKG",
+  "site_name": "Walnut_Gulch_Kendall_Grasslands",
+  "years": [
+    "2023"
+  ],
+  "run_number": 1,
+  "method": "unsupervised",
+  "script_path": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering",
+  "output_path": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results",
+  "data_path": "/projectnb/modislc/users/fache/data/planet/phenologyGeotiff/{site_name}/{year}",
+  "metric_layers": [
+    {
+      "path": "02_{year}_OGI.tif"
     },
-    "sampling": {
-        "method": "stratified_grid",
-        "cell_size_px": 30,
-        "samples_per_cell": 1,
-        "random_seed_base": 6
+    {
+      "path": "03_{year}_50PCGI.tif"
     },
-    "models": {
-        "pca": {
-            "run": true,
-            "n_components": null
-        },
-        "kmeans": {
-            "k_range": [3, 20],
-            "n_init": 10,
-            "base_seed": 42
-        },
-        "gmm": {
-            "k_range": [3, 20],
-            "covariance_types": ["full", "diag"],
-            "base_seed": 1000,
-            "covariance_offset_seed": {
-                "diag": 0,
-                "full": 1000
-            }
-        }
+    {
+      "path": "04_{year}_OGMx.tif"
     },
-    "report": "report.json",
-    "results": {
-        "step_1_3": {
-            "sampled_pixels_template": "03_{year}_sampled_metric_pixels.csv"
-        },
-        "step_1_4": {
-            "combined_features_template": "04_{year}_combined_features.csv"
-        },
-        "step_1_5": {
-            "scaled_features_template": "05_{year}_scaled_features.csv",
-            "scaler_template": "05_{year}_scaler.joblib"
-        },
-          "step_2_1": {
-            "correlation_matrix_template": "06_{year}_feature_correlation_matrix.csv",
-            "pca_explained_variance_template": "06_{year}_pca_explained_variance.csv",
-            "pca_plot_template": "06_{year}_pca_feature_importance.png"
-        },
-        "step_2_2": {
-            "kmeans_sweep_summary_template": "07_{year}_kmeans_sweep_summary.csv",
-            "kmeans_labels_template": "07_{year}_kmeans_labels_all_k.csv"
-        },
-        "step_2_3": {
-            "kmeans_validity_plot_template": "07_{year}_kmeans_validity_diagnostics.png"
-        },
-        "step_2_4": {
-            "gmm_sweep_summary_template": "07_{year}_gmm_sweep_summary.csv",
-            "gmm_labels_template": "07_{year}_gmm_labels_all_k.csv"
-        },
-        "step_2_5": {
-            "gmm_validity_plot_template": "07_{year}_gmm_validity_diagnostics.png"
-        },
-        "step_2_7": {
-            "kmeans_model_template": "08_{year}_kmeans_k{k}_model.joblib",
-            "gmm_model_template": "08_{year}_gmm_k{k}_model.joblib",
-            "final_labels_template": "08_{year}_final_cluster_labels.csv"
-        },
-        "step_2_8": {
-            "kmeans_full_raster_tif_template": "09_{year}_kmeans_k{k}_full_clustering.tif",
-            "kmeans_full_raster_png_template": "09_{year}_kmeans_k{k}_full_clustering.png",
-            "gmm_full_raster_tif_template": "09_{year}_gmm_k{k}_full_clustering.tif",
-            "gmm_full_raster_png_template": "09_{year}_gmm_k{k}_full_clustering.png"
-        }
+    {
+      "path": "05_{year}_Peak.tif"
+    },
+    {
+      "path": "06_{year}_OGD.tif"
+    },
+    {
+      "path": "07_{year}_50PCGD.tif"
+    },
+    {
+      "path": "08_{year}_OGMn.tif"
     }
+  ],
+  "derived_features": [
+    {
+      "name": "DurGU",
+      "description": "duration of greenness increase",
+      "metric1": "OGMx",
+      "metric2": "OGI",
+      "operation": "-"
+    },
+    {
+      "name": "DurGD",
+      "description": "duration of greenness decrease",
+      "metric1": "OGMn",
+      "metric2": "OGD",
+      "operation": "-"
+    },
+    {
+      "name": "LOS",
+      "description": "length of growing season",
+      "metric1": "OGMn",
+      "metric2": "OGI",
+      "operation": "-"
+    }
+  ],
+  "qa": {
+    "fill_value": 32767,
+    "logic": "AND",
+    "layers": [
+      {
+        "path": "01_{year}_NumCycles.tif",
+        "valid_range": [
+          1,
+          1
+        ]
+      },
+      {
+        "path": "12_{year}_QA.tif",
+        "valid_range": [
+          1,
+          2
+        ]
+      }
+    ]
+  },
+  "sampling": {
+    "method": "stratified_grid",
+    "cell_size_px": 30,
+    "samples_per_cell": 1,
+    "random_seed_base": 6
+  },
+  "models": {
+    "pca": {
+      "run": true,
+      "n_components": null
+    },
+    "kmeans": {
+      "k_range": [
+        3,
+        20
+      ],
+      "n_init": 10,
+      "base_seed": 42
+    },
+    "gmm": {
+      "k_range": [
+        3,
+        20
+      ],
+      "covariance_types": [
+        "full",
+        "diag"
+      ],
+      "base_seed": 1000,
+      "covariance_offset_seed": {
+        "diag": 0,
+        "full": 1000
+      }
+    }
+  },
+  "report": "00_{year}_report.json",
+  "results": {
+    "step_1_3": {
+      "sampled_pixels_template": "03_{year}_sampled_metric_pixels.csv"
+    },
+    "step_1_4": {
+      "combined_features_template": "04_{year}_combined_features.csv"
+    },
+    "step_1_5": {
+      "scaled_features_template": "05_{year}_scaled_features.csv",
+      "scaler_template": "05_{year}_scaler.joblib"
+    },
+    "step_2_1": {
+      "correlation_matrix_template": "06_{year}_feature_correlation_matrix.csv",
+      "pca_explained_variance_template": "06_{year}_pca_explained_variance.csv",
+      "pca_plot_template": "06_{year}_pca_feature_importance.png"
+    },
+    "step_2_2": {
+      "kmeans_sweep_summary_template": "07_{year}_kmeans_sweep_summary.csv",
+      "kmeans_labels_template": "07_{year}_kmeans_labels_all_k.csv"
+    },
+    "step_2_3": {
+      "kmeans_validity_plot_template": "07_{year}_kmeans_validity_diagnostics.png"
+    },
+    "step_2_4": {
+      "gmm_sweep_summary_template": "07_{year}_gmm_sweep_summary.csv",
+      "gmm_labels_template": "07_{year}_gmm_labels_all_k.csv"
+    },
+    "step_2_5": {
+      "gmm_validity_plot_template": "07_{year}_gmm_validity_diagnostics.png"
+    },
+    "step_2_7": {
+      "kmeans_model_template": "08_{year}_kmeans_k{k}_model.joblib",
+      "gmm_model_template": "08_{year}_gmm_k{k}_model.joblib",
+      "final_labels_template": "08_{year}_final_cluster_labels.csv"
+    },
+    "step_2_8": {
+      "kmeans_full_raster_tif_template": "09_{year}_kmeans_k{k}_full_clustering.tif",
+      "kmeans_full_raster_png_template": "09_{year}_kmeans_k{k}_full_clustering.png",
+      "gmm_full_raster_tif_template": "09_{year}_gmm_k{k}_full_clustering.tif",
+      "gmm_full_raster_png_template": "09_{year}_gmm_k{k}_full_clustering.png"
+    },
+    "step_3_2": {
+      "kmeans_distance_matrix_template": "10_{year}_kmeans_distance_matrix.csv",
+      "gmm_distance_matrix_template": "10_{year}_gmm_distance_matrix.csv"
+    },
+    "step_3_3": {
+      "kmeans_heatmap_template": "10_{year}_kmeans_centroid_heatmap.png",
+      "gmm_heatmap_template": "10_{year}_gmm_centroid_heatmap.png"
+    },
+    "step_3_4": {
+      "kmeans_sample_table_template": "11_{year}_kmeans_naip_sample_pixels.gpkg",
+      "gmm_sample_table_template": "11_{year}_gmm_naip_sample_pixels.gpkg"
+    },
+    "step_3_5": {
+      "kmeans_purity_table_template": "12_{year}_kmeans_cluster_purity.csv",
+      "gmm_purity_table_template": "12_{year}_gmm_cluster_purity.csv",
+      "kmeans_purity_plot_template": "12_{year}_kmeans_cluster_purity.png",
+      "gmm_purity_plot_template": "12_{year}_gmm_cluster_purity.png"
+    },
+    "step_3_6": {
+      "kmeans_reclass_tif_template": "13_{year}_kmeans_reclassified.tif",
+      "kmeans_reclass_png_template": "13_{year}_kmeans_reclassified.png",
+      "gmm_reclass_tif_template": "13_{year}_gmm_reclassified.tif",
+      "gmm_reclass_png_template": "13_{year}_gmm_reclassified.png"
+    }
+  },
+  "selected_clusters": {
+    "kmeans": {
+      "2022": 10
+    },
+    "gmm": {
+      "2022": {
+        "k": 10,
+        "covariance_type": "full"
+      }
+    }
+  }
 }
