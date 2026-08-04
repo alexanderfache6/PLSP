@@ -1,0 +1,11 @@
+cluster_id,n_bare,n_grass,n_shrub,n_tree,n_annotated,majority_class_code,majority_class_label,purity_fraction,shannon_entropy_bits,meets_purity_threshold
+0,10,3,6,1,20,0,bare,0.5,1.6477309221191607,False
+1,1,5,8,6,20,2,shrub,0.4,1.765957320949175,False
+2,20,0,0,0,20,0,bare,1.0,0.0,True
+3,4,1,0,15,20,3,tree,0.75,0.9917601481809734,False
+4,10,5,4,1,20,0,bare,0.5,1.6804820237218405,False
+5,3,3,14,0,20,2,shrub,0.7,1.1812908992306925,False
+6,2,16,1,1,20,1,grass,0.8,1.0219280948873624,True
+7,14,4,2,0,20,0,bare,0.7,1.1567796494470395,False
+8,9,5,5,1,20,0,bare,0.45,1.7344977967946407,False
+9,8,9,3,0,20,1,grass,0.45,1.4577174691301484,False

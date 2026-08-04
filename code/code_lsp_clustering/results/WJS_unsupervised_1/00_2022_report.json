@@ -1,0 +1,1279 @@
+{
+  "run_metadata": {
+    "site_name": "Willard_Juniper_Savannah",
+    "method": "unsupervised",
+    "run_number": 1,
+    "run_name": "WJS_unsupervised_1",
+    "created_at": "2026-07-25T16:24:00.032301+00:00",
+    "updated_at": "2026-07-27T19:22:43.676208+00:00"
+  },
+  "step_1_2_qa_retention": {
+    "2022": {
+      "year": "2022",
+      "n_total": 11115556,
+      "n_valid": 4981672,
+      "n_invalid": 6133884,
+      "valid_fraction": "0.448",
+      "invalid_fraction": "0.552"
+    }
+  },
+  "step_1_3_sampling": {
+    "2022": {
+      "n_cells_total": 12544,
+      "n_cells_sampled": 9306,
+      "n_cells_empty": 3238,
+      "n_samples": 9306,
+      "seed": 2028,
+      "output_csv": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/03_2022_sampled_metric_pixels.csv",
+      "cell_coverage_fraction": 0.7418686224489796
+    }
+  },
+  "step_1_4_derived_features": {
+    "2022": {
+      "derived_feature_names": [
+        "DurGU",
+        "DurGD",
+        "LOS"
+      ],
+      "derived_feature_stats": {
+        "DurGU": {
+          "min": 33.0,
+          "max": 156.0,
+          "mean": 84.27638082957232,
+          "sd": 19.571418557233738,
+          "n_valid": 9306,
+          "n_nan": 0
+        },
+        "DurGD": {
+          "min": 33.0,
+          "max": 144.0,
+          "mean": 62.349129593810446,
+          "sd": 10.188627632873056,
+          "n_valid": 9306,
+          "n_nan": 0
+        },
+        "LOS": {
+          "min": 92.0,
+          "max": 258.0,
+          "mean": 169.809370298732,
+          "sd": 23.98727905506033,
+          "n_valid": 9306,
+          "n_nan": 0
+        }
+      },
+      "output_csv": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/04_2022_combined_features.csv",
+      "n_rows": 9306
+    }
+  },
+  "step_1_5_scaling": {
+    "2022": {
+      "feature_names": [
+        "OGI",
+        "50PCGI",
+        "OGMx",
+        "Peak",
+        "OGD",
+        "50PCGD",
+        "OGMn",
+        "DurGU",
+        "DurGD",
+        "LOS"
+      ],
+      "fitted_scaler_params": {
+        "OGI": {
+          "fitted_mean": 141.04738878143132,
+          "fitted_sd": 18.73955358121738
+        },
+        "50PCGI": {
+          "fitted_mean": 196.29088759939825,
+          "fitted_sd": 12.991373947413134
+        },
+        "OGMx": {
+          "fitted_mean": 225.32376961100366,
+          "fitted_sd": 5.615782867118506
+        },
+        "Peak": {
+          "fitted_mean": 236.1870836019772,
+          "fitted_sd": 4.6709394578577506
+        },
+        "OGD": {
+          "fitted_mean": 248.5076294863529,
+          "fitted_sd": 4.5406201901744
+        },
+        "50PCGD": {
+          "fitted_mean": 273.30571674188695,
+          "fitted_sd": 5.471368492986436
+        },
+        "OGMn": {
+          "fitted_mean": 310.85675908016333,
+          "fitted_sd": 10.801135308259521
+        },
+        "DurGU": {
+          "fitted_mean": 84.27638082957232,
+          "fitted_sd": 19.570366980597175
+        },
+        "DurGD": {
+          "fitted_mean": 62.349129593810446,
+          "fitted_sd": 10.188080195662717
+        },
+        "LOS": {
+          "fitted_mean": 169.809370298732,
+          "fitted_sd": 23.985990213265076
+        }
+      },
+      "post_scaling_stats": {
+        "OGI": {
+          "min": -3.8980324939355326,
+          "max": 3.1458919745909406,
+          "mean": 6.169337314572974e-16,
+          "sd": 1.000053733107693,
+          "n_valid": 9306,
+          "n_nan": 0
+        },
+        "50PCGI": {
+          "min": -3.178331080803056,
+          "max": 2.594730360087431,
+          "mean": -6.59691514825625e-16,
+          "sd": 1.000053733107693,
+          "n_valid": 9306,
+          "n_nan": 0
+        },
+        "OGMx": {
+          "min": -7.180436025599764,
+          "max": 4.394085557239124,
+          "mean": -2.9625035619484084e-16,
+          "sd": 1.000053733107693,
+          "n_valid": 9306,
+          "n_nan": 0
+        },
+        "Peak": {
+          "min": -7.10501257860403,
+          "max": 5.740369071347393,
+          "mean": 2.541033983032037e-15,
+          "sd": 1.000053733107693,
+          "n_valid": 9306,
+          "n_nan": 0
+        },
+        "OGD": {
+          "min": -6.0581216517244885,
+          "max": 6.054761103590818,
+          "mean": -1.4293316154555206e-15,
+          "sd": 1.0000537331076929,
+          "n_valid": 9306,
+          "n_nan": 0
+        },
+        "50PCGD": {
+          "min": -4.990655770469352,
+          "max": 4.1478257747040965,
+          "mean": 9.773207627046295e-17,
+          "sd": 1.000053733107693,
+          "n_valid": 9306,
+          "n_nan": 0
+        },
+        "OGMn": {
+          "min": -3.6900527530365497,
+          "max": 7.6976390487635,
+          "mean": 6.352584957580092e-16,
+          "sd": 1.000053733107693,
+          "n_valid": 9306,
+          "n_nan": 0
+        },
+        "DurGU": {
+          "min": -2.6201031835739066,
+          "max": 3.664909260083742,
+          "mean": 3.664952860142361e-17,
+          "sd": 1.000053733107693,
+          "n_valid": 9306,
+          "n_nan": 0
+        },
+        "DurGD": {
+          "min": -2.8807320937957472,
+          "max": 8.014352933828501,
+          "mean": -8.551556673665509e-17,
+          "sd": 1.000053733107693,
+          "n_valid": 9306,
+          "n_nan": 0
+        },
+        "LOS": {
+          "min": -3.2439507231892706,
+          "max": 3.67675584443854,
+          "mean": -2.0462653469128182e-16,
+          "sd": 1.000053733107693,
+          "n_valid": 9306,
+          "n_nan": 0
+        }
+      },
+      "output_csv": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/05_2022_scaled_features.csv",
+      "output_scaler": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/05_2022_scaler.joblib",
+      "n_samples": 9306
+    }
+  },
+  "step_2_1_pca": {
+    "2022": {
+      "n_components_fit": 10,
+      "explained_variance_ratio": [
+        0.41058206792176294,
+        0.30091161687945694,
+        0.16476538901153928,
+        0.06545392570004462,
+        0.049839956572557326,
+        0.00716842147431971,
+        0.001278622440319214,
+        6.714232121264997e-17,
+        3.548789417099057e-17,
+        5.974436624872637e-18
+      ],
+      "cumulative_explained_variance": [
+        0.41058206792176294,
+        0.7114936848012199,
+        0.8762590738127591,
+        0.9417129995128037,
+        0.9915529560853611,
+        0.9987213775596808,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "top_loading_features": {
+        "PC1": [
+          {
+            "feature": "LOS",
+            "loading": 0.4503613846830332
+          },
+          {
+            "feature": "DurGU",
+            "loading": 0.40653891590380076
+          },
+          {
+            "feature": "OGI",
+            "loading": -0.3743649302538824
+          },
+          {
+            "feature": "OGMn",
+            "loading": 0.3506050047463591
+          },
+          {
+            "feature": "50PCGD",
+            "loading": 0.33832941859231674
+          }
+        ],
+        "PC2": [
+          {
+            "feature": "OGMx",
+            "loading": 0.5091432138168827
+          },
+          {
+            "feature": "Peak",
+            "loading": 0.4892436626652639
+          },
+          {
+            "feature": "OGD",
+            "loading": 0.39208069285872815
+          },
+          {
+            "feature": "50PCGI",
+            "loading": 0.3746953739931289
+          },
+          {
+            "feature": "DurGD",
+            "loading": -0.3395711913819539
+          }
+        ],
+        "PC3": [
+          {
+            "feature": "OGMn",
+            "loading": 0.48141664807741646
+          },
+          {
+            "feature": "DurGD",
+            "loading": 0.4610468687594045
+          },
+          {
+            "feature": "OGI",
+            "loading": 0.4363001656835932
+          },
+          {
+            "feature": "DurGU",
+            "loading": -0.42437734484711637
+          },
+          {
+            "feature": "50PCGD",
+            "loading": 0.3235932378447007
+          }
+        ],
+        "PC4": [
+          {
+            "feature": "50PCGD",
+            "loading": 0.6007351872357424
+          },
+          {
+            "feature": "50PCGI",
+            "loading": -0.5339668431240917
+          },
+          {
+            "feature": "DurGD",
+            "loading": -0.3352286616087856
+          },
+          {
+            "feature": "OGD",
+            "loading": 0.30431090451111986
+          },
+          {
+            "feature": "OGMx",
+            "loading": -0.22098905275834496
+          }
+        ],
+        "PC5": [
+          {
+            "feature": "50PCGI",
+            "loading": 0.7050525078008807
+          },
+          {
+            "feature": "50PCGD",
+            "loading": 0.4617757126764604
+          },
+          {
+            "feature": "OGMx",
+            "loading": -0.3033057903072195
+          },
+          {
+            "feature": "Peak",
+            "loading": -0.27485967209475043
+          },
+          {
+            "feature": "OGI",
+            "loading": -0.2046452589246448
+          }
+        ]
+      },
+      "correlation_matrix_csv": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/06_2022_feature_correlation_matrix.csv",
+      "pca_variance_csv": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/06_2022_pca_explained_variance.csv",
+      "pca_plot_png": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/06_2022_pca_feature_importance.png"
+    }
+  },
+  "step_2_2_kmeans_sweep": {
+    "2022": {
+      "k_range": [
+        3,
+        20
+      ],
+      "n_init": 10,
+      "sweep_summary": [
+        {
+          "year": "2022",
+          "k": 3,
+          "seed": 2067,
+          "inertia": 54824.53695873739,
+          "silhouette": 0.2499453597785793,
+          "n_iter": 18,
+          "min_cluster_size": 2239,
+          "max_cluster_size": 3611,
+          "n_clusters_realized": 3
+        },
+        {
+          "year": "2022",
+          "k": 4,
+          "seed": 2068,
+          "inertia": 47277.79968061658,
+          "silhouette": 0.23097347231557788,
+          "n_iter": 33,
+          "min_cluster_size": 1820,
+          "max_cluster_size": 2734,
+          "n_clusters_realized": 4
+        },
+        {
+          "year": "2022",
+          "k": 5,
+          "seed": 2069,
+          "inertia": 42159.58242482369,
+          "silhouette": 0.22857922233696423,
+          "n_iter": 16,
+          "min_cluster_size": 939,
+          "max_cluster_size": 2551,
+          "n_clusters_realized": 5
+        },
+        {
+          "year": "2022",
+          "k": 6,
+          "seed": 2070,
+          "inertia": 38951.46935402233,
+          "silhouette": 0.21547188400169343,
+          "n_iter": 33,
+          "min_cluster_size": 927,
+          "max_cluster_size": 1877,
+          "n_clusters_realized": 6
+        },
+        {
+          "year": "2022",
+          "k": 7,
+          "seed": 2071,
+          "inertia": 36030.850690023566,
+          "silhouette": 0.22260907192103385,
+          "n_iter": 45,
+          "min_cluster_size": 92,
+          "max_cluster_size": 1864,
+          "n_clusters_realized": 7
+        },
+        {
+          "year": "2022",
+          "k": 8,
+          "seed": 2072,
+          "inertia": 33536.39749025633,
+          "silhouette": 0.22473895805130228,
+          "n_iter": 29,
+          "min_cluster_size": 92,
+          "max_cluster_size": 1992,
+          "n_clusters_realized": 8
+        },
+        {
+          "year": "2022",
+          "k": 9,
+          "seed": 2073,
+          "inertia": 31192.39836868793,
+          "silhouette": 0.22115706040228497,
+          "n_iter": 45,
+          "min_cluster_size": 92,
+          "max_cluster_size": 1670,
+          "n_clusters_realized": 9
+        },
+        {
+          "year": "2022",
+          "k": 10,
+          "seed": 2074,
+          "inertia": 29515.651717351666,
+          "silhouette": 0.21594589488006885,
+          "n_iter": 68,
+          "min_cluster_size": 88,
+          "max_cluster_size": 1469,
+          "n_clusters_realized": 10
+        },
+        {
+          "year": "2022",
+          "k": 11,
+          "seed": 2075,
+          "inertia": 27971.502666838234,
+          "silhouette": 0.22634947698394448,
+          "n_iter": 42,
+          "min_cluster_size": 88,
+          "max_cluster_size": 1534,
+          "n_clusters_realized": 11
+        },
+        {
+          "year": "2022",
+          "k": 12,
+          "seed": 2076,
+          "inertia": 26786.87516642813,
+          "silhouette": 0.20768206488340327,
+          "n_iter": 38,
+          "min_cluster_size": 86,
+          "max_cluster_size": 1225,
+          "n_clusters_realized": 12
+        },
+        {
+          "year": "2022",
+          "k": 13,
+          "seed": 2077,
+          "inertia": 25780.95904199274,
+          "silhouette": 0.20878500142411077,
+          "n_iter": 49,
+          "min_cluster_size": 82,
+          "max_cluster_size": 1051,
+          "n_clusters_realized": 13
+        },
+        {
+          "year": "2022",
+          "k": 14,
+          "seed": 2078,
+          "inertia": 24819.577387816367,
+          "silhouette": 0.2056530171621656,
+          "n_iter": 79,
+          "min_cluster_size": 86,
+          "max_cluster_size": 1051,
+          "n_clusters_realized": 14
+        },
+        {
+          "year": "2022",
+          "k": 15,
+          "seed": 2079,
+          "inertia": 24036.734093460287,
+          "silhouette": 0.20547501693605066,
+          "n_iter": 57,
+          "min_cluster_size": 85,
+          "max_cluster_size": 1093,
+          "n_clusters_realized": 15
+        },
+        {
+          "year": "2022",
+          "k": 16,
+          "seed": 2080,
+          "inertia": 23280.781345339812,
+          "silhouette": 0.20678542343216297,
+          "n_iter": 38,
+          "min_cluster_size": 86,
+          "max_cluster_size": 907,
+          "n_clusters_realized": 16
+        },
+        {
+          "year": "2022",
+          "k": 17,
+          "seed": 2081,
+          "inertia": 22651.186106563677,
+          "silhouette": 0.20670301778613545,
+          "n_iter": 64,
+          "min_cluster_size": 85,
+          "max_cluster_size": 898,
+          "n_clusters_realized": 17
+        },
+        {
+          "year": "2022",
+          "k": 18,
+          "seed": 2082,
+          "inertia": 22019.494051440946,
+          "silhouette": 0.19767685222428721,
+          "n_iter": 58,
+          "min_cluster_size": 86,
+          "max_cluster_size": 794,
+          "n_clusters_realized": 18
+        },
+        {
+          "year": "2022",
+          "k": 19,
+          "seed": 2083,
+          "inertia": 21393.93708400556,
+          "silhouette": 0.19877765770262856,
+          "n_iter": 59,
+          "min_cluster_size": 85,
+          "max_cluster_size": 807,
+          "n_clusters_realized": 19
+        },
+        {
+          "year": "2022",
+          "k": 20,
+          "seed": 2084,
+          "inertia": 20791.256355148234,
+          "silhouette": 0.20035807456521906,
+          "n_iter": 93,
+          "min_cluster_size": 84,
+          "max_cluster_size": 791,
+          "n_clusters_realized": 20
+        }
+      ],
+      "sweep_summary_csv": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/07_2022_kmeans_sweep_summary.csv",
+      "labels_csv": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/07_2022_kmeans_labels_all_k.csv"
+    }
+  },
+  "step_2_3_kmeans_validity": {
+    "2022": {
+      "validity_plot_png": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/07_2022_kmeans_validity_diagnostics.png",
+      "silhouette_max_k_for_reference_only": 3,
+      "silhouette_max_value_for_reference_only": 0.2499453597785793,
+      "note": "silhouette_max_k is reported for reference only; final k selection is manual (Step 2.6)."
+    }
+  },
+  "step_2_4_gmm_sweep": {
+    "2022": {
+      "k_range": [
+        3,
+        20
+      ],
+      "covariance_types": [
+        "full",
+        "diag"
+      ],
+      "n_fits_not_converged": 0,
+      "sweep_summary": [
+        {
+          "year": "2022",
+          "k": 3,
+          "covariance_type": "full",
+          "seed": 4025,
+          "bic": -216676.65512312035,
+          "aic": -218082.92280570406,
+          "log_likelihood": 11.738497894138408,
+          "silhouette": 0.14221621172160875,
+          "converged": true,
+          "n_iter": 17,
+          "min_cluster_size": 2736,
+          "max_cluster_size": 3679,
+          "n_clusters_realized": 3
+        },
+        {
+          "year": "2022",
+          "k": 4,
+          "covariance_type": "full",
+          "seed": 4026,
+          "bic": -221626.90515920424,
+          "aic": -223504.30820752666,
+          "log_likelihood": 12.036874500726771,
+          "silhouette": 0.10876406813210517,
+          "converged": true,
+          "n_iter": 61,
+          "min_cluster_size": 482,
+          "max_cluster_size": 3262,
+          "n_clusters_realized": 4
+        },
+        {
+          "year": "2022",
+          "k": 5,
+          "covariance_type": "full",
+          "seed": 4027,
+          "bic": -223295.29861078298,
+          "aic": -225643.83702484408,
+          "log_likelihood": 12.158920966303679,
+          "silhouette": 0.13238435592653414,
+          "converged": true,
+          "n_iter": 22,
+          "min_cluster_size": 505,
+          "max_cluster_size": 2509,
+          "n_clusters_realized": 5
+        },
+        {
+          "year": "2022",
+          "k": 6,
+          "covariance_type": "full",
+          "seed": 4028,
+          "bic": -224675.09815861366,
+          "aic": -227494.77193841347,
+          "log_likelihood": 12.265461634344158,
+          "silhouette": 0.10317334502042977,
+          "converged": true,
+          "n_iter": 20,
+          "min_cluster_size": 334,
+          "max_cluster_size": 2439,
+          "n_clusters_realized": 6
+        },
+        {
+          "year": "2022",
+          "k": 7,
+          "covariance_type": "full",
+          "seed": 4029,
+          "bic": -225776.44673621407,
+          "aic": -229067.2558817526,
+          "log_likelihood": 12.357041472262658,
+          "silhouette": 0.09254246913281328,
+          "converged": true,
+          "n_iter": 31,
+          "min_cluster_size": 204,
+          "max_cluster_size": 2036,
+          "n_clusters_realized": 7
+        },
+        {
+          "year": "2022",
+          "k": 8,
+          "covariance_type": "full",
+          "seed": 4030,
+          "bic": -225941.92632015058,
+          "aic": -229703.8708314278,
+          "log_likelihood": 12.398338213594874,
+          "silhouette": 0.11881081051967343,
+          "converged": true,
+          "n_iter": 16,
+          "min_cluster_size": 259,
+          "max_cluster_size": 1999,
+          "n_clusters_realized": 8
+        },
+        {
+          "year": "2022",
+          "k": 9,
+          "covariance_type": "full",
+          "seed": 4031,
+          "bic": -226116.66462875987,
+          "aic": -230349.7445057758,
+          "log_likelihood": 12.440132414881571,
+          "silhouette": 0.12581838875729837,
+          "converged": true,
+          "n_iter": 20,
+          "min_cluster_size": 210,
+          "max_cluster_size": 1864,
+          "n_clusters_realized": 9
+        },
+        {
+          "year": "2022",
+          "k": 10,
+          "covariance_type": "full",
+          "seed": 4032,
+          "bic": -226242.76509336368,
+          "aic": -230946.98033611831,
+          "log_likelihood": 12.479313364287465,
+          "silhouette": 0.10589325649897718,
+          "converged": true,
+          "n_iter": 36,
+          "min_cluster_size": 172,
+          "max_cluster_size": 1630,
+          "n_clusters_realized": 10
+        },
+        {
+          "year": "2022",
+          "k": 11,
+          "covariance_type": "full",
+          "seed": 4033,
+          "bic": -227165.39860800433,
+          "aic": -232340.74921649764,
+          "log_likelihood": 12.561291060417883,
+          "silhouette": 0.1150854683389993,
+          "converged": true,
+          "n_iter": 26,
+          "min_cluster_size": 178,
+          "max_cluster_size": 1488,
+          "n_clusters_realized": 11
+        },
+        {
+          "year": "2022",
+          "k": 12,
+          "covariance_type": "full",
+          "seed": 4034,
+          "bic": -226995.97709286556,
+          "aic": -232642.4630670976,
+          "log_likelihood": 12.584593975236277,
+          "silhouette": 0.1002358644888931,
+          "converged": true,
+          "n_iter": 24,
+          "min_cluster_size": 172,
+          "max_cluster_size": 1181,
+          "n_clusters_realized": 12
+        },
+        {
+          "year": "2022",
+          "k": 13,
+          "covariance_type": "full",
+          "seed": 4035,
+          "bic": -226839.79775795803,
+          "aic": -232957.41909792877,
+          "log_likelihood": 12.608608376205071,
+          "silhouette": 0.103295160707492,
+          "converged": true,
+          "n_iter": 19,
+          "min_cluster_size": 159,
+          "max_cluster_size": 1269,
+          "n_clusters_realized": 13
+        },
+        {
+          "year": "2022",
+          "k": 14,
+          "covariance_type": "full",
+          "seed": 4036,
+          "bic": -226923.45533675532,
+          "aic": -233512.21204246476,
+          "log_likelihood": 12.645508921258584,
+          "silhouette": 0.1021817402726584,
+          "converged": true,
+          "n_iter": 20,
+          "min_cluster_size": 76,
+          "max_cluster_size": 1255,
+          "n_clusters_realized": 14
+        },
+        {
+          "year": "2022",
+          "k": 15,
+          "covariance_type": "full",
+          "seed": 4037,
+          "bic": -226511.18866000773,
+          "aic": -233571.08073145588,
+          "log_likelihood": 12.65576406251106,
+          "silhouette": 0.08124176170659808,
+          "converged": true,
+          "n_iter": 23,
+          "min_cluster_size": 69,
+          "max_cluster_size": 1173,
+          "n_clusters_realized": 15
+        },
+        {
+          "year": "2022",
+          "k": 16,
+          "covariance_type": "full",
+          "seed": 4038,
+          "bic": -226285.9645469692,
+          "aic": -233816.99198415605,
+          "log_likelihood": 12.676068771983454,
+          "silhouette": 0.09690782456672332,
+          "converged": true,
+          "n_iter": 18,
+          "min_cluster_size": 16,
+          "max_cluster_size": 1038,
+          "n_clusters_realized": 16
+        },
+        {
+          "year": "2022",
+          "k": 17,
+          "covariance_type": "full",
+          "seed": 4039,
+          "bic": -225471.8063955208,
+          "aic": -233473.96919844634,
+          "log_likelihood": 12.664730775760066,
+          "silhouette": 0.08200976157396285,
+          "converged": true,
+          "n_iter": 23,
+          "min_cluster_size": 110,
+          "max_cluster_size": 1123,
+          "n_clusters_realized": 17
+        },
+        {
+          "year": "2022",
+          "k": 18,
+          "covariance_type": "full",
+          "seed": 4040,
+          "bic": -225740.2496135155,
+          "aic": -234213.54778217975,
+          "log_likelihood": 12.711559627239403,
+          "silhouette": 0.07244951982756069,
+          "converged": true,
+          "n_iter": 29,
+          "min_cluster_size": 62,
+          "max_cluster_size": 912,
+          "n_clusters_realized": 18
+        },
+        {
+          "year": "2022",
+          "k": 19,
+          "covariance_type": "full",
+          "seed": 4041,
+          "bic": -225655.51101412674,
+          "aic": -234599.9445485297,
+          "log_likelihood": 12.739412451565103,
+          "silhouette": 0.07764417904870863,
+          "converged": true,
+          "n_iter": 33,
+          "min_cluster_size": 61,
+          "max_cluster_size": 852,
+          "n_clusters_realized": 19
+        },
+        {
+          "year": "2022",
+          "k": 20,
+          "covariance_type": "full",
+          "seed": 4042,
+          "bic": -225095.9304874606,
+          "aic": -234511.49938760226,
+          "log_likelihood": 12.741752599806698,
+          "silhouette": 0.07083413858061156,
+          "converged": true,
+          "n_iter": 26,
+          "min_cluster_size": 63,
+          "max_cluster_size": 886,
+          "n_clusters_realized": 20
+        },
+        {
+          "year": "2022",
+          "k": 3,
+          "covariance_type": "diag",
+          "seed": 3025,
+          "bic": 222865.5829463811,
+          "aic": 222423.001239172,
+          "log_likelihood": -11.943853494475178,
+          "silhouette": 0.22838032348361995,
+          "converged": true,
+          "n_iter": 10,
+          "min_cluster_size": 2581,
+          "max_cluster_size": 3545,
+          "n_clusters_realized": 3
+        },
+        {
+          "year": "2022",
+          "k": 4,
+          "covariance_type": "diag",
+          "seed": 3026,
+          "bic": 213498.85903719955,
+          "aic": 212906.37062270998,
+          "log_likelihood": -11.430279960386308,
+          "silhouette": 0.177535666870484,
+          "converged": true,
+          "n_iter": 20,
+          "min_cluster_size": 1718,
+          "max_cluster_size": 2670,
+          "n_clusters_realized": 4
+        },
+        {
+          "year": "2022",
+          "k": 5,
+          "covariance_type": "diag",
+          "seed": 3027,
+          "bic": 207070.8975239131,
+          "aic": 206328.50240214303,
+          "log_likelihood": -11.074602536113423,
+          "silhouette": 0.2069311862355773,
+          "converged": true,
+          "n_iter": 12,
+          "min_cluster_size": 876,
+          "max_cluster_size": 2333,
+          "n_clusters_realized": 5
+        },
+        {
+          "year": "2022",
+          "k": 6,
+          "covariance_type": "diag",
+          "seed": 3028,
+          "bic": 196968.8684568184,
+          "aic": 196076.5666277678,
+          "log_likelihood": -10.521521955070266,
+          "silhouette": 0.20367803349186692,
+          "converged": true,
+          "n_iter": 13,
+          "min_cluster_size": 570,
+          "max_cluster_size": 2395,
+          "n_clusters_realized": 6
+        },
+        {
+          "year": "2022",
+          "k": 7,
+          "covariance_type": "diag",
+          "seed": 3029,
+          "bic": 191953.6914371081,
+          "aic": 190911.48290077702,
+          "log_likelihood": -10.24175171398974,
+          "silhouette": 0.181379478984311,
+          "converged": true,
+          "n_iter": 24,
+          "min_cluster_size": 627,
+          "max_cluster_size": 1942,
+          "n_clusters_realized": 7
+        },
+        {
+          "year": "2022",
+          "k": 8,
+          "covariance_type": "diag",
+          "seed": 3030,
+          "bic": 188782.49111193663,
+          "aic": 187590.37586832506,
+          "log_likelihood": -10.061056085768593,
+          "silhouette": 0.17492861808815996,
+          "converged": true,
+          "n_iter": 21,
+          "min_cluster_size": 391,
+          "max_cluster_size": 1862,
+          "n_clusters_realized": 8
+        },
+        {
+          "year": "2022",
+          "k": 9,
+          "covariance_type": "diag",
+          "seed": 3031,
+          "bic": 184927.95090887765,
+          "aic": 183585.9289579856,
+          "log_likelihood": -9.843645441542316,
+          "silhouette": 0.1690040995160725,
+          "converged": true,
+          "n_iter": 19,
+          "min_cluster_size": 388,
+          "max_cluster_size": 1774,
+          "n_clusters_realized": 9
+        },
+        {
+          "year": "2022",
+          "k": 10,
+          "covariance_type": "diag",
+          "seed": 3032,
+          "bic": 181124.78320362078,
+          "aic": 179632.85454544824,
+          "log_likelihood": -9.628994978801217,
+          "silhouette": 0.15644136415107934,
+          "converged": true,
+          "n_iter": 26,
+          "min_cluster_size": 305,
+          "max_cluster_size": 1332,
+          "n_clusters_realized": 10
+        },
+        {
+          "year": "2022",
+          "k": 11,
+          "covariance_type": "diag",
+          "seed": 3033,
+          "bic": 181113.19848260385,
+          "aic": 179471.3631171508,
+          "log_likelihood": -9.61806163320174,
+          "silhouette": 0.17499823954967922,
+          "converged": true,
+          "n_iter": 15,
+          "min_cluster_size": 316,
+          "max_cluster_size": 1462,
+          "n_clusters_realized": 11
+        },
+        {
+          "year": "2022",
+          "k": 12,
+          "covariance_type": "diag",
+          "seed": 3034,
+          "bic": 176845.6319957145,
+          "aic": 175053.88992298095,
+          "log_likelihood": -9.378459591821457,
+          "silhouette": 0.15012767995740117,
+          "converged": true,
+          "n_iter": 21,
+          "min_cluster_size": 281,
+          "max_cluster_size": 1128,
+          "n_clusters_realized": 12
+        },
+        {
+          "year": "2022",
+          "k": 13,
+          "covariance_type": "diag",
+          "seed": 3035,
+          "bic": 173691.26988588733,
+          "aic": 171749.6211058733,
+          "log_likelihood": -9.198668660319862,
+          "silhouette": 0.13576898007963809,
+          "converged": true,
+          "n_iter": 20,
+          "min_cluster_size": 266,
+          "max_cluster_size": 1075,
+          "n_clusters_realized": 13
+        },
+        {
+          "year": "2022",
+          "k": 14,
+          "covariance_type": "diag",
+          "seed": 3036,
+          "bic": 172298.44525511932,
+          "aic": 170206.8897678248,
+          "log_likelihood": -9.113522983442122,
+          "silhouette": 0.13936910211726644,
+          "converged": true,
+          "n_iter": 23,
+          "min_cluster_size": 236,
+          "max_cluster_size": 1068,
+          "n_clusters_realized": 14
+        },
+        {
+          "year": "2022",
+          "k": 15,
+          "covariance_type": "diag",
+          "seed": 3037,
+          "bic": 171120.15099505725,
+          "aic": 168878.6888004822,
+          "log_likelihood": -9.039903761040307,
+          "silhouette": 0.1389636896065133,
+          "converged": true,
+          "n_iter": 15,
+          "min_cluster_size": 227,
+          "max_cluster_size": 789,
+          "n_clusters_realized": 15
+        },
+        {
+          "year": "2022",
+          "k": 16,
+          "covariance_type": "diag",
+          "seed": 3038,
+          "bic": 169599.98725207854,
+          "aic": 167208.618350223,
+          "log_likelihood": -8.94791630938228,
+          "silhouette": 0.14076797547637468,
+          "converged": true,
+          "n_iter": 18,
+          "min_cluster_size": 226,
+          "max_cluster_size": 814,
+          "n_clusters_realized": 16
+        },
+        {
+          "year": "2022",
+          "k": 17,
+          "covariance_type": "diag",
+          "seed": 3039,
+          "bic": 167182.66352941497,
+          "aic": 164641.38792027894,
+          "log_likelihood": -8.80772554912309,
+          "silhouette": 0.13298182835427563,
+          "converged": true,
+          "n_iter": 22,
+          "min_cluster_size": 216,
+          "max_cluster_size": 775,
+          "n_clusters_realized": 17
+        },
+        {
+          "year": "2022",
+          "k": 18,
+          "covariance_type": "diag",
+          "seed": 3040,
+          "bic": 165882.9129163442,
+          "aic": 163191.7305999277,
+          "log_likelihood": -8.72758062539908,
+          "silhouette": 0.14517993149638567,
+          "converged": true,
+          "n_iter": 14,
+          "min_cluster_size": 227,
+          "max_cluster_size": 806,
+          "n_clusters_realized": 18
+        },
+        {
+          "year": "2022",
+          "k": 19,
+          "covariance_type": "diag",
+          "seed": 3041,
+          "bic": 165302.771650425,
+          "aic": 162461.682626728,
+          "log_likelihood": -8.686099431911025,
+          "silhouette": 0.1356086549171978,
+          "converged": true,
+          "n_iter": 18,
+          "min_cluster_size": 202,
+          "max_cluster_size": 800,
+          "n_clusters_realized": 19
+        },
+        {
+          "year": "2022",
+          "k": 20,
+          "covariance_type": "diag",
+          "seed": 3042,
+          "bic": 162687.11733575884,
+          "aic": 159696.1216047813,
+          "log_likelihood": -8.535252611475462,
+          "silhouette": 0.1321727324110167,
+          "converged": true,
+          "n_iter": 17,
+          "min_cluster_size": 208,
+          "max_cluster_size": 657,
+          "n_clusters_realized": 20
+        }
+      ],
+      "sweep_summary_csv": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/07_2022_gmm_sweep_summary.csv",
+      "labels_csv": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/07_2022_gmm_labels_all_k.csv"
+    }
+  },
+  "step_2_5_gmm_validity": {
+    "2022": {
+      "validity_plot_png": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/07_2022_gmm_validity_diagnostics.png",
+      "silhouette_max_for_reference_only": {
+        "diag": {
+          "k": 3,
+          "silhouette": 0.22838032348361995,
+          "bic": 222865.5829463811
+        },
+        "full": {
+          "k": 3,
+          "silhouette": 0.14221621172160875,
+          "bic": -216676.65512312035
+        }
+      },
+      "note": "silhouette_max values are reported for reference only; final k and covariance_type selection is manual (Step 2.6)."
+    }
+  },
+  "step_2_7_final_models": {
+    "2022": {
+      "kmeans_model_path": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/08_2022_kmeans_k10_model.joblib",
+      "gmm_model_path": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/08_2022_gmm_k10_model.joblib",
+      "labels_csv_path": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/08_2022_final_cluster_labels.csv",
+      "kmeans_k": 10,
+      "gmm_k": 10,
+      "gmm_covariance_type": "full"
+    }
+  },
+  "step_2_8_full_raster_clustering": {
+    "2022": {
+      "kmeans_tif": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/09_2022_kmeans_k10_full_clustering.tif",
+      "kmeans_png": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/09_2022_kmeans_k10_full_clustering.png",
+      "kmeans_k": 10,
+      "gmm_tif": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/09_2022_gmm_k10_full_clustering.tif",
+      "gmm_png": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/09_2022_gmm_k10_full_clustering.png",
+      "gmm_k": 10
+    }
+  },
+  "step_3_2_centroid_distances": {
+    "2022": {
+      "kmeans_distance_csv": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/10_2022_kmeans_distance_matrix.csv",
+      "gmm_distance_csv": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/10_2022_gmm_distance_matrix.csv",
+      "kmeans_k": 10,
+      "gmm_k": 10,
+      "gmm_covariance_type": "full",
+      "gmm_distance_method": "mahalanobis_pooled_covariance"
+    }
+  },
+  "step_3_3_distance_heatmaps": {
+    "2022": {
+      "kmeans_heatmap_png": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/10_2022_kmeans_centroid_heatmap.png",
+      "gmm_heatmap_png": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/10_2022_gmm_centroid_heatmap.png"
+    }
+  },
+  "step_3_4_naip_sampling": {
+    "2022": {
+      "kmeans_gpkg": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/11_2022_kmeans_naip_sample_pixels.gpkg",
+      "gmm_gpkg": "/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_clustering/results/WJS_unsupervised_1/11_2022_gmm_naip_sample_pixels.gpkg",
+      "n_samples_per_cluster": 20,
+      "seed": 99,
+      "window_size": 5,
+      "majority_threshold": 0.5,
+      "kmeans_per_cluster_stats": {
+        "0": {
+          "n_interior_available": 53158,
+          "n_sampled": 20
+        },
+        "1": {
+          "n_interior_available": 5372,
+          "n_sampled": 20
+        },
+        "2": {
+          "n_interior_available": 86520,
+          "n_sampled": 20
+        },
+        "3": {
+          "n_interior_available": 66426,
+          "n_sampled": 20
+        },
+        "4": {
+          "n_interior_available": 160947,
+          "n_sampled": 20
+        },
+        "5": {
+          "n_interior_available": 131,
+          "n_sampled": 20
+        },
+        "6": {
+          "n_interior_available": 167617,
+          "n_sampled": 20
+        },
+        "7": {
+          "n_interior_available": 334776,
+          "n_sampled": 20
+        },
+        "8": {
+          "n_interior_available": 43073,
+          "n_sampled": 20
+        },
+        "9": {
+          "n_interior_available": 125580,
+          "n_sampled": 20
+        }
+      },
+      "gmm_per_cluster_stats": {
+        "0": {
+          "n_interior_available": 85681,
+          "n_sampled": 20
+        },
+        "1": {
+          "n_interior_available": 4226,
+          "n_sampled": 20
+        },
+        "2": {
+          "n_interior_available": 396418,
+          "n_sampled": 20
+        },
+        "3": {
+          "n_interior_available": 20992,
+          "n_sampled": 20
+        },
+        "4": {
+          "n_interior_available": 191762,
+          "n_sampled": 20
+        },
+        "5": {
+          "n_interior_available": 141019,
+          "n_sampled": 20
+        },
+        "6": {
+          "n_interior_available": 18056,
+          "n_sampled": 20
+        },
+        "7": {
+          "n_interior_available": 76201,
+          "n_sampled": 20
+        },
+        "8": {
+          "n_interior_available": 76607,
+          "n_sampled": 20
+        },
+        "9": {
+          "n_interior_available": 2208,
+          "n_sampled": 20
+        }
+      }
+    }
+  }
+}
