@@ -4,3 +4,4 @@
 .Ruserdata
 
 .env
+*__pycache__
