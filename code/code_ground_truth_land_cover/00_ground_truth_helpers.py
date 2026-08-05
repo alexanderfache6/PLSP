@@ -15,8 +15,13 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 SITE_DATA_PATH = Path(f'/projectnb/modislc/users/fache/data/NEON/{SITE_NAME}')
 
-
 def build_paths(tile_id):
+    '''
+    https://data.neonscience.org/data-products/DP3.30010.001
+    https://data.neonscience.org/data-products/DP3.30026.002
+    https://data.neonscience.org/data-products/DP3.30015.001
+    '''
+
     rgb = SITE_DATA_PATH / 'NEON_images-camera-ortho-mosaic' / f'NEON.D14.{SITE_ID}.DP3.30010.001.2022-08.basic' / f'{YEAR}_{SITE_ID}_5_{tile_id}_image.tif'
     vi_dir = SITE_DATA_PATH / 'NEON_indices-veg-spectrometer-bidir-mosaic' / f'NEON.D14.{SITE_ID}.DP3.30026.002.2022-08.basic' / f'NEON_D14_{SITE_ID}_DP3_{tile_id}_bidirectional_VegIndices'
     ndvi = vi_dir / f'NEON_D14_{SITE_ID}_DP3_{tile_id}_bidirectional_NDVI.tif'
