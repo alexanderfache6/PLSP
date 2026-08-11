@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Selected Sites</title>
+</head>
+<body>
+
+
+<!-- Load require.js. Delete this if your page already loads require.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.1/dist/embed-amd.js" crossorigin="anonymous"></script>
+
+<script type="application/vnd.jupyter.widget-state+json">
+{
+  "version_major": 2,
+  "version_minor": 0,
+  "state": {
+    "e8ef9d64ddde406590b1d83545c3af77": {
+      "model_name": "LeafletTileLayerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "attribution": "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+        "base": true,
+        "min_zoom": 1,
+        "name": "Esri.WorldImagery",
+        "options": [
+          "attribution",
+          "bounds",
+          "detect_retina",
+          "max_native_zoom",
+          "max_zoom",
+          "min_native_zoom",
+          "min_zoom",
+          "no_wrap",
+          "pm_ignore",
+          "tile_size",
+          "tms",
+          "zoom_offset"
+        ],
+        "subitems": [],
+        "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+      }
+    },
+    "bee011ef564f467f8c7f403ee3940e5c": {
+      "model_name": "LeafletMapStyleModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {}
+    },
+    "ca681595f18a499dbd62ec06ba235244": {
+      "model_name": "LeafletMapStyleModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "cursor": "move"
+      }
+    },
+    "39d8c94fe06c417890d0f6f56be1f875": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "1.2.0",
+      "state": {}
+    },
+    "1bce7b9a95434d7cb7b96b087f29dbd4": {
+      "model_name": "LeafletMapStyleModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {}
+    },
+    "aff872b011ea4683b9c2d2c3d474fc04": {
+      "model_name": "LeafletMapModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "_dom_classes": [],
+        "center": [
+          31.8236,
+          -110.3887
+        ],
+        "controls": [
+          "IPY_MODEL_2139179235364e46bb4e6682336b550a",
+          "IPY_MODEL_80c414fd1ae24b0e8ab8ef42348d00f0",
+          "IPY_MODEL_96c4b82dfb134a1db135d93c9bb89807"
+        ],
+        "crs": {
+          "name": "EPSG3857",
+          "custom": false
+        },
+        "default_style": "IPY_MODEL_bee011ef564f467f8c7f403ee3940e5c",
+        "dragging_style": "IPY_MODEL_ca681595f18a499dbd62ec06ba235244",
+        "layers": [
+          "IPY_MODEL_e8ef9d64ddde406590b1d83545c3af77",
+          "IPY_MODEL_a7ac24de82c2450588484bd0fe32a06a",
+          "IPY_MODEL_7db194e13a4c417c8340f846567a99ae",
+          "IPY_MODEL_9dc87f6f8fbf4f13bbe75aad5a4f145e",
+          "IPY_MODEL_1281f9d5dd86493cb14ef2b0675da208",
+          "IPY_MODEL_7adde022a59e4e0c9060f75df2977e5b"
+        ],
+        "layout": "IPY_MODEL_39d8c94fe06c417890d0f6f56be1f875",
+        "options": [
+          "bounce_at_zoom_limits",
+          "box_zoom",
+          "center",
+          "close_popup_on_click",
+          "double_click_zoom",
+          "dragging",
+          "fullscreen",
+          "inertia",
+          "inertia_deceleration",
+          "inertia_max_speed",
+          "interpolation",
+          "keyboard",
+          "keyboard_pan_offset",
+          "keyboard_zoom_offset",
+          "max_zoom",
+          "min_zoom",
+          "prefer_canvas",
+          "scroll_wheel_zoom",
+          "tap",
+          "tap_tolerance",
+          "touch_zoom",
+          "world_copy_jump",
+          "zoom",
+          "zoom_animation_threshold",
+          "zoom_delta",
+          "zoom_snap"
+        ],
+        "panes": {},
+        "style": "IPY_MODEL_1bce7b9a95434d7cb7b96b087f29dbd4",
+        "zoom": 5.0
+      }
+    },
+    "2139179235364e46bb4e6682336b550a": {
+      "model_name": "LeafletZoomControlModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "options": [
+          "position",
+          "zoom_in_text",
+          "zoom_in_title",
+          "zoom_out_text",
+          "zoom_out_title"
+        ]
+      }
+    },
+    "80c414fd1ae24b0e8ab8ef42348d00f0": {
+      "model_name": "LeafletAttributionControlModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "options": [
+          "position",
+          "prefix"
+        ],
+        "position": "bottomright"
+      }
+    },
+    "a7ac24de82c2450588484bd0fe32a06a": {
+      "model_name": "LeafletTileLayerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "attribution": "Tiles \u00a9 Esri \u2014 Source: Esri, DeLorme, HERE",
+        "options": [
+          "attribution",
+          "bounds",
+          "detect_retina",
+          "max_native_zoom",
+          "max_zoom",
+          "min_native_zoom",
+          "min_zoom",
+          "no_wrap",
+          "pm_ignore",
+          "tile_size",
+          "tms",
+          "zoom_offset"
+        ],
+        "subitems": [],
+        "url": "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+      }
+    },
+    "96c4b82dfb134a1db135d93c9bb89807": {
+      "model_name": "LeafletScaleControlModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "options": [
+          "imperial",
+          "max_width",
+          "metric",
+          "position",
+          "update_when_idle"
+        ],
+        "position": "bottomleft"
+      }
+    },
+    "a786bbb6396a4f1b9ba76092c7fbb9d5": {
+      "model_name": "LeafletAwesomeIconModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "name": "info-circle",
+        "options": [
+          "pm_ignore"
+        ],
+        "subitems": []
+      }
+    },
+    "ef53d3ea9b3d405585ddae0d8e06c06e": {
+      "model_name": "LeafletAwesomeIconModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "marker_color": "red",
+        "name": "info-circle",
+        "options": [
+          "pm_ignore"
+        ],
+        "subitems": []
+      }
+    },
+    "7db194e13a4c417c8340f846567a99ae": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "draggable": false,
+        "icon": "IPY_MODEL_ef53d3ea9b3d405585ddae0d8e06c06e",
+        "location": [
+          31.9107,
+          -110.8355
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "popup": "IPY_MODEL_e6cda852f80d4f079e61903c7d083964",
+        "subitems": [],
+        "title": "Site Name: Santa_Rita_Experimental_Range_NEON\nSite ID: US-xSR\nCoordinates: (31.9107, -110.8355)"
+      }
+    },
+    "499f08eb54c7497ca6c4eb01a272721d": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "1.2.0",
+      "state": {}
+    },
+    "1cd77697a0584694a34d8a8deb38402a": {
+      "model_name": "DescriptionStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "1.5.0",
+      "state": {}
+    },
+    "e6cda852f80d4f079e61903c7d083964": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "1.5.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_499f08eb54c7497ca6c4eb01a272721d",
+        "style": "IPY_MODEL_1cd77697a0584694a34d8a8deb38402a",
+        "value": "<b>Site Name:</b> Santa_Rita_Experimental_Range_NEON<br><b>Site ID:</b> US-xSR<br><b>Coordinates:</b> (31.9107, -110.8355)"
+      }
+    },
+    "9dc87f6f8fbf4f13bbe75aad5a4f145e": {
+      "model_name": "LeafletPolygonModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "color": "blue",
+        "fill_color": "blue",
+        "fill_opacity": 0.15,
+        "locations": [
+          [
+            31.95567100179964,
+            -110.88840224227889
+          ],
+          [
+            31.95567100179964,
+            -110.7825777577211
+          ],
+          [
+            31.86568899820036,
+            -110.7825777577211
+          ],
+          [
+            31.86568899820036,
+            -110.88840224227889
+          ],
+          [
+            31.95567100179964,
+            -110.88840224227889
+          ]
+        ],
+        "options": [
+          "color",
+          "dash_array",
+          "draggable",
+          "fill",
+          "fill_color",
+          "fill_opacity",
+          "line_cap",
+          "line_join",
+          "no_clip",
+          "opacity",
+          "pm_ignore",
+          "pointer_events",
+          "smooth_factor",
+          "stroke",
+          "transform",
+          "weight"
+        ],
+        "subitems": [],
+        "weight": 2
+      }
+    },
+    "1281f9d5dd86493cb14ef2b0675da208": {
+      "model_name": "LeafletMarkerModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "draggable": false,
+        "icon": "IPY_MODEL_ef53d3ea9b3d405585ddae0d8e06c06e",
+        "location": [
+          31.7365,
+          -109.9419
+        ],
+        "options": [
+          "alt",
+          "draggable",
+          "keyboard",
+          "pm_ignore",
+          "rise_offset",
+          "rise_on_hover",
+          "rotation_angle",
+          "rotation_origin",
+          "title",
+          "z_index_offset"
+        ],
+        "popup": "IPY_MODEL_3ac2fe72c2954ae28978478624a5f6dd",
+        "subitems": [],
+        "title": "Site Name: Walnut_Gulch_Kendall_Grasslands\nSite ID: US-Wkg\nCoordinates: (31.7365, -109.9419)"
+      }
+    },
+    "2093de3e7ce84bf18b1a1c311446bf01": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "1.2.0",
+      "state": {}
+    },
+    "72dc1723c02f4b14864ee8544b0339de": {
+      "model_name": "DescriptionStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "1.5.0",
+      "state": {}
+    },
+    "3ac2fe72c2954ae28978478624a5f6dd": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "1.5.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_2093de3e7ce84bf18b1a1c311446bf01",
+        "style": "IPY_MODEL_72dc1723c02f4b14864ee8544b0339de",
+        "value": "<b>Site Name:</b> Walnut_Gulch_Kendall_Grasslands<br><b>Site ID:</b> US-Wkg<br><b>Coordinates:</b> (31.7365, -109.9419)"
+      }
+    },
+    "7adde022a59e4e0c9060f75df2977e5b": {
+      "model_name": "LeafletPolygonModel",
+      "model_module": "jupyter-leaflet",
+      "model_module_version": "^0.20",
+      "state": {
+        "color": "blue",
+        "fill_color": "blue",
+        "fill_opacity": 0.15,
+        "locations": [
+          [
+            31.78149100179964,
+            -109.99471251087404
+          ],
+          [
+            31.78149100179964,
+            -109.88908748912597
+          ],
+          [
+            31.69150899820036,
+            -109.88908748912597
+          ],
+          [
+            31.69150899820036,
+            -109.99471251087404
+          ],
+          [
+            31.78149100179964,
+            -109.99471251087404
+          ]
+        ],
+        "options": [
+          "color",
+          "dash_array",
+          "draggable",
+          "fill",
+          "fill_color",
+          "fill_opacity",
+          "line_cap",
+          "line_join",
+          "no_clip",
+          "opacity",
+          "pm_ignore",
+          "pointer_events",
+          "smooth_factor",
+          "stroke",
+          "transform",
+          "weight"
+        ],
+        "subitems": [],
+        "weight": 2
+      }
+    }
+  }
+}
+</script>
+<script type="application/vnd.jupyter.widget-view+json">
+{"version_major": 2, "version_minor": 0, "model_id": "aff872b011ea4683b9c2d2c3d474fc04"}
+</script>
+
+</body>
+</html>

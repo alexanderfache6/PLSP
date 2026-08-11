@@ -20,7 +20,7 @@ from pathlib import Path
 INFO_DIR = Path(__file__).resolve().parent / "info"
 SITES_CSV = INFO_DIR / "01_selected_sites_raw2.csv"
 PRODUCTS_CSV = INFO_DIR / "neon_products.csv"
-OUT_CSV = INFO_DIR / "neon_product_availability.csv"
+OUT_CSV = INFO_DIR / "neon_data_availability.csv"
 
 API_URL = "https://data.neonscience.org/api/v0/products/{product_id}"
 PORTAL_URL = "https://data.neonscience.org/data-products/{product_id}"
