@@ -1,10 +1,14 @@
-is_focus,site_full,site_id,site_name,site_name_2,phenocam,plsp_number
-0,US-ARM_ARM_Southern_Great_Plains_site,US-ARM,ARM_Southern_Great_Plains_site,ARM_Southern_Great_Plains_site-_Lamont,southerngreatplains,
-0,US-Mpj_Mountainair_Pinyon-Juniper_Woodland,US-Mpj,Mountainair_Pinyon-Juniper_Woodland,,usmpj,
-0,US-xKZ_NEON_Konza_Prairie_Biological_Station,US-xKZ,NEON_Konza_Prairie_Biological_Station,Konza_Prairie_Biological_Station_NEON,konza,
-0,US-SRG_Santa_Rita_Grassland,US-SRG,Santa_Rita_Grassland,,srg,
-0,US-SRM_Santa_Rita_Mesquite,US-SRM,Santa_Rita_Mesquite,,srm,
-0,US-Ses_Sevilleta_shrubland,US-Ses,Sevilleta_shrubland,,sevilletashrub,
-1,US-Wkg_Walnut_Gulch_Kendall_Grasslands,US-Wkg,Walnut_Gulch_Kendall_Grasslands,,kendall,103
-0,US-Whs_Walnut_Gulch_Lucky_Hills_Shrub,US-Whs,Walnut_Gulch_Lucky_Hills_Shrub,,luckyhills,
-1,US-Wjs_Willard_Juniper_Savannah,US-Wjs,Willard_Juniper_Savannah,,junipersavannah,105
+site_full,flux_id,site_name,site_name_2,phenocam,plsp_number,is_neon,is_focus
+US-ARM_ARM_Southern_Great_Plains_site,US-ARM,ARM_Southern_Great_Plains_site,ARM_Southern_Great_Plains_site-_Lamont,southerngreatplains,,0
+US-Mpj_Mountainair_Pinyon-Juniper_Woodland,US-Mpj,Mountainair_Pinyon-Juniper_Woodland,,usmpj,,0
+US-xKZ_NEON_Konza_Prairie_Biological_Station,US-xKZ,NEON_Konza_Prairie_Biological_Station,Konza_Prairie_Biological_Station_NEON,konza,,1
+US-SRG_Santa_Rita_Grassland,US-SRG,Santa_Rita_Grassland,,srg,,0
+US-SRM_Santa_Rita_Mesquite,US-SRM,Santa_Rita_Mesquite,,srm,,0
+US-SES_Sevilleta_shrubland,US-Ses,Sevilleta_shrubland,,sevilletashrub,,0
+US-WKG_Walnut_Gulch_Kendall_Grasslands,US-Wkg,Walnut_Gulch_Kendall_Grasslands,,kendall,103,0,1
+US-WHS_Walnut_Gulch_Lucky_Hills_Shrub,US-Whs,Walnut_Gulch_Lucky_Hills_Shrub,,luckyhills,,0,0
+US-WJS_Willard_Juniper_Savannah,US-Wjs,Willard_Juniper_Savannah,,junipersavannah,105,0,1
+US-SRER_Santa_Rita_Experimental_Range_NEON,US-SRER,Santa_Rita_Experimental_Range_NEON,,,,1,1
+
+
+US-xKZ_NEON_Konza_Prairie_Biological_Station,Konza_Prairie_Biological_Station_NEON,US-xKZ,KONZ,Konza Prairie Biological Station NEON,,NEON.D06.KONZ.DP1.00033,NEON.D06.KONZ.DP1.00042,,1,1,
