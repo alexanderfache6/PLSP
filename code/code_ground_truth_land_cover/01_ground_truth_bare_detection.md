@@ -19,15 +19,16 @@ Transferable design: SAVI is derivable from NAIP RGB+NIR at non-NEON AmeriFlux s
 
 | Parameter | Default | Description |
 |---|---|---|
-| `OUT_SHAPE_1M` | `(1000, 1000)` | Target grid shape for 1m rasters (VI and CHM native). |
-| `RGB_SHAPE_10CM` | `(10000, 10000)` | Native RGB shape at 10cm. Used when reading RGB for overlays. |
-| `UPSAMPLE_FACTOR` | `10` | Nearest-neighbor factor for upsampling 1m bare masks to 10cm to overlay on RGB. |
+| `OUT_SHAPE_1M` | `(1000, 1000)` | Target grid shape for 1m rasters (VI and CHM native). Used for pooling stats and product rasters. |
+| `RGB_SHAPE_DISPLAY` | `(1000, 1000)` | Display resolution for RGB in overlay figures. Downsampled from native 10cm to 1m via rasterio averaging to avoid OOM on full-resolution overlay plots. |
+| `SAVI_SHAPE_DISPLAY` | `(1000, 1000)` | Display resolution for SAVI in overlay figures. Matches SAVI's native 1m grid, so this is a direct read with no resampling. |
+| `UPSAMPLE_FACTOR` | `1` | Nearest-neighbor factor for aligning the bare mask to the RGB display grid. RGB and SAVI now share the same 1m display grid, so this is a no-op; retained for completeness and to keep `upsample_mask_nn` reusable if display resolutions ever diverge again. |
 | `OVERLAY_ALPHA` | `0.45` | Transparency of the bare mask overlay on RGB (0 = invisible, 1 = opaque). |
 | `OVERLAY_COLOR` | `(1.0, 0.0, 0.0)` | RGB color of the bare mask overlay. Red by default. |
 | Otsu candidate | computed | Otsu's method on pooled SAVI. Automated but sensitive to distribution skew. |
 | p15 candidate | computed | 15th percentile of pooled SAVI. Aggressive bare threshold. |
 | p25 candidate | computed | 25th percentile of pooled SAVI. Conservative bare threshold. |
-| `SAVI_BARE_THRESHOLD` | `0.2` | Final SAVI cutoff. Set manually after inspecting histograms and overlays. Pixels with SAVI < threshold are labeled bare. |
+| `SAVI_BARE_THRESHOLD` | `0.18` | Final SAVI cutoff. Set manually after inspecting histograms and overlays. Pixels with SAVI < threshold are labeled bare. |
 | `ground.TILE_IDS` | from helpers | Tile list used for pooling and per-tile processing. Site-wide threshold assumed representative when all target tiles are pooled together. |
 
 ## Outputs
