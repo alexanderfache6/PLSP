@@ -1,3 +1,4 @@
+
 # Ground Truth Land Cover — v4 Execution Specification
 
 **Status**: authoritative. This document supersedes `instructions4.md` and governs all v4 work.
@@ -5,13 +6,14 @@
 
 ## 0. Document hierarchy
 
-| Document | Status | Use |
-|---|---|---|
-| `instructions5.md` (this file) | **Authoritative** | Spec and execution plan going forward |
-| `instructions4.md` | Superseded | Prior spec; retained for provenance |
-| `instructions1.md` | Archived context | Upstream PlanetScope LSP clustering project (Wkg/Wjs). Explains where the phenology metrics and the unsupervised-clustering label option come from |
-| `instructions2.md` | Archived context | v3 session summary (bare/shadow/tree notebooks). Shadow method and standing conventions carried forward from here |
-| `instructions3.md` | Archived context | Raw dictated brain-dump. **Contains heavy speech-to-text corruption** ("bear"=bare, "rainforest"/"rental force"=random forest, "lighter"=LiDAR, "nap"=NAIP, "Cypress sites"=across sites, "vegetation industries"=vegetation indices). Do not read literally |
+| Document                       | Status            | Use                                                                                                                                                                                                                                                          |
+| ------------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `instructions5.md` (this file) | **Authoritative** | Spec and execution plan going forward                                                                                                                                                                                                                        |
+| `instructions4.md`             | Superseded        | Prior spec; retained for provenance                                                                                                                                                                                                                          |
+| `instructions1.md`             | Archived context  | Upstream PlanetScope LSP clustering project (Wkg/Wjs). Explains where the phenology metrics and the unsupervised-clustering label option come from                                                                                                           |
+| `instructions2.md`             | Archived context  | v3 session summary (bare/shadow/tree notebooks). Shadow method and standing conventions carried forward from here                                                                                                                                            |
+| `instructions3.md`             | Archived context  | Raw dictated brain-dump. **Contains heavy speech-to-text corruption** ("bear"=bare, "rainforest"/"rental force"=random forest, "lighter"=LiDAR, "nap"=NAIP, "Cypress sites"=across sites, "vegetation industries"=vegetation indices). Do not read literally |
+|                                |                   |                                                                                                                                                                                                                                                              |
 
 ---
 
@@ -73,6 +75,8 @@ Consequences that must be handled before any cross-domain comparison:
 
 **This runs first, before any other analysis, at every site in the network.** It is cheap (one layer, one histogram) and it decides whether the project's core 1-cycle constraint is viable at that site.
 
+**QA policy — project-wide, not per-step.** All analysis uses **`QA ∈ {1, 2}`** (high + medium quality, layer 12). Wherever a second cycle is admitted, the same standard applies to it: **`QA_2 ∈ {1, 2}`** (layer 23). QA values 3–4 are dropped at both cycles. This rule is fixed once here and is not renegotiated downstream.
+
 `instructions1.md` §3 locks in a **`NumCycles == 1` strict** filter, stating unimodality was verified in advance at all sites — but that was the earlier nine-site list, and **D13 (MOAB, WJS) is expected to be genuinely bimodal**: cool-season moisture drives a spring green-up and the North American monsoon drives a second late-summer green-up in the same calendar year. Where that happens, `NumCycles == 2` is the *correct* description of the vegetation, and the strict filter discards those pixels as though they were bad data.
 
 **Procedure** — per site, per year:
@@ -105,6 +109,9 @@ Outputs → `00_qa/numcycles_distribution_{SITE}_{YEAR}.json` plus a per-site hi
 | Ecoregion definition | **Resolved — NEON domain** (R1, §12 Q4). All pairs are within-domain, so all three are model-transfer tests |
 | Pair separation distance and any EPA L3 boundary crossed | Record per pair for interpreting Route 1 outcomes (R1) |
 | PlanetScope LSP coverage per site and year | Needed |
+**Flight-year inventory — to be supplied by the user, one table per site**: NEON AOP flight years, NAIP flight years, and 3DEP LiDAR flight years. These three drive the §6 multi-year stability work, the R7 acquisition-phenology check, and the LiDAR-offset decision at Step 8, so none of that can be scoped until they land.
+
+**PlanetScope LSP** is already confirmed at **full site coverage for a minimum of 2017–2021**, extending to 2022–2025 (§5.1).
 
 ---
 
@@ -113,6 +120,8 @@ Outputs → `00_qa/numcycles_distribution_{SITE}_{YEAR}.json` plus a per-site hi
 **Site**: Santa_Rita_Experimental_Range_NEON (`SRER`), NEON Domain D14, AmeriFlux `US-xSR`
 **Acquisition vintage**: 2022-08 (monsoon peak — grasses green; see §9 temporal note)
 **CRS**: UTM (verify against actual file CRS; do not assume the zone)
+
+**Confirm CRS, UTM zone, and the easting/northing origin by reading them from the files themselves** — never from the filename, the tile key, or an assumption about the standard NEON zone for the site. The tile key encodes an easting/northing but is not authoritative for the grid. Record all three per file in the Step 0 audit (§11 checks #6, #11, #12).
 
 ### Data products
 
@@ -141,16 +150,22 @@ Train tiles are a contiguous block at easting 511000; test tiles are a spatially
 
 **Action required**: the existing `00_ground_truth_helpers.py` carries a different 3-tile set. Confirm all five tiles above are downloaded for all three products before Step 0 completes; download any missing tiles.
 
+**Build a file-validation helper.** A single function that, given a site, walks the expected product paths and reports presence/absence for every required file — run before any processing, at every site, as the first action of Step 0.
+
+**Produce a per-site checklist by file category** (RGB, vegetation indices, CHM, PlanetScope LSP, and later NAIP and 3DEP), listing expected count, found count, and the specific missing paths. The checklist is an output written to `00_qa/`, not console text, so a run's completeness is auditable after the fact. This is the machine-readable form of §11.1.
+
 **Phenocam**: located within the 511000 train block. Use as an independent phenology reference in Step 5.
 
 ### Paths
 
-- **Local (now)**: `.../Dropbox/planet/data/NEON/Santa_Rita_Experimental_Range_NEON/`
-- **Cluster (SCC)**: `/projectnb/modislc/users/fache/data/NEON/{SITE_NAME}/`, results under `/projectnb/modislc/users/fache/results/`
+- **Local (now)**: `.../Dropbox/planet/data/NEON/{SITE_NAME}/`, results under `/Dropbox/planet/results/v4
+- **Cluster (SCC)**: `/projectnb/modislc/users/fache/data/NEON/{SITE_NAME}/`, results under `/projectnb/modislc/users/fache/results/v4`
 
 Local paths are used for development. **All deep-learning tracks run on the SCC** (see §8 prerequisites). Path root must be a single configurable constant in the helpers module so the switch is one edit, not a search-and-replace.
 
 ### Output directory structure
+
+All directories below hang off the same `{DATA_ROOT}`-derived results root as §5.1, so the local → SCC migration remains a single constant change (R8). Do not hard-code either root here.
 
 ```
 results/
@@ -215,7 +230,25 @@ Velvet mesquite (*Prosopis velutina*) is the dominant woody species and straddle
 | **Hard label** | Plurality class, codes 0–3 (§3) | The discrete product; accuracy assessment; Step 3 counting |
 | **Soft vector** | Per-class membership `p = [p_bare, p_grass, p_shrub, p_tree]`, sums to 1 | Confidence; soft aggregation; training weights |
 
-Hard label = **argmax of `p`**. Ties break in order **tree > shrub > grass > bare**.
+#### What "hard label" means, precisely — three separate things
+
+These are routinely conflated. They are not the same.
+
+**(a) The *definition* of a 1 m pixel's true class.** The class occupying the **largest within-pixel area fraction** — plurality, or dominance. A pixel that is 40% grass, 35% bare, 25% shrub *is* grass. Ties break **tree > shrub > grass > bare**. This is a definition, not a computation: it is the rule a human labeler applies and the standard Step 6 validates against. The underlying area fractions are never computed directly at 1 m.
+
+**(b) How each framework *estimates* (a).** Three mechanisms, all producing the same locked class codes (§3):
+
+| Path | Mechanism |
+|---|---|
+| Reference (D/E rules) | Deterministic threshold cascade: CHM >= `H_TREE_MIN` → tree; `H_GRASS_MAX` <= CHM < `H_TREE_MIN` → shrub; else SAVI >= `SAVI_BARE_MAX` → grass; else bare |
+| Learned (A–E, RF-A) | **argmax of `p`** — for a random forest, the proportion of trees voting each class, i.e. a majority vote across the forest |
+| Deep learning (DL-2, DL-3) | argmax of the softmax output |
+
+**There is no regression at 1 m.** RF-A is a classifier; RF-B (§4.3) is the regressor. The only fractional quantity at 1 m is the conceptual area fraction in (a), which argmax estimates and manual labeling checks.
+
+**(c) How cleanly (b) resolved** — the confidence measure below. The 40/35/25 pixel above is labeled grass *and* carries low confidence, so a weak plurality is recorded rather than hidden.
+
+**All three are persisted.** `p` is never discarded on hardening, and `prediction_quality` is written to disk as its own raster at both the 1 m and block levels — Step 4 ranking, Step 5 `sample_weight`, and Step 6 stratification all read it from file rather than recomputing it, so the value used downstream is provably the value that was produced.
 
 #### Where the soft vector comes from
 
@@ -235,11 +268,69 @@ Range [0, 1]: **1.0 = pure** (all membership in one class), **0.0 = perfectly ev
 
 Also record, as a secondary diagnostic, the **margin** `p_(1) − p_(2)` between the top two classes. Entropy and margin disagree in an informative way: a pixel split 50/50 between grass and shrub has moderate entropy but near-zero margin, and it is the margin that identifies the specific confusions worth investigating (grass/shrub, bare/senesced grass).
 
+#### The probability simplex — what `p` actually is
+
+A 4-class probability vector carries 4 numbers but only **3 degrees of freedom**, because `Σp = 1` fixes the fourth once three are known. So `p` does not fill 4-D space; it lives on a 3-dimensional surface embedded in it, the **3-simplex**.
+
+Geometrically that surface is a **tetrahedron with one vertex per class**:
+
+| Position | Meaning |
+|---|---|
+| **Vertex** | Pure pixel, e.g. `(1,0,0,0)` = all bare. Entropy 0, confidence 1 |
+| **Edge** | Two-class mixture, e.g. 50/50 grass–shrub |
+| **Face** | Three-class mixture |
+| **Center** | `(0.25, 0.25, 0.25, 0.25)`, maximally mixed. Confidence 0 |
+
+The familiar case is 3 classes, giving a triangle — the 2-simplex — which is exactly the ternary diagram used for soil texture (sand/silt/clay). Four classes is the same construction one dimension up. Confidence is therefore a scalar measure of **how far a pixel sits from the nearest vertex**.
+
+#### Visualization helper
+
+**These visualizations are not decoration — they are the primary means of making the mixture structure legible, and building them well matters.** The tetrahedron has parts that mean different things (vertices, edges, faces, interior volume), and a visualization that collapses them hides exactly the information the confidence layer exists to expose. Render each part explicitly.
+
+**Group A — the simplex itself, showing every part of the tetrahedron:**
+
+| # | View | Which part of the tetrahedron it shows |
+|---|---|---|
+| A1 | **3D tetrahedron scatter**, rotatable, vertices labelled by class, points coloured by hard label | The **whole volume** at once — the master view |
+| A2 | **Four face ternary diagrams** — one per face, dropping one class and renormalizing the other three | Each **face** (3-class mixtures), read as a familiar ternary plot |
+| A3 | **Six pairwise mixing histograms**, one per class pair | Each **edge** (2-class mixtures) — where grass/shrub and bare/senesced-grass confusion lives |
+| A4 | **Vertex-proximity histogram** — distribution of distance from each pixel's `p` to its nearest vertex | How close the population sits to **purity** |
+| A5 | **Volume-occupancy summary** — fraction of pixels near a vertex, along an edge, on a face, or in the deep interior | How much of the volume is actually **occupied** |
+
+> **A5 is the scientifically loaded one.** A landscape of genuinely pure pixels clusters tightly at the four vertices; a heavily mixed landscape fills the interior. Occupancy therefore forecasts, *before Step 4 is ever run*, whether pure end members at the >= 90% threshold will be plentiful or scarce — and if the interior dominates, it warns that 1 m is simply too coarse to resolve pure cover at this site, which is a finding rather than a failure.
+
+**Group B — spatial and per-class views:**
+
+| # | View | Purpose |
+|---|---|---|
+| B1 | **Colour-blend composite map** — fixed colour per class code, per-pixel colour = `Σ_c p_c · colour_c` | The primary map. Pure pixels render saturated, mixed pixels desaturate toward grey, so purity reads directly with no legend |
+| B2 | **Four-panel per-class probability maps** | Shows *which* class is contesting a given area |
+| B3 | **Top-1 vs. top-2 probability scatter**, coloured by predicted class | Margin structure and the specific confusable pairs. Expect a visible grass/shrub arm |
+| B4 | **`prediction_quality` histogram per class** | Feeds the §6.5 monotonicity check and sets the within-class median bin edges used in §6.2 |
+
+Produce Group A and Group B at both the 1 m level and the block level (§3.1) — the tetrahedron structure at block scale is a direct picture of the Step 3 fraction estimates, and comparing the two levels shows how much mixture the N×N aggregation absorbs.
+
+#### Secondary diagnostic — Mahalanobis distance to class centroids
+
+Alongside the probability view above, compute a **4-vector of Mahalanobis distances** from each pixel to the four class centroids in feature space, using pooled per-class covariance with ridge regularization — the approach already proven in `instructions1.md` §3.2.
+
+This is a genuinely different measurement, not a restatement:
+
+| | Entropy of `p` (operational) | Mahalanobis distance vector (diagnostic) |
+|---|---|---|
+| Measures | How the *classifier* resolved the pixel | Raw feature-space geometry |
+| Depends on the classifier | Yes | **No** |
+| Comparable across frameworks A–E | No — each has its own decision boundaries | **Yes** — same feature space, same centroids |
+| Role | Weights RF-B, ranks end members, strata for Step 6 | Visualization and cross-framework comparison |
+
+The two are related — `softmax(−d²/2)` maps distances back to something close to a QDA posterior — but they are not interchangeable. **Entropy of `p` remains the operational `prediction_quality`**; the distance vector is diagnostic only and must never be substituted into Step 3 weighting, Step 4 ranking, or Step 5 `sample_weight`.
+
 #### Outputs
 
-`confidence_{framework}_{tile}_{YEAR}.tif` (float32, [0,1]),
+`prediction_quality_{framework}_{tile}_{YEAR}.tif` (float32, [0,1]) — the operational `prediction_quality`,
 `margin_{framework}_{tile}_{YEAR}.tif` (float32),
-`class_prob_{framework}_{tile}_{YEAR}.tif` (float32, 4 bands, band order = class codes 0–3).
+`class_probability_{framework}_{tile}_{YEAR}.tif` (float32, 4 bands, band order = class codes 0–3),
+`mahalanobis_distance_{framework}_{tile}_{YEAR}.tif` (float32, 4 bands, class-code order) — diagnostic only.
 
 Retaining the full probability stack is what makes soft aggregation (Step 3) possible. Do not harden and discard.
 
@@ -268,13 +359,13 @@ Frameworks A–E vary **input layers only**. The algorithm is held fixed across 
 
 **Fixed algorithm for A–E**: segmentation (SLIC at 1 m) + per-segment feature extraction + Random Forest classifier.
 
-| Framework | Inputs | Transferable to WKG? |
-|---|---|---|
-| A | RGB only | Yes |
-| B | RGB + vegetation indices (SAVI priority) | Yes |
-| C | RGB + VI + texture | Yes |
-| D | RGB + VI + texture + CHM | Degraded (offset LiDAR) |
-| E | All layers + full feature set | Degraded |
+| Framework | Inputs                                   | Transferable to WKG/non NEON sites? |
+| --------- | ---------------------------------------- | ----------------------------------- |
+| A         | RGB only                                 | Yes                                 |
+| B         | RGB + vegetation indices (SAVI priority) | Yes                                 |
+| C         | RGB + VI + texture                       | Yes                                 |
+| D         | RGB + VI + texture + CHM                 | Degraded (offset LiDAR)             |
+| E         | All layers + full feature set            | Degraded                            |
 
 **Priority order for feature emphasis**: vegetation indices and texture first; **LiDAR/CHM is a sanity check between classes, not a primary driver**. All available data is used, but the transferable frameworks (A–C) are the ones carried to WKG.
 
@@ -285,6 +376,7 @@ Frameworks A–E vary **input layers only**. The algorithm is held fixed across 
 | DL-1 | DeepForest (`weecology/deepforest-tree`, pretrained, no fine-tuning) | RGB 10 cm, tree crowns only. **Role: independent tree-crown validation backup**, not a competing 4-class framework — trained on NEON RGB, so it is an outside opinion on crowns (§12 Q9). NAIP use requires the degrade-and-compare test in Q9a |
 | DL-2 | U-Net semantic segmentation, 4-class | Requires the hand-labeled training set from §4.2 |
 | DL-3 | SAM zero-shot segment proposals + color/texture classification | Optional, run only if DL-1/DL-2 leave gaps |
+**DL-3 is run unconditionally**, not held back as optional. SAM's zero-shot segmentation is worth evaluating on its own terms as an advanced, inherently transferable segmentation front end — it needs no training data and no site-specific tuning, which is exactly the property frameworks A–C are being engineered toward. Run it alongside DL-1 and DL-2 and report it whether or not the others leave gaps.
 
 DL tracks output tree (DL-1) or full 4-class (DL-2/DL-3) maps evaluated on the same shared sample set as A–E. **DL-1 is scored on the tree class only** — it is a cross-check on tree detection, not a candidate for framework selection (§12 Q9).
 
@@ -306,12 +398,18 @@ Purpose: unguided hand labeling drifts toward the visually obvious. A labeler na
 - **`k` is chosen once and does not need optimizing.** No elbow or silhouette sweep — a suboptimal `k` yields slightly redundant zones, which costs a little labeling effort and nothing else.
 - **Seed** `BASE_SEED + year` (§12 Q8).
 
+- **Distance metric: Mahalanobis**, not Euclidean. The 1 m features are strongly correlated and on different natural scales, so Euclidean distance would over-weight whichever direction happens to carry the most variance. Mahalanobis accounts for the covariance structure and matches the convention already proven in `instructions1.md` §3.2. Use a ridge-regularized covariance for numerical stability, as done there.
+
 #### Stage 2 — Zone-guided hand labeling
 
 - **Per-cluster interior-pixel sampling** to place candidate labeling sites: 5×5 majority filter to avoid boundary and speckle pixels, matching the protocol proven in `instructions1.md` §3.4. Emit ~20 candidate sites per cluster.
 - Written as an **editable GeoPackage** for QGIS, with an empty nullable-integer `class_code` column (§3 codes 0–3), plus `cluster_id` retained as an attribute **for provenance only**.
 - The analyst draws polygons at or around these sites on 10 cm RGB, with CHM and SAVI available as reference overlays.
 - **Coverage requirement**: every cluster must receive labeled polygons, and the existing per-class minimum still holds — **>= 50 polygons per class per tile role** (train block / test block). Clusters constrain *where* labels are placed; they do not relax *how many* per class are needed.
+
+**Polygon geometry convention.** A labeled polygon is a **set of 1 m pixels**, not an arbitrary free-hand shape — polygons are rasterized to the 1 m analysis grid, so pixel membership is what the label actually is. Draw and store them accordingly.
+
+**A minimum polygon size is enforced for consistency.** Hand labeling sets the minimum, and it is then applied uniformly across all classes, tiles, and sites. Below-minimum polygons are rejected rather than silently kept: very small polygons are dominated by edge pixels, which are the most mixed and least reliable, and inconsistent polygon sizes silently reweight the training set toward whichever class happened to be drawn in smaller pieces. Record the minimum in config and report the polygon size distribution per class.
 
 #### Outputs
 
@@ -408,6 +506,8 @@ SRER is mesquite savanna; WKG (Kendall) is C4 desert grassland with far less woo
 
 SRER ground truth is 2022-08, monsoon peak, grasses green. NAIP in Arizona is flown across a range of summer dates and may land **pre-monsoon**, when grass is senesced and grass/bare separation collapses (`instructions1.md` §4 already identifies bare vs. senesced grass as a known degenerate pair). **Rule**: the NAIP acquisition date per tile is a required Step 0 check at any transfer site, and a pre-monsoon acquisition is a documented blocker, not something to work around silently.
 
+> **Action — user input required.** NAIP flyover dates per site must be supplied before any transfer site is processed; they cannot be inferred. Request them explicitly rather than proceeding on an assumed summer acquisition.
+
 #### R8 — Site-specific values live in config, never in code
 
 Planet pixel size, grid origin, UTM zone, tile lists, acquisition dates, class priors, and all thresholds are per-site config entries. Adding a site must be a new config file plus data, with zero code edits. This is the practical test of every rule above.
@@ -426,7 +526,41 @@ Outputs → `00_qa/`, as both a machine-readable `data_audit_{SITE}_{YEAR}.json`
 
 ### Step 1 — Per-pixel classification at 1 m
 
-**1a. Feature construction.** Resample RGB to the 1 m analysis grid (R5) and separately to `TEXTURE_SCALE` = 0.6 m for texture (R2). Compute RGB color indices (ExG, ExGR, VARI, GLI). Load SAVI/NDVI at 1 m. Compute texture at **0.6 m** and aggregate to 1 m: GLCM (contrast, homogeneity, entropy, correlation), LBP, moving-window std dev. Load CHM at 1 m (frameworks D/E only). Native 10 cm RGB is retained only for manual labeling and DL-1.
+**1a. Feature construction.**
+
+> **Order of operations is fixed and non-negotiable: compute every spectral index at 0.6 m, then aggregate to the 1 m analysis grid.** The indices below are nonlinear ratios, so computing at 0.6 m then averaging gives a *different number* from averaging to 1 m then computing. Both paths are defensible in isolation; only one can be used at both NEON and NAIP, because 0.6 m is the finest resolution NAIP can supply. Computing at native 10 cm would produce NEON features that NAIP can never reproduce, silently breaking R2 and every model-transfer claim (R1).
+
+**Why RGB-only indices at all**: the NEON RGB camera (`DP3.30010.001`) is **3-band with no NIR**, so frameworks A and C must separate vegetation from soil using visible bands alone. NAIP does carry NIR, but A/C must not depend on it or they stop being comparable to their NEON counterparts.
+
+**Chromatic coordinates** — the base for every index below:
+
+```
+r = R / (R+G+B),    g = G / (R+G+B),    b = B / (R+G+B)
+```
+
+Normalizing out total brightness is the point: it suppresses illumination and shadow effects, which at these resolutions in mesquite savanna are a first-order confuser. Indices are built on `r, g, b`, never on raw DN.
+
+**Visible-band vegetation indices** — all exploit chlorophyll absorbing red and blue while reflecting green:
+
+| Index | Definition | Reference | Why it is included |
+|---|---|---|---|
+| **ExG** | `2g − r − b` | Woebbecke et al. 1995 | Standard green-vegetation vs. soil separator in RGB |
+| **ExR** | `1.4r − g` | Meyer & Neto 2008 | Not used alone; the excess-red term inside ExGR |
+| **ExGR** | `ExG − ExR` | Meyer & Neto 2008 | Subtracting excess-red suppresses **reddish-brown litter and standing dead** — directly targets the bare vs. senesced-grass pair that `instructions1.md` §4 identifies as degenerate |
+| **VARI** | `(g − r) / (g + r − b)` | Gitelson et al. 2002 | Built to resist atmospheric variation — the right choice for **uncorrected NAIP** |
+| **GLI** | `(2G − R − B) / (2G + R + B)` | Louhaichi et al. 2001 | Developed on rangeland; normalized form, low illumination sensitivity |
+
+Four indices rather than one because they fail differently — ExG is strongest on green biomass, ExGR on litter, VARI under variable atmosphere, GLI under variable illumination. The classifier resolves which matters where; do not pre-select.
+
+**Brightness and saturation**: Rec. 709 luma `0.2126R + 0.7152G + 0.0722B` (shared with shadow detection, Step 1c) and HSV saturation. Soil and vegetation separate in saturation; shadow is low-value.
+
+**NIR indices — frameworks B, D, E only**: SAVI first, NDVI second. SAVI's soil-adjustment factor is what makes it the dryland choice, since NDVI saturates against bright soil background at low cover (§2A index priority).
+
+**Texture** at 0.6 m, aggregated to 1 m: GLCM (contrast, homogeneity, entropy, correlation), LBP, moving-window standard deviation.
+
+**CHM** at 1 m, frameworks D/E only. **Native 10 cm RGB** is retained only for manual labeling and DL-1.
+
+> **All absolute index thresholds are reference-path only** (R3). NEON RGB and NAIP differ in radiometry, bit depth, and correction, so an index value does not carry the same meaning at both. Frameworks A–C use percentile thresholds or learned boundaries.
 
 **1b. Segmentation.** SLIC at 1 m, ~100k segments/tile. Per-segment spectral, texture, shape, and context features.
 
@@ -442,8 +576,8 @@ Outputs → `00_qa/`, as both a machine-readable `data_audit_{SITE}_{YEAR}.json`
 
 Outputs per framework → `01_pixel_classification/{framework}/`:
 `classification_{framework}_{tile}_{YEAR}.tif` (uint8, 0–3, 255 nodata),
-`class_prob_{framework}_{tile}_{YEAR}.tif` (float32, 4 bands in class-code order),
-`confidence_{framework}_{tile}_{YEAR}.tif` (float32, [0,1]),
+`class_probability_{framework}_{tile}_{YEAR}.tif` (float32, 4 bands in class-code order),
+`prediction_quality_{framework}_{tile}_{YEAR}.tif` (float32, [0,1]),
 `margin_{framework}_{tile}_{YEAR}.tif` (float32),
 `shadow_mask_{framework}_{tile}_{YEAR}.tif` (uint8).
 
@@ -459,7 +593,24 @@ QA-failing Planet cells are excluded from Steps 3–5. Log retention statistics,
 
 > **"Moving window" in the source documents means grid-aligned, one block per Planet pixel** — the window steps by N, landing exactly on Planet pixel boundaries. It does **not** mean a stride-1 sliding window. Blocks are therefore non-overlapping and stand in one-to-one correspondence with Planet pixels, which is what Step 5 requires: a stride-1 window would produce overlapping, non-independent samples that cannot be matched to Planet pixels.
 
+> **This grid is built first, before any other processing — it is the spine of the whole pipeline.** Every 1 m product, every N×N block, and every fraction estimate is defined relative to it, so an error here propagates silently into all of them and cannot be corrected downstream.
+>
+> **Procedure**, run once per site:
+> 1. Read the site's PlanetScope LSP netCDF and extract its CRS, pixel size, and grid origin (§11 checks #10–12). This file is the authority — nothing else defines the grid.
+> 2. Generate the **1 m analysis grid** nested exactly inside the Planet grid, so that `N` whole 1 m cells tile each Planet pixel with no fractional remainder.
+> 3. Export **both grids as GeoPackage** in the site's native UTM, so alignment can be confirmed by visual inspection in QGIS against the NEON tiles before anything is computed.
+>
+> **SRER runs first as the worked example**: the user supplies the Planet netCDF, and the 1 m grid and GeoPackage are generated from it and visually verified. No Step 1 processing begins until that inspection passes.
+
 Shadow-masked and nodata 1 m pixels are excluded from the denominator; blocks with < 75% valid 1 m pixels are dropped.
+
+**Valid-block accounting — a required output, not a log line.** For every framework and tile, report the full distribution of valid 1 m pixels per block:
+
+- **Histogram of valid-pixel count per block**, over the complete range **0 to N²** (0–16 at N = 4) — every count gets a bin, including 0.
+- **Percentage of blocks at each count**, so block composition is readable as a distribution rather than a single retention figure.
+- Counts and percentages both before and after the < 75% valid drop rule, so the cost of that rule is explicit.
+
+This exposes whether blocks are being lost uniformly or concentrated along tile edges, shadow, and nodata — which a single retention percentage would hide entirely.
 
 #### Three fraction estimates per block, all produced
 
@@ -490,11 +641,15 @@ Down-weights ambiguous pixels in the hard count.
 **Block confidence** = mean of `w_i` over valid pixels in the block. Carried forward as a band and used at Step 4 (end-member ranking), Step 5 (regression `sample_weight`), and Step 6 (stratified accuracy).
 
 Outputs → `02_aggregation_mask/`, per framework:
-`frac_hard_{framework}_{tile}_{YEAR}.tif` (float32, 4 bands, class-code order),
-`frac_soft_{framework}_{tile}_{YEAR}.tif` (float32, 4 bands),
-`frac_wtd_{framework}_{tile}_{YEAR}.tif` (float32, 4 bands),
-`block_confidence_{framework}_{tile}_{YEAR}.tif` (float32),
-`valid_count_{framework}_{tile}_{YEAR}.tif` (uint8).
+`fraction_hard_count_{framework}_{tile}_{YEAR}.tif` (float32, 4 bands, class-code order),
+`fraction_soft_mean_{framework}_{tile}_{YEAR}.tif` (float32, 4 bands),
+`fraction_confidence_weighted_{framework}_{tile}_{YEAR}.tif` (float32, 4 bands),
+`block_prediction_quality_{framework}_{tile}_{YEAR}.tif` (float32),
+`valid_pixel_count_{framework}_{tile}_{YEAR}.tif` (uint8).
+
+> **Naming convention — all output files use full words, never shorthand or invented abbreviations.** `fraction_hard_count`, not `frac_hard`. `class_probability`, not `class_prob`. `valid_pixel_count`, not `valid_count`. `prediction_quality`, not `conf`.
+>
+> The one exception is **established product and index names, which are proper nouns and are kept verbatim**: `RGB`, `NDVI`, `SAVI`, `EVI`, `CHM`, `QA`, `LSP`, `NAIP`, `SLIC`, `GLCM`, `LBP`. Expanding those would make filenames less recognizable, not more. The rule targets abbreviations invented for brevity, not domain terminology.
 
 ### Step 4 — Pure end-member identification
 
@@ -546,6 +701,17 @@ The path splits cleanly into `{DATA_ROOT}/planet/...` for PLSP and `{DATA_ROOT}/
 | **2022** | **The target year** — PlanetScope prediction and validation, matching the 2022-08 ground truth. **Pending generation; Step 5 is gated on it** |
 | **2023–2025** | To be generated per site. Reserved for the §6 multi-year stability work |
 
+#### Target year selection — per site, chosen not assumed
+
+**Each site trains on its own "best" year**, selected rather than fixed by calendar. The best year is the most **climatically normal** year with the **highest count of high-quality QA pixels** — in practice not a drought year, since dry years both depress the phenological signal and inflate QA rejection.
+
+- **Target window: 2022 ± 1 year** (2021–2023), keeping the phenology year as close as possible to the 2022-08 ground-truth flight.
+- **Selection criterion**: the share of pixels passing `NumCycles == 1` and `QA ∈ {1, 2}` across the site footprint, cross-checked against precipitation for the year to confirm it is not anomalously dry.
+- **Selected independently per site.** Different sites may land on different years, which is expected and acceptable — the ground truth and the phenology year must match *within* a site, not across sites.
+- Record the selected year, its QA-pass fraction, and the runner-up years in the run report.
+
+> This makes §2.4's multi-year NumCycles and QA scan a **prerequisite for choosing the training year**, not merely a bimodality check — see §2.4.
+
 #### 5.1a Year alignment — 2022 is the target year (resolves Q1)
 
 **Decision: PLSP 2022 is the year used for PlanetScope prediction and validation**, matching the 2022-08 SRER ground truth exactly. The 2022–2025 products will be generated per site; 2022 is the one Step 5 targets.
@@ -557,10 +723,15 @@ Consequences:
 1. **Step 5 is gated on the 2022 product.** RF-B training and validation both use PLSP 2022 against 2022 ground truth — same year, no temporal offset, no stationarity assumption required. This is the clean case, and it removes the largest methodological caveat any interim-year substitute would have carried. **Do not begin Step 5 against 2017–2021 as a stand-in**; the earlier options of "use 2021 with a 1-year offset" or "train across five years as replicates" are **withdrawn**, not pending.
 2. **Sequencing.** Steps 0–4 (ground truth, aggregation, end members) run to completion on the 2022 NEON flight without needing PLSP at all. Only Step 5 waits. Build and validate the ground-truth side first; the dependency is one-directional.
 3. **Use 2017–2021 for feature characterization in the meantime.** Five years of LSP metrics over a landscape whose 2022 cover is known measures **interannual variability of the timing metrics for effectively unchanged cover**. That separates two things the project otherwise cannot distinguish: metrics varying because *cover* changed versus because *climate* varied. The per-pixel spread across 2017–2021 for stable-cover pixels estimates climatic noise in the features, and therefore sets a **floor on achievable RF-B accuracy** before a single 2022 model is fitted. This is characterization, not training — it produces an error bound, not a model. Run it while waiting; it is free information and it calibrates expectations for Step 5.
+> **Deliverable — per-pixel phenology spread.** Compute and retain, for every pixel over the available year series: the **mean and standard deviation of each timing metric**, the **range**, and a per-pixel **coefficient of variation**. Map these, and summarize them per class using the ground-truth labels.
+>
+> This is the interannual-variability layer. Two uses: it quantifies how much of a metric's variance is climatic rather than compositional, and — since the same pixel's cover is effectively fixed across the series — the spread for stable-cover pixels is a **direct estimate of the noise floor** any RF-B model must work above. A class whose between-class separation is smaller than its within-class interannual spread cannot be separated by timing alone, and that is worth knowing before the model is fitted rather than after.
+
 4. **§6's stability check remains required, with a narrower job.** With prediction and validation both on 2022, it no longer guards a temporal offset. It now answers whether end members and the RF-B model hold across years — the multi-year and cross-site ambitions in §2 and §6 still depend on it. SRER has documented mesquite encroachment, so interannual woody change is real, not hypothetical.
 
 **Also run §2.4 (NumCycles distribution) across all available years**, not just the target year. Monsoon strength varies year to year, so the bimodality question may have a different answer in a wet year than a dry one, and a single-year check could mislead. The 2017–2021 series is directly useful here, and this check does not need to wait for 2022.
 
+> **This runs at the front of the project, across all available years at once — not as a per-step check.** It is promoted to an initial scan because its results feed the target-year selection above: a year that looks attractive on the calendar may fail on cycle count or QA share, and **the scan can therefore change which year is chosen for training**. Run it for every site and every available year before committing to a training year (§2.4).
 #### 5.2 Product specification — PlanetScope LSP metric layers
 
 24 layers, 1-based `product_lyr`. All layers are **Int16** with **fill value 32767**.
@@ -594,6 +765,8 @@ These follow directly from the layer specification above and must be handled in 
 
 1. **Int16 overflow on derived features — the dangerous one.** Fill is 32767, which is `Int16` max. Computing `DurGU = OGMx − OGI` on raw arrays yields `32767 − 32767 = 0` for fill pixels: a plausible-looking zero-day duration that passes every range check. **Mask fill to NaN and cast to float *before* any arithmetic.** Never compute derived features on the raw integer arrays.
 
+> **Rule: every fill, flagged, or QA-failing value becomes NaN in a float array, immediately on read, before any other operation.** No sentinel value (32767, −9999, 65535) is ever permitted to reach arithmetic, comparison, or aggregation. This applies to every data source in the project, not only the LSP product. The failure mode is silent — arithmetic on sentinels produces numbers that look valid and pass range checks — so masking is the first operation after load, never a later cleanup step.
+
 2. **Timing metrics are extended DOY, not circular.** Valid range is **−181 to 548**, so a cycle may legitimately start in the previous calendar year (negative DOY) or end in the next (> 366). Two consequences: (a) **no circular statistics are needed** — treat these as ordinary continuous variables; (b) **a `value < 0` filter would silently discard valid early-onset pixels.** Filter on the fill value only, then range-check against the per-layer bounds in the table.
 
 3. **`Peak` has a different valid range from every other timing layer** (1–366, not −181–548). It cannot cross a year boundary while its neighbours can. Range-check per layer, never with one shared bound, and be aware that a cycle spanning the year boundary will pair an out-of-calendar `OGI` with an in-calendar `Peak`.
@@ -606,6 +779,12 @@ These follow directly from the layer specification above and must be handled in 
    - **Georeferencing is not guaranteed.** NetCDF carries CRS and grid via CF conventions (a `crs`/`spatial_ref` variable plus 1-D `x`/`y` coordinate arrays), not a GeoTIFF geotransform. Extract CRS and affine explicitly and verify against the NEON tiles; do not assume either is present.
    - **Layers may be named variables rather than a band axis.** This is an improvement — variable names should match the `short_name` column in §5.2, removing the band-order risk of check #30. **Verify the names match** rather than assuming positional order; if the file instead stores a single array with a layer dimension, positional order applies and check #30 stands in full.
    - **`xarray` may auto-apply `_FillValue` and `scale_factor`** from CF attributes on read (`mask_and_scale`, default `True`). This is convenient but must be **verified, not assumed** — if it fires, trap 1 is already handled; if it does not, fill arrives as raw 32767 and trap 1 is live. Check which, and record it. Applying scaling twice is equally damaging.
+
+> **Standing rule for netCDF and every other data import: assume nothing, verify everything.**
+>
+> Read and record — do not infer — CRS, affine/geotransform, pixel size, grid origin, dtype, band or variable count and order, nodata and fill values, scale factors and offsets, and units. Every one of these has a silent failure mode: wrong values that raise no error and produce plausible output.
+>
+> **Where any parameter is ambiguous, undocumented, or contradicts the specification, stop and ask rather than choosing a default.** A wrong assumption at import propagates through every downstream step and is close to undetectable once the pipeline is running. Persist all verified parameters to the run report so a later run can be checked against them.
 
 **Additional confidence filter — `numObs` (layer 24).** Not currently in the `instructions1.md` pipeline. A pixel with few clear observations produces poorly constrained curve fits and therefore unreliable timing metrics, even at QA 1–2. **Record the `numObs` distribution at Step 0 and evaluate a minimum-observation threshold**; carry `numObs` through as a per-pixel confidence attribute regardless of whether it becomes a hard filter.
 
@@ -626,6 +805,14 @@ These follow directly from the layer specification above and must be handled in 
 #### 5.4 Amplitude layers — available but excluded by design
 
 `EVImax`, `EVIamp`, and `EVIarea` (layers 9–11) are present in the product and deliberately **not** used: the project's core hypothesis is that **timing alone** suffices (`instructions1.md` §1). They are noted here because they are the obvious ablation. If timing-only performance is inadequate at Step 6, adding them is the first fallback — but that is a **change to the research question**, not a tuning step, and must be recorded as such.
+
+**Confirmed intent**: the question under test is whether **timing alone** can differentiate plant functional type classes. The amplitude layers are withheld so that the answer is unambiguous.
+
+**If timing alone proves insufficient**, the EVI metrics are added — but to answer a *different* question: not "can PFTs be separated by timing," but "how strongly is fractional cover expressed at PlanetScope scale." That is a **separate problem, and an important one**, not a rescue of the first. Keep the two results distinct in reporting: a timing-only result that fails is a genuine finding about phenological separability, and folding amplitude in afterwards would erase it.
+
+Sequence accordingly — run and report timing-only to completion first, then treat the amplitude extension as a new study with its own framing.
+
+if successful just with timing, fractional cover maps at planetscale will still be produced as a final product
 
 #### 5.5 Model form — multi-output regression, not classification
 
@@ -649,13 +836,28 @@ Outputs → `04_rf_phenology/`.
 
 This is not a loose reference. **Accuracy is estimated area-weighted, and reported per land-cover class with confidence intervals**, following the estimators below. Raw sample counts are never reported as accuracy.
 
+> **The ground truth itself is assessed for the training year.** This step validates the 1 m classification and the derived blocks **for the year the RF-B model is trained on** (§5.1a target-year selection) — not for an arbitrary year. Where ground truth is produced for more than one year (§6 multi-year work), each year carries its own accuracy assessment; accuracy from one year is never carried across to another, since class composition and acquisition conditions both change. Record the assessed year alongside every reported figure.
+
 #### 6.1 Why area weighting is mandatory here
 
 A stratified sample over-samples rare classes by design. At SRER, tree and shrub are rare and bare and grass are abundant (§11 check #20), so raw counts from a stratified sample **do not** reflect the map's actual composition. Computing accuracy from those counts silently assumes equal class areas and produces a number that describes the sample rather than the landscape. Every estimate below therefore reweights sample counts by the map-area proportion of the stratum they came from.
 
 #### 6.2 Sampling design
 
-**Strata = map class × confidence bin** (§3.1). Crossing the two satisfies two requirements at once: Olofsson's requirement that strata be defined on the map being assessed, and the §3.1 requirement that low-confidence pixels be populated well enough to validate the confidence layer. Record `W_h`, the area proportion of every stratum `h`, from the full map — these are the weights that make the estimators area-weighted.
+**Strata = map class × `prediction_quality` bin** (§3.1). Crossing the two satisfies two requirements at once: Olofsson's requirement that strata be defined on the map being assessed, and the §3.1 requirement that low-confidence pixels be populated well enough to validate the confidence layer. Record `W_h`, the area proportion of every stratum `h`, from the full map — these are the weights that make the estimators area-weighted.
+
+#### Which confidence layer, and where the bin edges go
+
+`prediction_quality` exists at two spatial levels (§3.1). **Bin the layer that matches the assessment level:**
+
+| Assessment level | Layer binned |
+|---|---|
+| 1 m pixel accuracy | Per-pixel `prediction_quality` — entropy of `p` for that pixel |
+| N×N block / end-member accuracy | Block `prediction_quality` — mean of pixel values over the block |
+
+**Bin edges are within-class quantiles, never global absolute thresholds.** This is the part that is easy to get wrong. Shrub sits at systematically lower confidence than bare across the entire map, so a single global cut would place nearly all shrub in the low bin and nearly all bare in the high bin. Class and confidence would become collinear, the cross-stratification would carry no independent information, and the §6.5 monotonicity check would be measuring class difficulty rather than confidence calibration. Cutting at **each class's own median** keeps the two axes independent.
+
+**Use 2 bins, split at the within-class median** → 4 classes × 2 bins = **8 strata**. Three bins would give 12 strata and, at a 50-sample floor each, a 600-sample floor before the size formula is even applied; 8 strata costs 400. Record the actual median value per class in the run report — it is a derived quantity, not a fixed constant, and it will differ per site and per framework.
 
 **Sample size**, replacing the earlier "X per class, TBD":
 
@@ -663,13 +865,42 @@ A stratified sample over-samples rare classes by design. At SRER, tree and shrub
 n = ( Σ_h W_h · S_h / S(Ô) )²        S_h = sqrt( U_h · (1 − U_h) )
 ```
 
-where `U_h` is a conjectured user's accuracy for stratum `h` and `S(Ô)` the target standard error of overall accuracy. Use `S(Ô) = 0.01`, and conjecture `U_h` ≈ 0.6–0.7 for shrub and for low-confidence bins, ≈ 0.8–0.9 for bare and grass at high confidence — deliberately pessimistic, since underestimating `U` only oversamples.
+**Reading the formula, right to left:**
+
+- **`S(Ô)`** — how precisely overall accuracy needs to be known. **`S(Ô) = 0.02` is the value used** (decided), giving a 95% interval of about **±0.04**: "overall accuracy = 0.85 ± 0.04".
+- **`U_h`** — a *guess*, made before sampling, at the user's accuracy of stratum `h`. Guessing is expected and standard; the value only sizes the sample and never enters the reported results.
+- **`S_h = √(U(1−U))`** — the standard deviation of a coin flip with bias `U`, because each sampled pixel is simply right or wrong (a Bernoulli trial). It peaks at `U = 0.5` and shrinks toward 0 or 1, so **uncertain classes demand more samples**. Guessing `U` low is therefore the safe direction: it only oversamples.
+- **`W_h`** — the stratum's share of map area, since accuracy is area-weighted (§6.1).
+- **`Σ W_h S_h`** — the area-weighted average per-sample standard deviation. The whole expression then reduces to the ordinary `n = (σ / SE)²`.
+
+Conjecture `U_h` ≈ 0.6–0.7 for shrub and for low-confidence bins, ≈ 0.8–0.9 for bare and grass at high confidence — deliberately pessimistic.
+
+**Worked example, plausible SRER values:**
+
+| Class | `W` | `U` (conjectured) | `S` | `W·S` |
+|---|---|---|---|---|
+| bare | 0.45 | 0.85 | 0.357 | 0.161 |
+| grass | 0.35 | 0.80 | 0.400 | 0.140 |
+| shrub | 0.15 | 0.65 | 0.477 | 0.072 |
+| tree | 0.05 | 0.75 | 0.433 | 0.022 |
+| | | | **Σ** | **0.394** |
+
+- **`S(Ô) = 0.02` → `n = (0.394 / 0.02)²` ≈ 390 samples — the operative figure**
+- `S(Ô) = 0.01` → `n = (0.394 / 0.01)²` ≈ 1,550 samples (rejected: ~4× the manual labeling for ±0.02 instead of ±0.04)
+
+> **`S(Ô) = 0.02` — DECIDED.** Every sample is a manual label, and 0.01 would have cost roughly four times the labeling effort (~1,550 points versus ~390) to tighten the overall-accuracy interval from ±0.04 to ±0.02. Not worth it here, particularly since framework selection rests on **per-class** accuracy (§6.4) rather than on overall accuracy.
+>
+> Two consequences to hold in mind. First, the ~390 figure is a *total* from the formula, while the 8 strata each carry a 50-sample floor — so the binding constraint is the **400-sample floor**, not the formula. Expect ~400–500 labels in practice. Second, the `W_h` in the table above are conjectured, not measured: **recompute with the real class proportions from §11 check #20** before fixing the final allocation.
 
 **Allocation**: proportional to `W_h`, then raised to a **floor of 50–100 samples in any rare stratum** (Olofsson §5.1.2). Without that floor, tree and shrub confidence intervals will be too wide to separate frameworks — which is the entire purpose of this step.
 
 **Single shared sample set**, drawn **once** and evaluated by every framework, so comparisons are direct.
 
+**One sample set assesses every framework.** The same labeled points are scored against A–E and the DL tracks alike, so differences between frameworks reflect the frameworks and not sampling variation. No framework gets its own sample.
+
 > **A tension to handle explicitly.** Olofsson stratifies on the map being assessed, but frameworks A–E produce *different* maps, so a per-framework stratification would give each framework a different sample and destroy comparability. Resolution: stratify **once** on the reference framework (D/E, §4.1), draw a probability sample, and **record every inclusion probability**. The estimators below remain unbiased for every framework, because the sample is a valid probability sample of the whole area regardless of which map defines the strata. The cost is precision, not bias: for a framework whose rare-class map disagrees sharply with the stratification, rare-class intervals will be wider. Where that happens, augment per-framework and **recompute the weights** — never merge an augmented sample in at equal weight.
+
+**Stratify once, for now.** The single reference-based stratification is used for all frameworks in this phase — the goal here is to compare *techniques*, and a shared stratification is what makes that comparison direct. Per-framework augmentation and reweighting stay specified above but are **deferred**: revisit only if a rare-class interval turns out too wide to separate frameworks, and never as a default.
 
 **Two assessment levels**, same protocol:
 1. 1 m pixel level, per class.
@@ -698,6 +929,20 @@ p̂_ij = W_i · n_ij / n_i·
 
 **The error-adjusted area `Â_j` is a deliverable in its own right**, not a diagnostic. It will differ from the naive pixel count of class `j`, and the difference *is* the map's bias for that class. For a product whose purpose is ground truth, that number matters as much as the accuracy figures.
 
+#### 6.3a Required output — the full error matrix with all calculations shown
+
+For every framework, produce a **user's vs. producer's accuracy matrix** with the complete arithmetic exposed, not just the summary figures:
+
+- **Counts matrix** `n_ij` — raw sample counts, rows = map class, columns = reference class.
+- **Area-proportion matrix** `p̂_ij` — the same matrix after weighting by `W_i`, with the weights printed alongside.
+- **Row margins** `p̂_i·` and **column margins** `p̂_·j`.
+- **User's accuracy** per class with standard error and 95% interval — from the row margins.
+- **Producer's accuracy** per class with standard error and 95% interval — from the column margins.
+- **Overall accuracy** with standard error and 95% interval.
+- **Error-adjusted area** `Â_j` per class with 95% interval, shown next to the naive mapped pixel count so the bias is directly readable.
+
+Emit both a machine-readable table and a formatted version for reporting. **Showing the intermediate quantities is deliberate**: the area-weighted estimators are easy to implement subtly wrong, and a matrix that prints only final accuracies gives no way to catch it.
+
 #### 6.4 Framework selection
 
 Select the best-performing **transferable** framework (A–C, DL) per §4.1 on **per-class user's and producer's accuracy with intervals**, not on overall accuracy.
@@ -725,6 +970,10 @@ Outputs → `05_accuracy_assessment/`: the sample set with inclusion probabiliti
 
 **Pending**: RAP data path. Compare RAP (10 m fractional cover) vs. ground truth (1 m aggregated to the RAP grid) vs. the Planet-scale mask (Step 3). Aggregation to 10 m must align to the RAP grid, same rule as Step 0.
 
+> **PAUSED — Step 7 is deferred to Phase 2.** This comparison runs **last, after site transferability (Step 8) is complete**, not in sequence between Steps 6 and 8. Nothing in Steps 1–6 or Step 8 depends on it.
+>
+> Keep the design recorded here so it stays in view, but do not build it, and do not let it gate anything. The RAP data path remains an open item (§10) and does not need resolving until Phase 2 begins.
+
 ### Step 8 — Transferability to WKG
 
 - **Phase 1**: framework development on SRER train tiles, validated on SRER test tiles.
@@ -737,6 +986,9 @@ Outputs → `05_accuracy_assessment/`: the sample set with inclusion probabiliti
   Route 2 is the **expected path across an ecoregion boundary** and the fallback if Route 1 fails within one; it is the reason frameworks A–C are constrained to RGB + VI + texture in §4.1. **It also removes the need for synthetic mixtures at WKG** (see §9 risk 1): with its own ground truth layer, WKG has true mixed-pixel fractions and RF-B can be trained there exactly as at SRER.
 
   Constraints at WKG: NAIP 0.6 m RGB+NIR; LiDAR offset 1–2 years, so CHM is a cross-check at best and frameworks D/E are not carried over.
+> **LiDAR may carry over, conditionally.** CHM is usable at a transfer site — and frameworks D/E may then be carried over — if **either** the LiDAR acquisition is **within 1 year** of the imagery, **or** its alignment against the imagery can be positively verified (§11 check #9 coregistration test, plus a CHM-vs-imagery edge check on stable features).
+>
+> Where neither holds, CHM stays a cross-check only and D/E are not transferred. Record which condition was met, and the measured offset, in the run report — a carried-over CHM that later proves misaligned would corrupt the shrub/tree split (§3) with no visible symptom.
 
   Working assumption: sites outside a shared ecoregion require independent end-member sets. Comparing Route 1 against Route 2 is the direct test of that assumption.
 
@@ -775,7 +1027,14 @@ Carried forward from `instructions2.md`:
 - **Per-site JSON config**; every site-varying value lives there, never inline in code (R8).
 - **Run provenance**: each run gets its own results directory and a single `report.json` to which every step appends a named section — the convention proven in `instructions1.md` §5. Record resampling methods, thresholds actually used, seeds, and every §11 observed value.
 - **`data_quality` and `prediction_quality` are distinct, reserved names** (§3.1, §5.3). Never merge them into a generic `confidence` or `quality` field in any raster, attribute table, config key, or report section.
+- **Output filenames use full words, never invented shorthand** — `fraction_hard_count`, not `frac_hard`; `class_probability`, not `class_prob`. Established product and index names are proper nouns and kept verbatim: `RGB`, `NDVI`, `SAVI`, `EVI`, `CHM`, `QA`, `LSP`, `NAIP`, `SLIC`, `GLCM`, `LBP` (§5 Step 3).
+- **Assume nothing on data import; verify and record every parameter** — CRS, transform, pixel size, origin, dtype, band/variable order, nodata, scale, offset, units. Ask rather than default when any of these is ambiguous (§5.3).
+- **Mask fill and flagged values to NaN in float arrays immediately on read**, before any arithmetic. No sentinel value ever reaches a computation (§5.3).
 - **Seeds**: `base_seed + year`, matching `instructions1.md` §3, applied to SLIC, RF, and all sampling.
+- variable and function names should not be shortened, no acronyms
+- for each step create py file for functions and separate runner jupyter file that calls a "run()" function so that output is easy to see
+- for every file saved, print "Written: file"
+- 
 
 ---
 
@@ -800,23 +1059,23 @@ Carried from `instructions2.md` §§6–7 — **DL tracks are gated on both**:
 
 ## 10. Open items
 
-| Item | Status |
-|---|---|
-| PlanetScope phenology data path | **Resolved — §5.1**. NetCDF; 2017–2021 available now |
-| Which PLSP year for Step 5 | **Resolved — 2022** (§5.1a), matching the ground-truth flight year |
-| PLSP 2022 product generation | **Pending — gates Step 5 only.** Steps 0–4 proceed independently. Track as a schedule dependency |
-| `numObs` minimum-observation threshold | TBD — evaluate at Step 0 check #35 |
-| RAP data path | Pending |
-| Accuracy assessment sample size | **Resolved — §6.2**. Computed from the Olofsson formula with `S(Ô) = 0.01`; floor of 50–100 in rare strata. Conjectured `U_h` values still to be fixed |
-| SAVI/EVI filename convention | Assumed to mirror NDVI; verify against actual files |
-| UTM zone | Assumed standard NEON zone for SRER; verify against file CRS |
-| WKG data paths | Needed at Step 8 |
-| `NumCycles == 1` viability at D13 (and all sites) | **Run §2.4 first** — decides whether the 1-cycle constraint holds |
-| NEON AOP flight years per site; NAIP and 3DEP years per AmeriFlux site | Needed — see §2.4 |
-| Climate-anchored features for cross-domain (Axis 2) comparison | Designed in `instructions1.md` §8, not implemented |
-| Presence of all 5 tiles for all 3 products | Verify at Step 0 |
-| `H_GRASS_MAX` final value | Provisional 0.3 m; set from measured CHM noise floor at Step 0 |
-| PlanetScope pixel size and grid origin | Read from product file at Step 0 |
+| Item                                                                   | Status                                                                                                                                                 |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| PlanetScope phenology data path                                        | **Resolved — §5.1**. NetCDF; 2017–2021 available now                                                                                                   |
+| Which PLSP year for Step 5                                             | **Resolved — 2022** (§5.1a), matching the ground-truth flight year                                                                                     |
+| PLSP 2022 product generation                                           | **Pending — gates Step 5 only.** Steps 0–4 proceed independently. Track as a schedule dependency                                                       |
+| `numObs` minimum-observation threshold                                 | TBD — evaluate at Step 0 check #35. **Produce a histogram of `numObs`** over QA-passing pixels                                                                                       |
+| RAP data path                                                          | Pending. Will follow the same `{DATA_ROOT}/...` convention as §5.1                                                                                                |
+| Accuracy assessment sample size                                        | **Resolved — §6.2**. `S(Ô) = 0.02`, 8 strata (4 classes × 2 confidence bins), 50-sample floor per stratum → ~400–500 labels. Recompute allocation with measured `W_h` from check #20 |
+| SAVI/EVI filename convention                                           | **Confirmed to mirror the NDVI pattern**; still verify against the actual files at Step 0                                                                                |
+| UTM zone                                                               | Read from file CRS. **Never assume any file parameter — always verify** (§5.3 import rule)                                                        |
+| WKG data paths                                                         | Needed at Step 8                                                                                                                                       |
+| `NumCycles == 1` viability at D13 (and all sites)                      | **Run §2.4 first** — decides whether the 1-cycle constraint holds                                                                                      |
+| NEON AOP flight years per site; NAIP and 3DEP years per AmeriFlux site | Needed — see §2.4                                                                                                                                      |
+| Climate-anchored features for cross-domain (Axis 2) comparison         | Designed in `instructions1.md` §8, not implemented                                                                                                     |
+| Presence of all 5 tiles for all 3 products                             | Verify at Step 0                                                                                                                                       |
+| `H_GRASS_MAX` final value                                              | Provisional 0.3 m; set from measured CHM noise floor at Step 0                                                                                         |
+| PlanetScope pixel size and grid origin                                 | Read from product file at Step 0                                                                                                                       |
 
 ---
 
@@ -836,41 +1095,47 @@ Every check writes a pass/fail plus the observed value into `00_qa/data_audit_{S
 
 ### 11.2 Georeferencing and alignment
 
-| # | Check | Fail condition |
-|---|---|---|
-| 6 | CRS identical across all products and all tiles; UTM zone recorded explicitly | **BLOCKER** on mismatch |
-| 7 | VI and CHM 1 m grids share an identical origin (no half-pixel offset) | **BLOCKER** — a silent half-pixel shift corrupts every class rule in §3 |
-| 8 | RGB 10 cm grid nests exactly within the 1 m grid | **BLOCKER** |
-| 9 | Coregistration test: pick a hard edge (road, building, large crown), cross-correlate RGB against CHM and against SAVI, report offset in metres | Report; > 1 m offset is a **BLOCKER** |
-| 10 | Planet LSP raster CRS matches, and its footprint covers all 5 tiles | **BLOCKER** |
-| 11 | Planet pixel size read from the product file — **never hard-coded** as 3, 3.7, or 4 m. Record it; derive `N = round(planet_pixel_size / 1.0)` | **BLOCKER** if `N` is non-integer within tolerance |
-| 12 | Planet grid origin recorded; confirm 1 m blocks tile it exactly with no fractional remainder | **BLOCKER** |
+| #   | Check                                                                                                                                          | Fail condition                                                          |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 6   | CRS identical across all products and all tiles; UTM zone recorded explicitly                                                                  | **BLOCKER** on mismatch                                                 |
+| 7   | VI and CHM 1 m grids share an identical origin (no half-pixel offset)                                                                          | **BLOCKER** — a silent half-pixel shift corrupts every class rule in §3 |
+| 8   | RGB 10 cm grid nests exactly within the 1 m grid                                                                                               | **BLOCKER**                                                             |
+| 9   | Coregistration test: pick a hard edge (road, building, large crown), cross-correlate RGB against CHM and against SAVI, report offset in metres | Report; > 1 m offset is a **BLOCKER**                                   |
+| 10  | Planet LSP raster CRS matches, and its footprint covers all 5 tiles                                                                            | **BLOCKER**                                                             |
+| 11  | Planet pixel size read from the product file — **never hard-coded** as 3, 3.7, or 4 m. Record it; derive `N = round(planet_pixel_size / 1.0)`  | **BLOCKER** if `N` is non-integer within tolerance. **Double-check independently** before it propagates    |
+| 12  | Planet grid origin recorded; confirm 1 m blocks tile it exactly with no fractional remainder                                                   | **BLOCKER**                                                             |
 
 ### 11.3 Radiometry and value sanity
 
-| # | Check | Fail condition |
-|---|---|---|
-| 13 | **VI scale factor.** NEON VI rasters may be stored as scaled integers. Read dtype and any scale/offset metadata; confirm SAVI/NDVI land in [-1, 1] after scaling | **BLOCKER** — an unapplied scale factor silently breaks `SAVI_BARE_MAX` = 0.2 with no error |
-| 14 | RGB band count (3 vs 4) and dtype (uint8 vs uint16); identify any alpha band | **BLOCKER** if unexpected — an alpha band read as blue corrupts the shadow rule |
-| 15 | Nodata / fill value recorded per product and confirmed actually applied (not left as a raw sentinel such as -9999 or 65535 entering arithmetic) | **BLOCKER** |
-| 16 | CHM range: no negatives, and max plausible for SRER (values > ~15 m are suspect) | Report |
-| 17 | CHM noise floor: distribution over visually-confirmed bare areas; set `H_GRASS_MAX` above it (§3 safeguard 2) | Report — sets a config value |
-| 18 | Per-tile percentage of nodata in the VI mosaic — bidirectional mosaics carry flightline gaps | Report; > 5% flags the tile |
-| 19 | Visual scan for cloud, cloud shadow, and mosaic seams in RGB | Report |
+| #   | Check                                                                                                                                                            | Fail condition                                                                              |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 13  | **VI scale factor.** NEON VI rasters may be stored as scaled integers. Read dtype and any scale/offset metadata; confirm SAVI/NDVI land in [-1, 1] after scaling | **BLOCKER** — an unapplied scale factor silently breaks `SAVI_BARE_MAX` = 0.2 with no error |
+| 14  | RGB band count (3 vs 4) and dtype (uint8 vs uint16); identify any alpha band                                                                                     | **BLOCKER** if unexpected — an alpha band read as blue corrupts the shadow rule             |
+| 15  | Nodata / fill value recorded per product and confirmed actually applied (not left as a raw sentinel such as -9999 or 65535 entering arithmetic)                  | **BLOCKER**                                                                                 |
+| 16  | CHM range: no negatives, and max plausible for SRER (values > ~15 m are suspect)                                                                                 | Report                                                                                      |
+| 17  | CHM noise floor: distribution over visually-confirmed bare areas; set `H_GRASS_MAX` above it (§3 safeguard 2)                                                    | Report — sets a config value                                                                |
+| 18  | Per-tile percentage of nodata in the VI mosaic — bidirectional mosaics carry flightline gaps                                                                     | Report; > 5% flags the tile                                                                 |
+| 19  | Visual scan for cloud, cloud shadow, and mosaic seams in RGB                                                                                                     | Report                                                                                      |
 
 ### 11.4 Class and sampling sanity
 
-| # | Check | Fail condition |
-|---|---|---|
-| 19a | All class-valued rasters use the locked §3 codes (0–3 terminal, 4 shadow intermediate only, 255 nodata); assert no value outside that set, and no 4 in any final product | **BLOCKER** |
-| 20 | Per-class pixel counts under the §3 reference rules, per tile | Report — establishes the class prior for R6 |
-| 21 | Both train and test blocks contain all four classes | **BLOCKER** if a class is absent from either |
-| 22 | Expected pure end-member counts per class at the 90% threshold (§5 Step 4) | Report; < 30 for any class is flagged, not silently worked around |
-| 22a | Distribution of the 1 m confidence layer and of block confidence (§3.1), per class and per tile — sets the Step 4 confidence threshold | Report — sets a config value |
-| 22b | Agreement between hard (a) and soft (b) fraction estimates per block (§5 Step 3); map the disagreement | Report — large systematic divergence means the site is mixture-dominated at 1 m and Step 5 targets should be revisited |
-| 23 | Phenocam location falls inside the 511000 train block; record its footprint | Report |
+| #   | Check                                                                                                                                                                    | Fail condition                                                                                                         |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| 19a | All class-valued rasters use the locked §3 codes (0–3 terminal, 4 shadow intermediate only, 255 nodata); assert no value outside that set, and no 4 in any final product | **BLOCKER**                                                                                                            |
+| 20  | Per-class pixel counts under the §3 reference rules, per tile                                                                                                            | Report — establishes the class prior for R6                                                                            |
+| 21  | Both train and test blocks contain all four classes                                                                                                                      | **BLOCKER** if a class is absent from either                                                                           |
+| 22  | Expected pure end-member counts per class at the 90% threshold (§5 Step 4)                                                                                               | Report; < 30 for any class is flagged, not silently worked around                                                      |
+| 22a | Distribution of the 1 m confidence layer and of block confidence (§3.1), per class and per tile — sets the Step 4 confidence threshold                                   | Report — sets a config value                                                                                           |
+| 22b | Agreement between hard (a) and soft (b) fraction estimates per block (§5 Step 3); map the disagreement                                                                   | Report — large systematic divergence means the site is mixture-dominated at 1 m and Step 5 targets should be revisited |
+| 23  | Phenocam location falls inside the 511000 train block; record its footprint                                                                                              | Report. **Phenocam coordinates to be provided by user**                                                                               |
 
 ### 11.5 Cross-site checks (run at every transfer site)
+
+> **Action — user input required before any transfer site is processed:**
+> - **3DEP LiDAR acquisition dates per site** — needed for the carry-over decision in Step 8 and check #27.
+> - **NAIP data and full metadata per site** — acquisition date, band order, native resolution, and radiometric/processing notes, covering checks #24–26.
+>
+> These are blocking inputs for §11.5, not background information. Request them explicitly rather than proceeding on assumed values.
 
 | # | Check | Fail condition |
 |---|---|---|
@@ -901,6 +1166,12 @@ Run against the layer specification in §5.2.
 
 Texture windows, SLIC segments, and the shadow-proximity test all run off tile edges. **Decide once and apply everywhere**: read a buffer from neighbouring tiles where available, and where not (site boundary) mask an edge margin equal to the largest window radius used. Record the margin. Do not leave edge behaviour implicit — it is a common source of seam artifacts in tiled mosaics.
 
+**Decision: use an edge margin, not neighbour-tile buffer reads.** Mask a margin equal to the largest window radius used anywhere in the pipeline (texture window, SLIC neighbourhood, `SHADOW_TREE_RADIUS`) around every tile edge, and exclude those pixels from all products and from Step 6 sampling.
+
+Losing a few edge pixels is acceptable and is the right trade: buffer reads add cross-tile I/O dependencies that break tile-level parallelism and fail silently at the site boundary, where no neighbour exists. A fixed margin behaves identically at interior and boundary tiles.
+
+Record the margin width in config and the count of pixels dropped per tile — the loss should be small, and a large number signals a window radius that has grown beyond what the tiling supports.
+
 ---
 
 ## 12. Open questions to resolve
@@ -923,6 +1194,8 @@ This supersedes the earlier macro-F1 recommendation. Macro-F1 weights classes eq
 
 ### Q3 — How is RF-B evaluated?
 Fractional-cover regression needs different metrics from classification. Recommend per-class RMSE and MAE on held-out blocks, plus systematic bias (mean signed error) per class, plus a 1:1 scatter of predicted vs. true fraction. Overall R² alone will hide class-specific failure.
+
+**Required: a 1:1 predicted-vs-true scatter for each of the four classes**, four panels, each with the 1:1 line drawn, per-class RMSE, MAE, and mean signed error annotated, and points coloured by block `prediction_quality`. Aggregate metrics hide the failure modes that matter here — saturation at high cover, a floor at low cover, and systematic over- or under-prediction of a single class — and all three are visible at a glance in the scatter and invisible in a single R².
 
 ### Q4 — Does the model transfer, or only the pipeline? — **RESOLVED: both, at different distances**
 
@@ -990,3 +1263,5 @@ This matters because the tree-crown backup is most useful exactly where CHM is w
 This yields a quantified answer — *DeepForest at NAIP resolution recovers X% of crowns above Y m diameter* — over a scene where the true answer is already known from CHM. It is cheap, needs no new data, and converts an assumption into a measured degradation curve that also tells you the **minimum detectable crown size** at NAIP resolution. If step 3 shows recovery is adequate for the crown sizes that matter at WKG, use it there; if not, DL-1 stays a NEON-only cross-check and the AmeriFlux tree class rests on frameworks A–C.
 
 **Optional extension if the degradation proves too severe**: fine-tune DeepForest on 0.6 m simulated-NAIP chips using the native-10 cm detections as labels. This is well-posed — NEON supplies both the imagery and, via CHM, an independent crown check — and produces a NAIP-resolution crown detector without any manual crown digitizing. Treat as a follow-on, not part of the initial run.
+
+> **Note for target-year selection (§5.1a).** The choice is grounded in an **existing histogram of the percentage of high-quality pixels per year**, already produced by the user. Selection rule: take one of the **high-quality years** for each site, choosing the one **closest to 2022**. Use that histogram as the primary evidence rather than regenerating the statistic, and record which year it selected per site alongside the runner-up.
