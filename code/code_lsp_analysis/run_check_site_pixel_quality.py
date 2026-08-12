@@ -13,7 +13,7 @@ from pathlib import Path
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns∏
+import seaborn as sns
 from aquarel import load_theme
 import matplotlib as mpl
 
@@ -112,7 +112,7 @@ def save_results_to_png(csv_file, png_file, QA):
 
 
 def main(QA_level):
-    sites = ['ARM_Southern_Great_Plains_site', 'Mountainair_Pinyon-Juniper_Woodland', 'NEON_Konza_Prairie_Biological_Station', 'Santa_Rita_Grassland', 'Santa_Rita_Mesquite', 'Sevilleta_shrubland', 'Walnut_Gulch_Kendall_Grasslands', 'Walnut_Gulch_Lucky_Hills_Shrub', 'Willard_Juniper_Savannah']
+    sites = ['ARM_Southern_Great_Plains_site', 'Mountainair_Pinyon-Juniper_Woodland', 'NEON_Konza_Prairie_Biological_Station', 'Santa_Rita_Experimental_Range_NEON', 'Santa_Rita_Grassland', 'Santa_Rita_Mesquite', 'Sevilleta_shrubland', 'Walnut_Gulch_Kendall_Grasslands', 'Walnut_Gulch_Lucky_Hills_Shrub', 'Willard_Juniper_Savannah']
     print(f'{len(sites)=}')
     product_dirs = ['PLSP_production_nc', 'PLSP_stage_nc']
     print(f'{len(product_dirs)=}')
