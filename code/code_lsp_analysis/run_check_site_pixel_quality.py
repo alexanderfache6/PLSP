@@ -18,6 +18,18 @@ from aquarel import load_theme
 import matplotlib as mpl
 
 
+# repo root, so the site list resolves the same locally and on the SCC
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+SITES_CSV = REPO_ROOT / 'code' / 'selected_sites_info' / 'data' / '01_selected_sites_raw_handgenerated_2.csv'
+
+
+def get_sites(csv_file):
+    '''Site directory names come from the plsp_raw_id column of the hand-generated site list.'''
+    with open(csv_file, newline='') as f:
+        sites = [row['plsp_raw_id'].strip() for row in csv.DictReader(f)]
+    return sorted({s for s in sites if s})
+
+
 def get_nc_files(sites, product_dirs):
     dirs = []
     for site in sites:
@@ -29,6 +41,13 @@ def get_nc_files(sites, product_dirs):
         if os.path.isdir(d):
             nc_files.extend(glob.glob(os.path.join(d, '*.nc'), recursive=True))
     nc_files = sorted(set(nc_files))
+
+    # a plsp_raw_id that does not match a PLSP directory name would otherwise
+    # drop the site silently, so name it rather than returning a short list
+    found = {Path(p).parent.name for p in nc_files}
+    for site in sites:
+        if site not in found:
+            print(f'WARNING: no .nc files for "{site}" in any of {product_dirs}', file=sys.stderr)
 
     return nc_files
 
@@ -112,8 +131,10 @@ def save_results_to_png(csv_file, png_file, QA):
 
 
 def main(QA_level):
-    sites = ['ARM_Southern_Great_Plains_site', 'Mountainair_Pinyon-Juniper_Woodland', 'NEON_Konza_Prairie_Biological_Station', 'Santa_Rita_Experimental_Range_NEON', 'Santa_Rita_Grassland', 'Santa_Rita_Mesquite', 'Sevilleta_shrubland', 'Walnut_Gulch_Kendall_Grasslands', 'Walnut_Gulch_Lucky_Hills_Shrub', 'Willard_Juniper_Savannah']
+    sites = get_sites(SITES_CSV)
+    print(f'{SITES_CSV=}')
     print(f'{len(sites)=}')
+    print(f'{sites=}')
     product_dirs = ['PLSP_production_nc', 'PLSP_stage_nc']
     print(f'{len(product_dirs)=}')
 
