@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check which years all NEON AOP data products are available for the selected NEON sites.
+"""Check which months all NEON AOP data products are available for the selected NEON sites.
 
 Sites come from info/01_selected_sites_raw2.csv (rows with is_neon == 1).
 Products come from info/neon_data_products.csv.
@@ -64,12 +64,11 @@ def fetch_product(product_id):
         return json.load(resp)["data"]
 
 
-def years_by_site(product_data):
-    """Return {site_code: set(years)} from a product's availableMonths."""
+def months_by_site(product_data):
+    """Return {site_code: set('YYYY-MM')} from a product's availableMonths."""
     out = {}
     for entry in product_data.get("siteCodes") or []:
-        months = entry.get("availableMonths") or []
-        out[entry["siteCode"]] = {m.split("-")[0] for m in months}
+        out[entry["siteCode"]] = set(entry.get("availableMonths") or [])
     return out
 
 
@@ -95,7 +94,7 @@ def main():
         print(f"{pid} {desc}")
         print(f"{PORTAL_URL.format(product_id=pid)}")
         try:
-            availability[pid] = years_by_site(fetch_product(pid))
+            availability[pid] = months_by_site(fetch_product(pid))
         except (urllib.error.URLError, urllib.error.HTTPError, KeyError) as exc:
             sys.exit(f"Failed to fetch {pid}: {exc}")
 
@@ -110,24 +109,27 @@ def main():
 
         print(f"=== {site} ({name}) ===")
         for pid in products:
-            yrs = per_product[pid]
-            print(f"  {pid}: {', '.join(yrs) if yrs else '(none)'}")
+            months = per_product[pid]
+            print(f"  {pid}: {', '.join(months) if months else '(none)'}")
         label = ", ".join(common) if common else "(none)"
         print(f"  ALL {len(products)} PRODUCTS: {label}")
         print()
 
-        all_years = sorted(set().union(*(set(v) for v in per_product.values())))
-        for year in all_years:
+        all_months = sorted(set().union(*(set(v) for v in per_product.values())))
+        for year_month in all_months:
+            year, month = year_month.split("-")
             rows.append(
                 {
                     "neon_id": site,
                     "year": year,
-                    **{pid: int(year in per_product[pid]) for pid in products},
-                    "all_products": int(year in common),
+                    "month": month,
+                    "year_month": year_month,
+                    **{pid: int(year_month in per_product[pid]) for pid in products},
+                    "all_products": int(year_month in common),
                 }
             )
 
-    fieldnames = ["neon_id", "year"] + list(products) + ["all_products"]
+    fieldnames = ["neon_id", "year", "month", "year_month"] + list(products) + ["all_products"]
     with open(args.out_csv, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
