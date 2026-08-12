@@ -1,3 +1,4 @@
-plsp_product_id,plsp_raw_id,ameriflux_id,neon_id,site_name,site_name_2,phenocam1,phenocam2,is_neon,neon_domain,is_focus,plsp_site_number
-US-xSR_NEON_Santa_Rita_Experimental_Range,Santa_Rita_Experimental_Range_NEON,US-xSR,SRER,Santa Rita Experimental Range NEON,,NEON.D14.SRER.DP1.00042,NEON.D14.SRER.DP1.00033,1,D14,1,
-US-Wkg_Walnut_Gulch_Kendall_Grasslands,Walnut_Gulch_Kendall_Grasslands,US-Wkg,,Walnut Gulch Kendall Grasslands,,kendall,,0,D14,1,103
+plsp_product_id,plsp_raw_id,ameriflux_id,neon_id,is_neon,neon_domain,site_name,site_name_2,phenocam1,phenocam2,plsp_site_number,is_focus
+US-xSR_NEON_Santa_Rita_Experimental_Range,Santa_Rita_Experimental_Range_NEON,US-xSR,SRER,1,D14,Santa Rita Experimental Range NEON,,NEON.D14.SRER.DP1.00042,NEON.D14.SRER.DP1.00033,-1,0
+US-Wkg_Walnut_Gulch_Kendall_Grasslands,Walnut_Gulch_Kendall_Grasslands,US-Wkg,,0,D14,Walnut Gulch Kendall Grasslands,,kendall,,103,0
+US-xKZ_NEON_Konza_Prairie_Biological_Station,Konza_Prairie_Biological_Station_NEON,US-xKZ,KONZ,1,D06,Konza Prairie Biological Station NEON,,NEON.D06.KONZ.DP1.00033,NEON.D06.KONZ.DP1.00042,-1,0
