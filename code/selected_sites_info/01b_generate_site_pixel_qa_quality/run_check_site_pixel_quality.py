@@ -22,6 +22,9 @@ import matplotlib as mpl
 SITES_DIR = Path(__file__).resolve().parent.parent
 SITES_CSV = SITES_DIR / 'data' / '01_selected_sites_raw_handgenerated_2.csv'
 
+OUT_DIR = Path('/projectnb/modislc/users/fache/src/PLSP/code/selected_sites_info/01b_generate_site_pixel_qa_quality')
+OUT_FILE_PRE = 'check_site_pixel_quality_results_QA'
+
 
 def get_sites(csv_file):
     '''Site directory names come from the plsp_raw_id column of the hand-generated site list.'''
@@ -99,7 +102,7 @@ def save_results_to_png(csv_file, png_file, QA):
     df = pd.read_csv(csv_file)
     df['year'] = pd.to_numeric(df['year'])
     df['percent_good_pixels'] = pd.to_numeric(df['percent_good_pixels'].astype(str).str.rstrip('%'))
-    df = df.sort_values('year')
+    df = df.sort_values(by=['year', 'site'], ascending=True)
     df['year'] = df['year'].astype(int).astype(str)
 
     theme = load_theme('arctic_dark')
@@ -143,8 +146,8 @@ def main(QA_level):
     results = run_all_analyze_pixel_quality(nc_files, QA_level)
     print(f'{len(results)=}')
 
-    csv_file = f'/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_analysis/check_site_pixel_quality_results_QA{QA_level}.csv'
-    png_file = f'/projectnb/modislc/users/fache/src/PLSP/code/code_lsp_analysis/check_site_pixel_quality_results_QA{QA_level}.png'
+    csv_file = OUT_DIR / f'{OUT_FILE_PRE}{QA_level}.csv'
+    png_file = OUT_DIR / f'{OUT_FILE_PRE}{QA_level}.png'
     save_results_to_csv(results, csv_file)
     save_results_to_png(csv_file, png_file, QA_level)
 
