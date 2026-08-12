@@ -44,14 +44,9 @@ def resolve(root, *parts):
 
 def tile_paths(cfg, site_dir, tile):
     p = cfg["products"]
-    out = {
-        "rgb": site_dir / p["rgb"]["folder"] / p["rgb"]["pattern"].format(tile=tile),
-        "chm": site_dir / p["chm"]["folder"] / p["chm"]["pattern"].format(tile=tile),
-    }
+    out = {"rgb": site_dir / p["rgb"]["folder"] / p["rgb"]["pattern"].format(tile=tile), "chm": site_dir / p["chm"]["folder"] / p["chm"]["pattern"].format(tile=tile),}
     for index in p["vi"]["indices"]:
-        out[f"vi_{index}"] = site_dir / p["vi"]["folder"] / p["vi"]["pattern"].format(
-            tile=tile, index=index
-        )
+        out[f"vi_{index}"] = site_dir / p["vi"]["folder"] / p["vi"]["pattern"].format(tile=tile, index=index)
     return out
 
 
@@ -63,11 +58,7 @@ def read_rgb_at_scale(path, scale_m):
     with rasterio.open(path) as ds:
         width = int(round((ds.bounds.right - ds.bounds.left) / scale_m))
         height = int(round((ds.bounds.top - ds.bounds.bottom) / scale_m))
-        arr = ds.read(
-            out_shape=(ds.count, height, width),
-            resampling=Resampling.average,
-            out_dtype="float32",
-        )
+        arr = ds.read(out_shape=(ds.count, height, width), resampling=Resampling.average, out_dtype="float32",)
         transform = from_bounds(*ds.bounds, width, height)
         return arr, transform, ds.crs, ds.bounds
 
@@ -83,16 +74,7 @@ def rgb_indices(rgb):
     r, g, b = chromatic(rgb)
     exg = 2.0 * g - r - b
     exr = 1.4 * r - g
-    out = {
-        "r": r,
-        "g": g,
-        "b": b,
-        "ExG": exg,
-        "ExR": exr,
-        "ExGR": exg - exr,
-        "VARI": (g - r) / (g + r - b + EPS),
-        "GLI": (2.0 * rgb[1] - rgb[0] - rgb[2]) / (2.0 * rgb[1] + rgb[0] + rgb[2] + EPS),
-    }
+    out = {"r": r, "g": g, "b": b, "ExG": exg, "ExR": exr, "ExGR": exg - exr, "VARI": (g - r) / (g + r - b + EPS), "GLI": (2.0 * rgb[1] - rgb[0] - rgb[2]) / (2.0 * rgb[1] + rgb[0] + rgb[2] + EPS),}
     # Rec. 709 luma, shared with Step 1c shadow detection
     out["luma"] = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
     mx = rgb.max(axis=0)
@@ -141,11 +123,7 @@ def glcm_features(img, window, levels, offset):
     def pad(arr):
         return np.pad(arr, ((0, dy), (0, dx)), mode="edge")
 
-    return {
-        "glcm_contrast": pad(contrast),
-        "glcm_homogeneity": pad(homogeneity),
-        "glcm_correlation": pad(correlation),
-    }
+    return {"glcm_contrast": pad(contrast), "glcm_homogeneity": pad(homogeneity), "glcm_correlation": pad(correlation),}
 
 
 def local_entropy(img, window, levels):
@@ -190,15 +168,7 @@ def local_std(img, window):
 def to_analysis_grid(arr, src_transform, src_crs, dst_profile):
     """Area-weighted average from the 0.6 m grid onto the canonical 1 m grid."""
     out = np.empty((dst_profile["height"], dst_profile["width"]), dtype="float32")
-    reproject(
-        source=np.ascontiguousarray(arr, dtype="float32"),
-        destination=out,
-        src_transform=src_transform,
-        src_crs=src_crs,
-        dst_transform=dst_profile["transform"],
-        dst_crs=dst_profile["crs"],
-        resampling=Resampling.average,
-    )
+    reproject(source=np.ascontiguousarray(arr, dtype="float32"), destination=out, src_transform=src_transform, src_crs=src_crs, dst_transform=dst_profile["transform"], dst_crs=dst_profile["crs"], resampling=Resampling.average,)
     return out
 
 
@@ -210,12 +180,7 @@ def build_tile(cfg, site_dir, tile):
 
     # canonical 1 m grid comes from the CHM (check 7 proved VI shares its origin)
     with rasterio.open(paths["chm"]) as ds:
-        grid = {
-            "transform": ds.transform,
-            "crs": ds.crs,
-            "width": ds.width,
-            "height": ds.height,
-        }
+        grid = {"transform": ds.transform, "crs": ds.crs, "width": ds.width, "height": ds.height,}
         chm = ds.read(1, masked=True)
 
     rgb, rgb_transform, rgb_crs, _ = read_rgb_at_scale(paths["rgb"], scale)
@@ -225,9 +190,7 @@ def build_tile(cfg, site_dir, tile):
     # --- computed at 0.6 m, then averaged to 1 m
     for name, arr in rgb_indices(rgb).items():
         bands[name] = to_analysis_grid(arr, rgb_transform, rgb_crs, grid)
-        group = "chromatic" if name in ("r", "g", "b") else (
-            "brightness" if name in ("luma", "saturation") else "rgb_index"
-        )
+        group = "chromatic" if name in ("r", "g", "b") else ("brightness" if name in ("luma", "saturation") else "rgb_index")
         meta.append({"name": name, "group": group, "computed_at_m": scale})
 
     luma = rgb_indices(rgb)["luma"]
@@ -250,14 +213,7 @@ def build_tile(cfg, site_dir, tile):
     mask_limit = cfg["thresholds"]["chm_max_valid_m"]
     chm_masked = np.ma.masked_where(chm > mask_limit, chm)
     bands["CHM"] = chm_masked.filled(np.nan).astype("float32")
-    meta.append(
-        {
-            "name": "CHM",
-            "group": "chm",
-            "computed_at_m": 1.0,
-            "note": f"values > {mask_limit} m masked as man-made structures",
-        }
-    )
+    meta.append({"name": "CHM", "group": "chm", "computed_at_m": 1.0, "note": f"values > {mask_limit} m masked as man-made structures",})
 
     # --- section 11.7 edge margin, in 1 m cells
     margin = int(np.ceil((window // 2) * scale / cfg["step1"]["analysis_grid_m"]))
@@ -290,64 +246,23 @@ def main():
         bands, meta, grid, margin = build_tile(cfg, site_dir, tile)
         band_meta = meta
 
-        profile = {
-            "driver": "GTiff",
-            "dtype": "float32",
-            "count": len(bands),
-            "width": grid["width"],
-            "height": grid["height"],
-            "crs": grid["crs"],
-            "transform": grid["transform"],
-            "nodata": np.nan,
-            "compress": "deflate",
-            "tiled": True,
-        }
+        profile = {"driver": "GTiff", "dtype": "float32", "count": len(bands), "width": grid["width"], "height": grid["height"], "crs": grid["crs"], "transform": grid["transform"], "nodata": np.nan, "compress": "deflate", "tiled": True,}
         path = out_dir / f"features_{site}_{tile}_{year}.tif"
         with rasterio.open(path, "w", **profile) as ds:
             for i, (name, arr) in enumerate(bands.items(), start=1):
                 ds.write(arr.astype("float32"), i)
                 ds.set_band_description(i, name)
         valid = {n: float(np.isfinite(a).mean()) for n, a in bands.items()}
-        print(f"[{tile}] wrote {path.name}  bands={len(bands)}  "
-              f"edge margin={margin} m  min valid frac={min(valid.values()):.3f}")
+        print(f"[{tile}] wrote {path.name}  bands={len(bands)}  " f"edge margin={margin} m  min valid frac={min(valid.values()):.3f}")
 
     if band_meta:
-        spec = {
-            "site": site,
-            "year": year,
-            "texture_scale_m": cfg["step1"]["texture_scale_m"],
-            "analysis_grid_m": cfg["step1"]["analysis_grid_m"],
-            "edge_margin_m": margin,
-            "band_order": [b["name"] for b in band_meta],
-            "bands": band_meta,
-            # section 4.1 is authoritative (resolved). Each framework adds exactly
-            # one input family to the one before it, which is what makes the A-E
-            # comparison a clean deconfounding of inputs.
-            "framework_groups": {
-                "A": ["chromatic", "rgb_index", "brightness"],
-                "B": ["chromatic", "rgb_index", "brightness", "nir_index"],
-                "C": ["chromatic", "rgb_index", "brightness", "nir_index", "texture"],
-                "D": ["chromatic", "rgb_index", "brightness", "nir_index", "texture", "chm"],
-                "E": ["chromatic", "rgb_index", "brightness", "nir_index", "texture", "chm"],
-            },
-            "framework_note": (
-                "Resolved in favour of the section 4.1 table: A = RGB, B = RGB + vegetation "
-                "indices, C = RGB + vegetation indices + texture. NIR is permitted in A-C "
-                "because NAIP is 4-band, so a NIR-bearing feature is reproducible at the "
-                "transfer site. The rgb_index group (ExG/ExR/ExGR/VARI/GLI) stays in A: it is "
-                "a deterministic function of RGB and adds no input layer."
-            ),
-            "framework_caveat": (
-                "B and C inherit a cross-sensor mismatch that A does not. NEON NIR indices "
-                "come from the imaging spectrometer (narrowband, BRDF- and atmospherically "
-                "corrected, native 1 m); NAIP NIR comes from an uncorrected broadband 4-band "
-                "camera at 0.6 m. Same index name, different measurement - so R3 (percentile "
-                "or learned boundaries, never absolute thresholds) is binding for B-E."
-            ),
-        }
-        (out_dir / f"features_{site}_{year}_bands.json").write_text(
-            json.dumps(spec, indent=2) + "\n"
-        )
+        # section 4.1 is authoritative (resolved). Each framework adds exactly one input
+        # family to the one before it, which makes A-E a clean deconfounding of inputs.
+        groups = {"A": ["chromatic", "rgb_index", "brightness"], "B": ["chromatic", "rgb_index", "brightness", "nir_index"], "C": ["chromatic", "rgb_index", "brightness", "nir_index", "texture"], "D": ["chromatic", "rgb_index", "brightness", "nir_index", "texture", "chm"], "E": ["chromatic", "rgb_index", "brightness", "nir_index", "texture", "chm"]}
+        note = "Resolved in favour of the section 4.1 table: A = RGB, B = RGB + vegetation indices, C = RGB + vegetation indices + texture. NIR is permitted in A-C because NAIP is 4-band, so a NIR-bearing feature is reproducible at the transfer site. The rgb_index group (ExG/ExR/ExGR/VARI/GLI) stays in A: it is a deterministic function of RGB and adds no input layer."
+        caveat = "B and C inherit a cross-sensor mismatch that A does not. NEON NIR indices come from the imaging spectrometer (narrowband, BRDF- and atmospherically corrected, native 1 m); NAIP NIR comes from an uncorrected broadband 4-band camera at 0.6 m. Same index name, different measurement - so R3 (percentile or learned boundaries, never absolute thresholds) is binding for B-E."
+        spec = {"site": site, "year": year, "texture_scale_m": cfg["step1"]["texture_scale_m"], "analysis_grid_m": cfg["step1"]["analysis_grid_m"], "edge_margin_m": margin, "band_order": [b["name"] for b in band_meta], "bands": band_meta, "framework_groups": groups, "framework_note": note, "framework_caveat": caveat}
+        (out_dir / f"features_{site}_{year}_bands.json").write_text(json.dumps(spec, indent=2) + "\n")
         print(f"\nwrote band spec: {out_dir / f'features_{site}_{year}_bands.json'}")
         print(f"bands ({len(band_meta)}): {', '.join(b['name'] for b in band_meta)}")
 

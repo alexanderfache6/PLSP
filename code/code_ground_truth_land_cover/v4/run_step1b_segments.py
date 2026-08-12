@@ -59,14 +59,7 @@ def slic_labels(stack, names, cfg):
     compactness = s1b["compactness"]
 
     def run(request):
-        seg = slic(
-            img,
-            n_segments=int(request),
-            compactness=compactness,
-            channel_axis=-1,
-            start_label=1,
-            enforce_connectivity=True,
-        )
+        seg = slic(img, n_segments=int(request), compactness=compactness, channel_axis=-1, start_label=1, enforce_connectivity=True,)
         return seg, int(seg.max())
 
     # Compactness controls segment SHAPE (how far a region may deform to follow
@@ -126,10 +119,7 @@ def build_features(labels, stack, names, cfg, n_seg):
     # ---- shape (E only)
     from skimage.measure import regionprops_table
 
-    props = regionprops_table(
-        labels,
-        properties=("label", "area", "perimeter", "eccentricity", "solidity", "extent"),
-    )
+    props = regionprops_table(labels, properties=("label", "area", "perimeter", "eccentricity", "solidity", "extent"),)
     order = np.argsort(props["label"])
     for key in ("area", "perimeter", "eccentricity", "solidity", "extent"):
         col = np.zeros(n_seg, dtype=np.float64)
@@ -137,9 +127,7 @@ def build_features(labels, stack, names, cfg, n_seg):
         feats[f"shape_{key}"] = col
         e_cols.append(f"shape_{key}")
     per = feats["shape_perimeter"]
-    feats["shape_circularity"] = np.where(
-        per > EPS, 4 * np.pi * feats["shape_area"] / (per**2 + EPS), 0.0
-    )
+    feats["shape_circularity"] = np.where(per > EPS, 4 * np.pi * feats["shape_area"] / (per**2 + EPS), 0.0)
     e_cols.append("shape_circularity")
 
     # ---- context (E only): neighbour contrast, and distance to the nearest tall object
@@ -168,10 +156,7 @@ def build_features(labels, stack, names, cfg, n_seg):
 def segment_adjacency(labels, n_seg):
     """Neighbour sets from horizontally/vertically touching label pairs."""
     pairs = set()
-    for a, b in (
-        (labels[:, :-1].ravel(), labels[:, 1:].ravel()),
-        (labels[:-1, :].ravel(), labels[1:, :].ravel()),
-    ):
+    for a, b in ((labels[:, :-1].ravel(), labels[:, 1:].ravel()), (labels[:-1, :].ravel(), labels[1:, :].ravel()),):
         diff = a != b
         for x, y in zip(a[diff], b[diff]):
             pairs.add((x - 1, y - 1) if x < y else (y - 1, x - 1))
@@ -211,52 +196,12 @@ def main():
 
         cols = list(feats)
         table = np.column_stack([np.asarray(feats[c], dtype="float32") for c in cols])
-        np.savez_compressed(
-            out_dir / f"segment_features_{site}_{tile}_{year}.npz",
-            columns=np.array(cols),
-            data=table,
-        )
+        np.savez_compressed(out_dir / f"segment_features_{site}_{tile}_{year}.npz", columns=np.array(cols), data=table,)
         px = feats["n_pixels"]
-        print(
-            f"[{tile}] segments={n_seg:>6} (requested {request})  compactness={compactness:.2f}  "
-            f"px/seg mean={px.mean():.1f} median={np.median(px):.0f}  features={len(cols) - 1}"
-        )
-        summary.append(
-            {
-                "tile": tile,
-                "n_segments": n_seg,
-                "compactness": compactness,
-                "n_segments_requested": request,
-                "px_per_segment_mean": round(float(px.mean()), 2),
-                "px_per_segment_median": float(np.median(px)),
-            }
-        )
+        print(f"[{tile}] segments={n_seg:>6} (requested {request})  compactness={compactness:.2f}  " f"px/seg mean={px.mean():.1f} median={np.median(px):.0f}  features={len(cols) - 1}")
+        summary.append({"tile": tile, "n_segments": n_seg, "compactness": compactness, "n_segments_requested": request, "px_per_segment_mean": round(float(px.mean()), 2), "px_per_segment_median": float(np.median(px)),})
 
-    spec = {
-        "site": site,
-        "year": year,
-        "segmentation_bands": cfg["step1b"]["segmentation_bands"],
-        "segmentation_note": (
-            "SLIC runs on framework-A (RGB-derived) bands only, so every framework "
-            "shares one segmentation and A-E differ by input features alone."
-        ),
-        "target_segments": cfg["step1b"]["target_segments"],
-        "framework_features": {
-            "D": d_cols,
-            "E": d_cols + e_cols,
-            "A": None,
-            "B": None,
-            "C": None,
-        },
-        "framework_feature_note": (
-            "A/B/C use the same per-band means as D, restricted to their band groups "
-            "in the Step 1a band spec. D = per-segment means of all 20 bands. "
-            "E = D plus distribution, shape and context features, and serves as the "
-            "accuracy ceiling: if E does not beat D materially, D wins on simplicity."
-        ),
-        "n_features": {"D": len(d_cols), "E": len(d_cols) + len(e_cols)},
-        "tiles": summary,
-    }
+    spec = {"site": site, "year": year, "segmentation_bands": cfg["step1b"]["segmentation_bands"], "segmentation_note": ("SLIC runs on framework-A (RGB-derived) bands only, so every framework " "shares one segmentation and A-E differ by input features alone."), "target_segments": cfg["step1b"]["target_segments"], "framework_features": {"D": d_cols, "E": d_cols + e_cols, "A": None, "B": None, "C": None,}, "framework_feature_note": ("A/B/C use the same per-band means as D, restricted to their band groups " "in the Step 1a band spec. D = per-segment means of all 20 bands. " "E = D plus distribution, shape and context features, and serves as the " "accuracy ceiling: if E does not beat D materially, D wins on simplicity."), "n_features": {"D": len(d_cols), "E": len(d_cols) + len(e_cols)}, "tiles": summary,}
     (out_dir / f"segments_{site}_{year}_spec.json").write_text(json.dumps(spec, indent=2) + "\n")
     print(f"\nD features: {len(d_cols)}   E features: {len(d_cols) + len(e_cols)}")
     print(f"wrote {out_dir / f'segments_{site}_{year}_spec.json'}")
