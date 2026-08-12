@@ -18,9 +18,9 @@ from aquarel import load_theme
 import matplotlib as mpl
 
 
-# repo root, so the site list resolves the same locally and on the SCC
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-SITES_CSV = REPO_ROOT / 'code' / 'selected_sites_info' / 'data' / '01_selected_sites_raw_handgenerated_2.csv'
+# selected_sites_info/, so the site list resolves the same locally and on the SCC
+SITES_DIR = Path(__file__).resolve().parent.parent
+SITES_CSV = SITES_DIR / 'data' / '01_selected_sites_raw_handgenerated_2.csv'
 
 
 def get_sites(csv_file):
