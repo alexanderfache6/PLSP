@@ -1,0 +1,105 @@
+Site_Code,Site_Full_Name,Is_NEON
+PR-xGU,NEON Guanica Forest,TRUE
+PR-xLA,NEON Lajas Experimental Station,TRUE
+US-xAB,NEON Abby Road,TRUE
+US-xAE,NEON Klemme Range Research Station,TRUE
+US-xBL,NEON Blandy Experimental Farm,TRUE
+US-xBN,NEON Caribou Creek - Poker Flats Watershed,TRUE
+US-xBR,NEON Bartlett Experimental Forest,TRUE
+US-xCL,NEON LBJ National Grassland,TRUE
+US-xCP,NEON Central Plains Experimental Range,TRUE
+US-xDC,NEON Dakota Coteau Field School,TRUE
+US-xDJ,NEON Delta Junction,TRUE
+US-xDL,NEON Dead Lake,TRUE
+US-xDS,NEON Disney Wilderness Preserve,TRUE
+US-xGR,NEON Great Smoky Mountains National Park,TRUE
+US-xHA,NEON Harvard Forest,TRUE
+US-xHE,NEON Healy,TRUE
+US-xJE,NEON Jones Ecological Research Center,TRUE
+US-xJR,NEON Jornada LTER,TRUE
+US-xKA,NEON Konza Prairie Biological Station-Relocatable,TRUE
+US-xKZ,NEON Konza Prairie Biological Station,TRUE
+US-xLE,NEON Lenoir Landing,TRUE
+US-xMB,NEON Moab,TRUE
+US-xML,NEON Mountain Lake Biological Station,TRUE
+US-xNG,NEON Northern Great Plains Research Laboratory,TRUE
+US-xNQ,NEON Onaqui-Ault,TRUE
+US-xNW,NEON Niwot Ridge Mountain Research Station,TRUE
+US-xPU,NEON Pu'u Maka'ala Natural Area Reserve,TRUE
+US-xRM,NEON Rocky Mountain National Park,TRUE
+US-xRN,NEON Oak Ridge National Lab,TRUE
+US-xSB,NEON Ordway-Swisher Biological Station,TRUE
+US-xSC,NEON Smithsonian Conservation Biology Institute,TRUE
+US-xSE,NEON Smithsonian Environmental Research Center,TRUE
+US-xSJ,NEON San Joaquin Experimental Range,TRUE
+US-xSL,NEON North Sterling,TRUE
+US-xSP,NEON Soaproot Saddle,TRUE
+US-xSR,NEON Santa Rita Experimental Range,TRUE
+US-xST,NEON Steigerwaldt Land Services,TRUE
+US-xTA,NEON Talladega National Forest,TRUE
+US-xTE,NEON Lower Teakettle,TRUE
+US-xTL,NEON Toolik,TRUE
+US-xTR,NEON Treehaven,TRUE
+US-xUK,NEON The University of Kansas Field Station,TRUE
+US-xUN,NEON Univ. of Notre Dame Environmental Research Center,TRUE
+US-xWD,NEON Woodworth,TRUE
+US-xWR,NEON Wind River Experimental Forest,TRUE
+US-xYE,NEON Yellowstone Northern Range,TRUE
+US-ALQ,Allequash Creek Site,FALSE
+US-ARM,ARM Southern Great Plains site,FALSE
+US-Bi1,Bouldin Island Alfalfa,FALSE
+US-Bi2,Bouldin Island corn,FALSE
+US-BMM,Bangtail Mountain Meadow,FALSE
+US-BRG,Bayles Road Grassland Tower,FALSE
+US-CF1,CAF-LTAR Cook East,FALSE
+US-CF2,CAF-LTAR Cook West,FALSE
+US-CF3,CAF-LTAR Boyd North,FALSE
+US-CF4,CAF-LTAR Boyd South,FALSE
+US-Ha1,Harvard Forest EMS Tower,FALSE
+US-Ha2,Harvard Forest Hemlock Site,FALSE
+US-HB1,North Inlet Crab Haul Creek,FALSE
+US-HB2,Hobcaw Barony Mature Longleaf Pine,FALSE
+US-HB3,Hobcaw Barony Longleaf Pine Restoration,FALSE
+US-Ho1,Howland Forest,FALSE
+US-ICs,Imnavait Creek Watershed Wet Sedge Tundra,FALSE
+US-KFS,Kansas Field Station,FALSE
+US-Me2,Metolius mature ponderosa pine,FALSE
+US-Me6,Metolius Young Pine Burn,FALSE
+US-MMS,Morgan Monroe State Forest,FALSE
+US-Mpj,Mountainair Pinyon-Juniper Woodland,FALSE
+US-Myb,Mayberry Wetland,FALSE
+US-NC2,NC_Loblolly Plantation,FALSE
+US-NC3,NC_Clearcut#3,FALSE
+US-NC4,NC_AlligatorRiver,FALSE
+US-Ne1,Mead-irrigated continuous maize site,FALSE
+US-Ne2,Mead-irrigated maize-soybean rotation site,FALSE
+US-Ne3,Mead-rainfed maize-soybean rotation site,FALSE
+US-NR1,Niwot Ridge Forest,FALSE
+US-PFa,Park Falls,FALSE
+US-Rms,RCEW Mountain Big Sagebrush,FALSE
+US-Ro4,Rosemount Prairie,FALSE
+US-Ro5,Rosemount I18_South,FALSE
+US-Ro6,Rosemount I18_North,FALSE
+US-Rws,Reynolds Creek Wyoming big sagebrush,FALSE
+US-Seg,Sevilleta grassland,FALSE
+US-Ses,Sevilleta shrubland,FALSE
+US-Sne,Sherman Island Restored Wetland,FALSE
+US-Snf,Sherman Barn,FALSE
+US-SRG,Santa Rita Grassland,FALSE
+US-SRM,Santa Rita Mesquite,FALSE
+US-Syv,Sylvania Wilderness Area,FALSE
+US-Ton,Tonzi Ranch,FALSE
+US-Tw1,Twitchell Wetland West Pond,FALSE
+US-Tw3,Twitchell Alfalfa,FALSE
+US-Tw4,Twitchell East End Wetland,FALSE
+US-Tw5,East Pond Wetland,FALSE
+US-UMB,Univ. of Mich. Biological Station,FALSE
+US-UMd,UMBS Disturbance,FALSE
+US-Var,Vaira Ranch,FALSE
+US-Vcm,Valles Caldera Mixed Conifer,FALSE
+US-Vcp,Valles Caldera Ponderosa Pine,FALSE
+US-Vcs,Valles Caldera Sulphur Springs Mixed Conifer,FALSE
+US-WCr,Willow Creek,FALSE
+US-Whs,Walnut Gulch Lucky Hills Shrub,FALSE
+US-Wjs,Willard Juniper Savannah,FALSE
+US-Wkg,Walnut Gulch Kendall Grasslands,FALSE

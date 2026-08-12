@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Find 3DEP lidar point cloud (LPC) tiles covering each selected site.
 
-Sites come from info/02_selected_sites_short_2.csv; the bounding box of the
+Sites come from results/01_selected_sites_short_2.csv; the bounding box of the
 `coordinates` column (already WGS84 decimal lat/lon) is the area of interest.
 
 This is the programmatic equivalent of https://apps.nationalmap.gov/downloader/
@@ -30,10 +30,12 @@ import urllib.request
 from collections import OrderedDict
 from pathlib import Path
 
-INFO_DIR = Path(__file__).resolve().parent / "info"
-SITES_CSV = INFO_DIR / "02_selected_sites_short_2.csv"
-TILES_CSV = INFO_DIR / "3dep_metadata.csv"
-DATES_CSV = INFO_DIR / "3dep_data_availability.csv"
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+RESULTS_DIR = BASE_DIR / "results"
+SITES_CSV = RESULTS_DIR / "01_selected_sites_short_2.csv"
+TILES_CSV = RESULTS_DIR / "03_3dep_metadata.csv"
+DATES_CSV = RESULTS_DIR / "03_3dep_data_availability.csv"
 
 PRODUCTS_URL = "https://tnmaccess.nationalmap.gov/api/v1/products"
 SCIENCEBASE_URL = "https://www.sciencebase.gov/catalog/item/{item_id}"

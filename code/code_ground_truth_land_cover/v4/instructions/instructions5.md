@@ -1,4 +1,3 @@
-
 # Ground Truth Land Cover — v4 Execution Specification
 
 **Status**: authoritative. This document supersedes `instructions4.md` and governs all v4 work.
@@ -46,6 +45,27 @@ NEON sites carry AmeriFlux registrations under their `x`-prefixed IDs (`US-xSR`,
 - AmeriFlux site search / mapping tool — https://ameriflux.lbl.gov/sites/site-search/?mapping-tool
 
 **Current scope**: SRER only. The other five sites are the roadmap; the pipeline must be built so adding one is a config file plus data, with zero code edits (R8).
+
+> **The network above is PROVISIONAL, pending a combined data-availability analysis.** Site pairs will be reselected once QA2 scans for additional sites and the NEON / NAIP / 3DEP / phenocam timelines are assembled. Two of the six sites (MOAB, KFB) are already absent from the QA scan (§5.1a), and SRER's usable-year set is a single year — so the current pairing is not yet evidence-backed. Do not hard-code the site list anywhere; it lives in config (R8) precisely so this can change.
+
+#### Site selection is an intersection problem, not a ranking
+
+The binding constraint is **temporal alignment across four independent data streams**, not the quality of any one. A site with excellent PLSP QA but no NEON flight in that year is unusable, and so is a NEON flight year whose PLSP QA is 4%.
+
+For a pair to qualify, all of the following must hold **in the same window**:
+
+| Stream | Requirement |
+|---|---|
+| **PLSP QA2** | A high-quality year at the NEON site (`percent_good_pixels` high under `QA ∈ {1,2}`) |
+| **NEON AOP** | A flight year matching or adjacent to that PLSP year — this pairing is what removes the temporal offset (§5.1a) |
+| **NAIP** | At the AmeriFlux partner, near a high-QA PLSP year there, and **post-monsoon** (R7) |
+| **3DEP** | Within 1 year of the NAIP imagery, or with verifiable alignment (§5 Step 8) |
+| **Phenocam** | Present, for the independent phenology cross-check (§5 Step 5) |
+| **Domain** | Both members in the same NEON domain (R1) |
+
+**Score sites on the size of that intersection**, not on any single stream. A site scoring 98% on PLSP QA across all years but lacking a coincident NEON flight ranks below one at 85% where every stream lines up.
+
+> **One case worth checking first.** SRER's only strong pre-2022 year is 2021 (91.1%), while its ground truth is the 2022-08 flight. **If NEON also flew SRER in 2021**, that pairing resolves the year-alignment problem immediately — no waiting on the PLSP 2022 product, no offset, no reliance on an unknown 2022 QA figure. Check this before treating 2022 as fixed.
 
 ### 2.2 What this network is designed to test
 
@@ -195,6 +215,32 @@ results/
 | **3** | **tree** | Yes | Woody. CHM >= `H_TREE_MIN` | Tall woody vegetation |
 | **4** | **shadow** | **No** | Detected per §5 Step 1c | Intermediate only. Resolved to tree (3) if within `SHADOW_TREE_RADIUS` of CHM >= `H_TREE_MIN`, else masked to nodata. **Never appears in a final product** |
 | **255** | **nodata** | n/a | — | Fill / masked / outside footprint. uint8 rasters |
+
+#### Class labels and colours — LOCKED
+
+Both mappings are fixed project-wide, alongside the codes. Every raster colour table, every figure, every legend, and every QGIS style file uses these and nothing else.
+
+```python
+CLASS_LABELS = {0: "bare", 1: "grass", 2: "shrub", 3: "tree"}
+CLASS_COLORS = {0: "#c2b280", 1: "#7cb342", 2: "#8d6e63", 3: "#1b5e20"}
+```
+
+| Code | Label | Hex | RGB | Reads as |
+|---|---|---|---|---|
+| 0 | `bare` | `#c2b280` | (194, 178, 128) | Sand / bare soil |
+| 1 | `grass` | `#7cb342` | (124, 179, 66) | Living herbaceous green |
+| 2 | `shrub` | `#8d6e63` | (141, 110, 99) | Woody brown |
+| 3 | `tree` | `#1b5e20` | (27, 94, 32) | Dark canopy green |
+
+**Rendering conventions for the two non-terminal values:**
+- **255 (nodata)** — fully transparent, `(0, 0, 0, 0)`. Never rendered as a colour, so it cannot be mistaken for a class.
+- **4 (shadow)** — intermediate only and never present in a final product (§11 check #19a). Where an intermediate is rendered for inspection, use a neutral mid-grey, deliberately outside the earth-and-green family so it is unmistakable.
+
+**Two properties worth preserving if these are ever revised:**
+1. **Lightness decreases monotonically** bare → grass → shrub → tree. That is what keeps the palette legible in greyscale and under colour-vision deficiency, where hue separation degrades but lightness ordering survives.
+2. **Colours are semantically intuitive** — sand, grass green, woody brown, dark canopy. Legends become nearly unnecessary, which matters for the colour-blend composite (§3.1 view B1).
+
+> **One consequence to expect in the blend composite**: `bare` and `shrub` are both earth tones, so a bare/shrub mixture blends to a muddy mid-brown that is harder to read than, say, a grass/tree mixture. The margin view (B3) and the per-class probability panels (B2) are the fallback for inspecting that specific pair.
 
 **`mixed` is not a class code.** It is a **continuous confidence layer** (§3.1), so a pixel always carries both its plurality class *and* how strongly it resembles that class — rather than losing the class label to an ambiguity code, or collapsing a graded quantity into a boolean.
 
@@ -712,6 +758,31 @@ The path splits cleanly into `{DATA_ROOT}/planet/...` for PLSP and `{DATA_ROOT}/
 
 > This makes §2.4's multi-year NumCycles and QA scan a **prerequisite for choosing the training year**, not merely a bimodality check — see §2.4.
 
+#### Observed QA quality per site — and what it forces
+
+From the `QA2` scan (§12 Q9a source files), percent of pixels passing `QA ∈ {1,2}`, `PLSP_production_nc` unless noted:
+
+| Site | 2017 | 2018 | 2019 | 2020 | 2021 | 2022+ |
+|---|---|---|---|---|---|---|
+| **SRER** (xSR) | 12.9% | 12.9% | 3.8% | **0.1%** | **91.1%** | not yet scanned |
+| **WKG** | 97.1% | 61.4% | 37.5% | 3.9% | **98.1%** | 98.3% / 98.6% / 33.3% / 39.3% *(stage)* |
+| **WJS** | 4.1% | 19.6% | 0.2% | 9.2% | **81.3%** | 44.8% / 1.8% / 47.8% / 34.6% *(stage)* |
+| **KONZ** (xKZ) | 98.4% | 98.7% | 98.8% | 99.0% | **99.1%** | not yet scanned |
+| **MOAB** (xMB) | — | — | — | — | — | **absent from the scan** |
+| **KFB** | — | — | — | — | — | **absent from the scan** |
+
+**Four consequences, all load-bearing:**
+
+1. **2021 is the only usable pre-2022 year at SRER.** 2017–2020 range from 12.9% down to 0.1% — effectively unusable. This does not change the 2022 target (§5.1a), but it means SRER has **no fallback year other than 2021** if 2022 proves poor.
+
+2. **The 2017–2021 interannual-variability characterization (§5.1a item 3) collapses at SRER.** It assumed a five-year series; SRER has one usable year. That analysis is **not available at SRER** and must be run at **KONZ instead**, which has 98–99% across all five years and is the only site in the network with a genuinely complete series. Retarget it accordingly rather than reporting a one-year "spread".
+
+3. **Per-site target years differ, as §5.1a anticipated.** On current evidence: **WJS → 2021** (2022 is only 44.8%); **WKG → 2022 or 2023** (both ~98%); **KONZ → any year**; **SRER → 2022 if it scans well, else 2021**.
+
+4. **MOAB and KFB are missing from the scan entirely** — two of the six network sites. Either their PLSP products do not exist yet or they were not included in the run. **Resolve before Phase 3** (§5 Step 8), since D13 and D06 transfer testing both depend on them.
+
+> **Also note**: 2022–2025 products already exist for WKG and WJS in **`PLSP_stage_nc`**, not `PLSP_production_nc`. §5.1's path convention points at production. Confirm whether stage products are usable for analysis or are a pre-release staging area before relying on those years.
+
 #### 5.1a Year alignment — 2022 is the target year (resolves Q1)
 
 **Decision: PLSP 2022 is the year used for PlanetScope prediction and validation**, matching the 2022-08 SRER ground truth exactly. The 2022–2025 products will be generated per site; 2022 is the one Step 5 targets.
@@ -1038,6 +1109,45 @@ Carried forward from `instructions2.md`:
 
 ---
 
+## 7A. Compute environment and packages
+
+**A dedicated conda environment has been created for this project.** All work runs inside it; additional packages may be installed on request.
+
+**Core stack — required:**
+
+| Package | Used for |
+|---|---|
+| `rasterio` | GeoTIFF read/write, colour tables (§3 `CLASS_COLORS`), windowed reads |
+| `xarray`, `netCDF4` | PlanetScope LSP `.nc` products (§5.1, §5.3 trap 6) |
+| `numpy`, `pandas` | Arrays, tabular outputs, the QA/target-year tables |
+| `geopandas`, `shapely`, `fiona` | GeoPackage I/O — labeling zones, training polygons, crown outlines, grids |
+| `pyproj` | CRS and UTM handling (§11.2) |
+| `scikit-learn` | K-means (§4.2), `StandardScaler` (R4), RF-A classifier, RF-B multi-output regressor |
+| `scikit-image` | SLIC segmentation, GLCM and LBP texture (§5 Step 1) |
+| `scipy` | Mahalanobis distance, watershed, general numerics |
+| `joblib` | Model and scaler persistence (R1 model transfer, R4) |
+| `matplotlib` | All diagnostics — 1:1 scatters, histograms, ternary and tetrahedron views (§3.1) |
+| `gdal` | `gdal_translate -co TILED=YES` preprocessing (§8) |
+
+**Deep-learning tracks — required only for DL-1/2/3, and gated on the GPU blocker (§8):**
+
+| Package | Used for |
+|---|---|
+| `torch`, `torchvision` | Backbone for DeepForest and U-Net |
+| `deepforest` | DL-1 tree-crown detection |
+| `segment-anything` | DL-3 SAM segmentation |
+
+**Optional, decision-dependent:**
+
+| Package | Used for |
+|---|---|
+| `qgis` (conda-forge) | Only if §12 Q10 mechanism 4 is built. **Install in a separate environment** — it pulls a large Qt stack and must not contaminate the pipeline environment |
+| `mpltern` or equivalent | Ternary face plots (§3.1 view A2) if not hand-rolled in `matplotlib` |
+
+**Convention**: pin and export the environment (`environment.yml`) into the repository, and record the resolved package versions in `report.json` per run (§7). A model persisted by one `scikit-learn` version and loaded by another is a silent failure mode, and R1 model transfer depends on exactly that operation working across machines.
+
+---
+
 ## 8. Prerequisites and known blockers
 
 Carried from `instructions2.md` §§6–7 — **DL tracks are gated on both**:
@@ -1064,6 +1174,9 @@ Carried from `instructions2.md` §§6–7 — **DL tracks are gated on both**:
 | PlanetScope phenology data path                                        | **Resolved — §5.1**. NetCDF; 2017–2021 available now                                                                                                   |
 | Which PLSP year for Step 5                                             | **Resolved — 2022** (§5.1a), matching the ground-truth flight year                                                                                     |
 | PLSP 2022 product generation                                           | **Pending — gates Step 5 only.** Steps 0–4 proceed independently. Track as a schedule dependency                                                       |
+| SRER 2022 QA quality                                                   | **Unknown — the key risk.** 2021 (91.1%) is SRER's only viable fallback; 2017–2020 are unusable (§5.1a QA table)                                       |
+| MOAB and KFB PLSP products                                             | **Absent from the QA scan.** Resolve before Phase 3 transfer testing (§5.1a QA table)                                                                  |
+| `PLSP_stage_nc` vs `PLSP_production_nc`                                | 2022–2025 exist for WKG/WJS in **stage** only. Confirm whether stage is analysis-grade before use                                                      |
 | `numObs` minimum-observation threshold                                 | TBD — evaluate at Step 0 check #35. **Produce a histogram of `numObs`** over QA-passing pixels                                                                                       |
 | RAP data path                                                          | Pending. Will follow the same `{DATA_ROOT}/...` convention as §5.1                                                                                                |
 | Accuracy assessment sample size                                        | **Resolved — §6.2**. `S(Ô) = 0.02`, 8 strata (4 classes × 2 confidence bins), 50-sample floor per stratum → ~400–500 labels. Recompute allocation with measured `W_h` from check #20 |
@@ -1192,10 +1305,29 @@ Selection is on **per-class user's and producer's accuracy with 95% confidence i
 
 This supersedes the earlier macro-F1 recommendation. Macro-F1 weights classes equally, which is a reasonable heuristic but is not area-weighted and yields no confidence intervals or error-adjusted area estimates.
 
-### Q3 — How is RF-B evaluated?
-Fractional-cover regression needs different metrics from classification. Recommend per-class RMSE and MAE on held-out blocks, plus systematic bias (mean signed error) per class, plus a 1:1 scatter of predicted vs. true fraction. Overall R² alone will hide class-specific failure.
+### Q3 — How is RF-B evaluated? — **RESOLVED**
 
-**Required: a 1:1 predicted-vs-true scatter for each of the four classes**, four panels, each with the 1:1 line drawn, per-class RMSE, MAE, and mean signed error annotated, and points coloured by block `prediction_quality`. Aggregate metrics hide the failure modes that matter here — saturation at high cover, a floor at low cover, and systematic over- or under-prediction of a single class — and all three are visible at a glance in the scatter and invisible in a single R².
+Fractional-cover regression needs different metrics from classification (§6.6 bars forcing fractional output into an error matrix). **Overall R² alone is not reportable** — it hides class-specific failure, and shrub is exactly where failure is expected.
+
+**Required metrics, all computed per class on held-out blocks** (spatial holdout, never random — §5 Step 4):
+
+| Metric | What it catches |
+|---|---|
+| **RMSE** per class | Overall error magnitude, penalising large misses |
+| **MAE** per class | Typical error, robust to outliers. Report alongside RMSE — a large RMSE/MAE gap means a few severe failures rather than uniform noise |
+| **Mean signed error** per class | **Systematic bias** — whether a class is consistently over- or under-predicted. The one an unsigned metric cannot show |
+
+**Required plot — 1:1 predicted-vs-true scatter, one panel per class, four panels:**
+
+- Predicted fraction on the y-axis, true (Step 3) fraction on the x-axis, both on `[0, 1]`.
+- **1:1 line drawn** on every panel.
+- Per-class **RMSE, MAE, and mean signed error annotated** in-panel.
+- Points **coloured by block `prediction_quality`** (§3.1), so label-noise effects are visible rather than confounded with model error.
+- Equal axes and identical scaling across all four panels, so the classes are directly comparable.
+
+**Why the scatter is required and not optional**: three failure modes matter here and none is visible in a summary number — **saturation** at high cover (predictions compressing below the 1:1 line as true fraction approaches 1), a **floor** at low cover (a class never predicted below some value, common when a rare class is regularised toward its mean), and **systematic offset** of one class. All three are obvious at a glance in the scatter and invisible in R².
+
+**Also report**: whether predictions were constrained or post-normalized to sum to 1 (§5 Step 5), and the metrics both before and after that step — normalization redistributes error between classes, so a class can appear to improve purely because another absorbed its excess.
 
 ### Q4 — Does the model transfer, or only the pipeline? — **RESOLVED: both, at different distances**
 
@@ -1264,4 +1396,38 @@ This yields a quantified answer — *DeepForest at NAIP resolution recovers X% o
 
 **Optional extension if the degradation proves too severe**: fine-tune DeepForest on 0.6 m simulated-NAIP chips using the native-10 cm detections as labels. This is well-posed — NEON supplies both the imagery and, via CHM, an independent crown check — and produces a NAIP-resolution crown detector without any manual crown digitizing. Treat as a follow-on, not part of the initial run.
 
-> **Note for target-year selection (§5.1a).** The choice is grounded in an **existing histogram of the percentage of high-quality pixels per year**, already produced by the user. Selection rule: take one of the **high-quality years** for each site, choosing the one **closest to 2022**. Use that histogram as the primary evidence rather than regenerating the statistic, and record which year it selected per site alongside the runner-up.
+> **Note for target-year selection (§5.1a).** The choice is grounded in an **existing per-site, per-year high-quality-pixel scan**, already produced. Selection rule: take one of the **high-quality years** for each site, choosing the one **closest to 2022**. Use this as the primary evidence rather than regenerating the statistic, and record the selected year and the runner-up per site.
+>
+> **Source files** (produced by `code/code_lsp_analysis/run_check_site_pixel_quality.py`):
+> ```
+> code/code_lsp_analysis/check_site_pixel_quality_results_QA2.csv
+> code/code_lsp_analysis/check_site_pixel_quality_results_QA2.png
+> ```
+> `QA1`/`QA2`/`QA3` variants exist for different QA thresholds. **Use the `QA2` variant** — it matches the project-wide `QA ∈ {1, 2}` policy (§2.4).
+>
+> **Columns**: `file, site, year, good_pixels, total_pixels, percent_good_pixels`.
+>
+> **Three handling notes.** `percent_good_pixels` is a **string with a `%` suffix** and must be parsed, not cast. Rows appear for **both `PLSP_production_nc` and `PLSP_stage_nc`**, giving duplicate `(site, year)` pairs with slightly different values — **dedupe on `(site, year)` preferring `PLSP_production_nc`**, the path this specification uses (§5.1). And the `file` column carries the full SCC path, so it doubles as an inventory of which products actually exist.
+
+### Q10 — Can QGIS layer loading and symbology be generated automatically? — **feasibility assessed, not implemented**
+
+**Goal**: eliminate the manual clicking involved in loading each run's outputs into QGIS with correct paths and consistent styling. At 5 frameworks × 5 tiles × multiple pipeline steps, this is repeated often enough to be worth automating.
+
+**Answer: yes, by four mechanisms of increasing effort.** None is implemented; this records the options and the trade-offs.
+
+| # | Mechanism | Best for | Cost |
+|---|---|---|---|
+| 1 | **Colour table embedded in the GeoTIFF** — `rasterio` `dst.write_colormap()` | Categorical rasters (`classification_*`, masks) | A few lines at write time |
+| 2 | **Sidecar `.qml` style files**, basename-matched so QGIS auto-loads them | Continuous rasters (`prediction_quality_*`, `fraction_*`) | Small, one template per layer type |
+| 3 | **`.qlr` layer-definition files** — sources plus symbology for a group of layers | One file per pipeline step | Moderate |
+| 4 | **Generated QGIS project via PyQGIS** — `QgsProject.write('site_run.qgz')`, headless | Whole-run loading, grouped by step | Largest; adds a dependency |
+
+**Why 1 and 2 are the high-value pair**: symbology travels with the data and is honoured outside QGIS too (GDAL, ArcGIS). Mechanism 2 additionally pins a **fixed stretch** — QGIS defaults to a per-layer min/max stretch, so without it two frameworks' `prediction_quality` maps would render on different scales and appear to differ when they do not. That is a real interpretation hazard given the framework comparison in Step 6.
+
+**Constraints to respect if implemented:**
+- **PyQGIS requires the QGIS Python environment** (conda-forge `qgis`), not the pipeline env. Keep it isolated to a project-generation helper so the pipeline gains no dependency.
+- **Save relative paths.** With the local/SCC dual root (§5.1, R8), an absolute-path project breaks on the other machine.
+- **Prefer `.qgs` (plain XML) over `.qgz` (zipped)** for a generated artifact, so it is diffable in version control.
+- Colour tables are **uint8/paletted only** — they cover the categorical outputs, not the float layers, which is exactly the split between mechanisms 1 and 2.
+
+**Dependency**: the locked class colour table (§3, `CLASS_COLORS`) — now defined, so categorical symbology is identical across every framework, tile, site, and figure. Mechanism 1 writes exactly that table into the GeoTIFF.

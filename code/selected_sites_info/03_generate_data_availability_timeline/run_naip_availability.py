@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Find NAIP imagery covering each selected site, with per-scene metadata.
 
-Sites come from info/02_selected_sites_short_2.csv; the `coordinates` column
+Sites come from results/01_selected_sites_short_2.csv; the `coordinates` column
 (list of [lat, lon] points) is the site boundary box and is used as the search
 polygon.
 
@@ -32,10 +32,12 @@ from collections import OrderedDict
 from http.cookiejar import CookieJar
 from pathlib import Path
 
-INFO_DIR = Path(__file__).resolve().parent / "info"
-SITES_CSV = INFO_DIR / "02_selected_sites_short_2.csv"
-SCENES_CSV = INFO_DIR / "naip_metadata.csv"
-DATES_CSV = INFO_DIR / "naip_data_availability.csv"
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+RESULTS_DIR = BASE_DIR / "results"
+SITES_CSV = RESULTS_DIR / "01_selected_sites_short_2.csv"
+SCENES_CSV = RESULTS_DIR / "03_naip_metadata.csv"
+DATES_CSV = RESULTS_DIR / "03_naip_data_availability.csv"
 
 BASE_URL = "https://earthexplorer.usgs.gov/"
 # "Aerial Imagery -> NAIP" in the EarthExplorer data set tree

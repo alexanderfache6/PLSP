@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check which months all NEON AOP data products are available for the selected NEON sites.
 
-Sites come from info/01_selected_sites_raw2.csv (rows with is_neon == 1).
-Products come from info/neon_data_products.csv.
+Sites come from data/01_selected_sites_raw_handgenerated_2.csv (is_neon == 1).
+Products come from data/neon_products.csv.
 
 Availability is read from the NEON data portal's public API, which is the same
 source that backs https://data.neonscience.org/data-products/{product_id}.
@@ -17,10 +17,12 @@ import urllib.request
 from collections import OrderedDict
 from pathlib import Path
 
-INFO_DIR = Path(__file__).resolve().parent / "info"
-SITES_CSV = INFO_DIR / "01_selected_sites_raw2.csv"
-PRODUCTS_CSV = INFO_DIR / "neon_products.csv"
-OUT_CSV = INFO_DIR / "neon_data_availability.csv"
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+RESULTS_DIR = BASE_DIR / "results"
+SITES_CSV = DATA_DIR / "01_selected_sites_raw_handgenerated_2.csv"
+PRODUCTS_CSV = DATA_DIR / "neon_products.csv"
+OUT_CSV = RESULTS_DIR / "03_neon_data_availability.csv"
 
 API_URL = "https://data.neonscience.org/api/v0/products/{product_id}"
 PORTAL_URL = "https://data.neonscience.org/data-products/{product_id}"

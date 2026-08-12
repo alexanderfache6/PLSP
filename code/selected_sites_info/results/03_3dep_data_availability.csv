@@ -1,3 +1,4 @@
 site_id,lidar_dates,lidar_projects
 US-xSR,"[2021-09-27, 2020-09-15, 2015-02-20]","[AZ_CochiseCounty_2020_B20, AZ_PimaCounty_2021_B21, Eastern_Pima_County_Lidar]"
 US-Wkg,"[2020-09-24, 2018-01-11, 2015-09-16]","[AZ_CochiseCounty_2020_B20, AZ_WalnutGulch_2015, CA_AZ_FEMA_R9_Lidar_2017_D18]"
+US-xKZ,"[2018-01-23, 2015-03-07, 2012-01-13, 2010-03-18, 2006-04-09]","[KS_AREA3_NORTHEASTB_2012, KS_GEARY_2010, KS_MANHATTAN_2006, KS_Statewide_2018_A18, S_Central_NE_NW_Kansas_Lidar]"

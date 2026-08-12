@@ -26,13 +26,15 @@ matplotlib.use("Agg")
 import matplotlib.dates as mdates  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 
-INFO_DIR = Path(__file__).resolve().parent / "info"
-SITES_CSV = INFO_DIR / "02_selected_sites_short_2.csv"
-DEP_CSV = INFO_DIR / "3dep_data_availability.csv"
-NAIP_CSV = INFO_DIR / "naip_data_availability.csv"
-NEON_CSV = INFO_DIR / "neon_data_availability.csv"
-LONG_CSV = INFO_DIR / "03_selected_sites_long_2.csv"
-OUT_PNG = INFO_DIR / "data_availability_timeline.png"
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+RESULTS_DIR = BASE_DIR / "results"
+SITES_CSV = RESULTS_DIR / "01_selected_sites_short_2.csv"
+DEP_CSV = RESULTS_DIR / "03_3dep_data_availability.csv"
+NAIP_CSV = RESULTS_DIR / "03_naip_data_availability.csv"
+NEON_CSV = RESULTS_DIR / "03_neon_data_availability.csv"
+LONG_CSV = RESULTS_DIR / "01_selected_sites_long_2.csv"
+OUT_PNG = RESULTS_DIR / "03_data_availability_timeline.png"
 
 # PlanetScope coverage starts in 2017, so earlier acquisitions are not plotted
 MIN_YEAR = 2017
