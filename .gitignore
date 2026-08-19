@@ -5,3 +5,5 @@
 
 .env
 __pycache__
+symbology-style.db
+.claude
