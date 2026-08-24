@@ -1,0 +1,5 @@
+[tool.ruff]
+line-length = 320 # Disables line length wrapping
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
