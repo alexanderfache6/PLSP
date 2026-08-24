@@ -1,0 +1,214 @@
+{
+  "site": "SRER",
+  "site_name": "Santa_Rita_Experimental_Range_NEON",
+  "domain": "D14",
+  "ameriflux_id": "US-xSR",
+  "year": 2022,
+  "acquisition": "2022-08",
+  "data_root": "~/Dropbox/planet/data/NEON",
+  "results_root": "~/Dropbox/planet/results/v4",
+  "products": {
+    "rgb": {
+      "code": "DP3.30010.001",
+      "folder": "NEON_images-camera-ortho-mosaic/NEON.D14.SRER.DP3.30010.001.2022-08.basic",
+      "pattern": "2022_SRER_5_{tile}_image.tif",
+      "expected_size": [
+        10000,
+        10000
+      ],
+      "expected_res": 0.1
+    },
+    "vi": {
+      "code": "DP3.30026.002",
+      "folder": "NEON_indices-veg-spectrometer-bidir-mosaic/NEON.D14.SRER.DP3.30026.002.2022-08.basic",
+      "pattern": "NEON_D14_SRER_DP3_{tile}_bidirectional_VegIndices/NEON_D14_SRER_DP3_{tile}_bidirectional_{index}.tif",
+      "indices": [
+        "SAVI",
+        "NDVI",
+        "EVI"
+      ],
+      "drop_indices": [
+        "ARVI",
+        "PRI"
+      ],
+      "drop_indices_note": "Indices the pipeline never uses. The NEON VI zip ships five (ARVI, EVI, NDVI, PRI, SAVI); only SAVI, NDVI and EVI are read (instructions5.md 2A index priority). ARVI and PRI are deleted after download, with their _error.tif and .aux.xml companions, to avoid carrying dead weight across ~70 tiles.",
+      "expected_size": [
+        1000,
+        1000
+      ],
+      "expected_res": 1.0
+    },
+    "chm": {
+      "code": "DP3.30015.001",
+      "folder": "NEON_struct-ecosystem/NEON.D14.SRER.DP3.30015.001.2022-08.basic",
+      "pattern": "NEON_D14_SRER_DP3_{tile}_CHM.tif",
+      "expected_size": [
+        1000,
+        1000
+      ],
+      "expected_res": 1.0
+    }
+  },
+  "tiles": {
+    "511000_3527000": "train",
+    "511000_3528000": "train",
+    "511000_3529000": "train",
+    "515000_3530000": "test",
+    "515000_3531000": "test",
+    "519000_3527000": "train",
+    "515000_3526000": "train",
+    "511000_3532000": "train",
+    "520000_3532000": "test",
+    "518000_3529000": "test"
+  },
+  "expected_crs": "EPSG:32612",
+  "parameters": {
+    "H_TREE_MIN": 2.0,
+    "H_GRASS_MAX": 0.7,
+    "SAVI_BARE_MAX": 0.2,
+    "SHADOW_TREE_RADIUS": 5.0,
+    "TEXTURE_SCALE": 0.6
+  },
+  "thresholds": {
+    "chm_max_plausible_m": 15.0,
+    "vi_nodata_flag_pct": 5.0,
+    "coreg_blocker_m": 1.0,
+    "coreg_search_m": 5,
+    "chm_max_valid_m": 15.0,
+    "coreg_window_px": 100,
+    "coreg_upsample": 20
+  },
+  "phenocam_csv": "../../selected_sites_info/results/01_selected_sites_short_2.csv",
+  "decisions": {
+    "rgb_nodata_undeclared": "ACCEPTED - NEON RGB carries no nodata value; check 15 is informational, not a defect",
+    "chm_max_valid_m": "CHM values above 15 m are man-made structures (towers) and are masked pipeline-wide",
+    "H_GRASS_MAX_measured": "Set to 0.7 m from measurement, not assumption (instructions5.md section 3 safeguard 2). NEON CHM is pre-thresholded: minimum non-zero value is exactly 0.700 m on all five tiles, with nothing between 0 and 0.7. The previous 0.3 m was inert - any value in (0, 0.7] yields an identical shrub band. Consequence: woody vegetation below 0.7 m is structurally invisible to CHM and is recorded as 0, indistinguishable from bare ground."
+  },
+  "stage1_5_generate_features": {
+    "texture_scale_m": 0.6,
+    "analysis_grid_m": 1.0,
+    "texture_window_px": 5,
+    "glcm_levels": 32,
+    "glcm_offset": [
+      0,
+      1
+    ],
+    "lbp_points": 8,
+    "lbp_radius": 1
+  },
+  "stage1_7_generate_segments": {
+    "segmentation_bands": [
+      "r",
+      "g",
+      "b",
+      "luma"
+    ],
+    "target_segments": 100000,
+    "calibration_iters": 3,
+    "context_bands": [
+      "ExG",
+      "SAVI",
+      "luma",
+      "CHM"
+    ],
+    "compactness": 0.5,
+    "count_tolerance": 0.05
+  },
+  "stage1_6_detect_shadows": {
+    "luma_percentile": 20,
+    "pool_over": "all",
+    "hist_bins": 4096,
+    "majority_fraction": 0.7,
+    "blue_shift_mode": "percentile",
+    "blue_percentile": 80
+  },
+  "stage1_3_planet_grid": {
+    "planet_data_root": "~/Dropbox/planet/data/planet",
+    "lsp_subdir": "PLSP_production_nc",
+    "grid_source_year": 2021,
+    "grid_source_year_note": "The grid is year-invariant for a site, so it is derived from a year that exists on disk. SRER 2022 is pending generation and gates Step 5 only; Steps 3 and 4 need the geometry, not the phenology, and 2021 defines the same geometry. Switch to 2022 once it exists and confirm the checks still pass.",
+    "neon_tile_size_m": 1000,
+    "verification_variable": "EVIamp",
+    "verification_variable_note": "LSP layer exported as a GeoTIFF on the measured grid and loaded under the cell outlines in QGIS. EVIamp is chosen because it has near-complete coverage (121 fill pixels of 11,112,222 at SRER 2021) and its spatial pattern tracks woody vs herbaceous cover, so it can be compared against the AOP imagery by eye. Int16 with scale 0.0001 and fill 32767 - masked to NaN and scaled before writing, per instructions5.md 5.3 trap 1.",
+    "verification_window_m": 60,
+    "verification_window_note": "Edge length of the two per-tile windows the cell grids are drawn in. A full-site 3 m grid is 11.1 million polygons and a full-site 1 m grid is 100 million; QGIS opens neither usefully. 60 m gives 20 x 20 Planet cells per window, enough to read a congruence offset by eye.",
+    "measured": {
+      "planet_pixel_m": 3.0,
+      "N": 3,
+      "epsg": "EPSG:32612",
+      "origin_x": 510555.0,
+      "origin_y": 3535548.0,
+      "nx": 3333,
+      "ny": 3334,
+      "note": "MEASURED from US-xSR_NEON_Santa_Rita_Experimental_Range_PLSP_2021.nc by run_stage1_3_define_planet_grid.py, not assumed. The PlanetScope LSP pixel is 3 m, so N = 3 - earlier drafts of instructions5.md said 'expected 4' and that was wrong. Cached here for reference only; every script reads the live values from the netCDF via stage1_data_and_features/qa/planet_grid_SRER_2022.json."
+    },
+    "crop_to_planet_footprint": true,
+    "crop_note": "NEON tiles are cropped to the PlanetScope footprint, which is the smaller SRER focus area (x 510555-520554, y 3525546-3535548). Ground truth outside it has no Planet pixel to aggregate into and cannot enter Steps 3-6, so carrying it forward would inflate ground-truth area against a Planet denominator that does not exist. 520000_3532000 is the only configured tile affected, at 55.4% inside."
+  },
+  "stage4_1_aggregation": {
+    "min_valid_pixels_per_block": 8,
+    "min_valid_pixels_note": "A Planet block is kept only if 8 or 9 of its 9 one-metre pixels are valid - i.e. at most ONE masked pixel. Replaces the earlier 75% rule, which at N=3 quantised to 7 of 9 and let a block through with two of nine pixels missing, 22% of its area unobserved. Set as a count, not a percentage, because N=3 makes percentages misleading: the only meaningful cuts are 7, 8 or 9 of 9.",
+    "aggregate_from_mosaic": true,
+    "aggregate_from_mosaic_note": "No SRER tile is congruent with the Planet grid in both axes, so tile boundaries cut through Planet cells on all four edges of every tile. Blocking each tile in isolation emits partial blocks around every perimeter, which then fail the min_valid_pixels rule and silently delete the tile edges from the fraction product. Aggregate from a site-wide mosaic, or carry a one-cell halo per tile."
+  },
+  "BASE_SEED": 6,
+  "stage2_1_labeling_zones": {
+    "k": 16,
+    "cluster_min_pixel_fraction": 0.001,
+    "cluster_min_pixel_fraction_note": "Clusters holding less than this share of site pixels are excluded from the coverage gate. k-means at k=16 produces degenerate clusters - measured at SRER, cluster 2 is 1 pixel across the whole 10-tile site - and requiring coverage of those makes the gate unpassable. Shares are recomputed from the cluster maps on every run of 4_2d and the excluded clusters are named.",
+    "n_init": 10,
+    "pca_variance": 0.99,
+    "drop_collinear_bands": [
+      "b",
+      "ExG",
+      "ExR",
+      "ExGR"
+    ],
+    "fit_sample_per_tile": 120000,
+    "min_separation_px": 15,
+    "min_polygon_area_m2": {
+      "0": 9.0,
+      "1": 9.0,
+      "2": 2.0,
+      "3": 4.0
+    },
+    "min_polygon_area_note": "Class-specific per instructions5.md 4.2. 0 bare / 1 grass non-binding (median 64 / 81 m2). 3 tree 4 m2, small mesquite. 2 shrub 2 m2, typical creosote crown 1-3 m2; a 9 m2 floor sat at the shrub median and both excluded and contaminated the class.",
+    "sites_per_cluster_per_role": 30,
+    "interior_levels": [
+      {
+        "window": 5,
+        "min_fraction": 0.8
+      },
+      {
+        "window": 3,
+        "min_fraction": 0.7
+      },
+      {
+        "window": 3,
+        "min_fraction": 0.5
+      }
+    ]
+  },
+  "stage2_2_shrub_candidates": {
+    "min_component_area_m2": 2.0,
+    "max_component_area_m2": 200.0,
+    "point_label_below_min": true,
+    "review_sample_per_tile": 150,
+    "review_area_strata": 3,
+    "reviewed_tiles": [],
+    "reviewed_tiles_note": "Tiles swept end to end in the shrub review layer. Listing a tile means: every candidate in it was looked at, and only the rejects were marked - so everything with rejected != 1 is an accepted label. Add the tile key AFTER finishing the sweep, never before.",
+    "erode_px": 0,
+    "note": "CHM-derived shrub candidate proposals. Bounds come from H_GRASS_MAX / H_TREE_MIN in parameters; only area filtering is set here. Candidates are proposals, never labels - each must be accepted or rejected by hand. The full candidate set is provenance only; hand review works from the stratified review subset, sized to clear the 50-per-class-per-role gate with margin."
+  },
+  "stage3_1_classification": {
+    "max_pixels_per_polygon": 100,
+    "note": "Cap on pixels contributed by any one training polygon. Pixels inside a polygon are near-duplicates, so beyond a few dozen they add weight without information - and unevenly, since a 1386 m2 bare polygon would otherwise outvote a 5 m2 shrub one 277:1. Run 1 used no cap; run 2 uses 100. Sampling is random within the polygon, seeded by BASE_SEED + year.",
+    "run_notes": {
+      "1": "Baseline. No polygon subsampling, 5 tiles, partial shrub review. Frozen; not reproducible under current defaults without --max-pixels-per-polygon 0 (see run_reproducibility in the run 1 report).",
+      "2": "Adds polygon subsampling at 100 px/polygon. Label state identical to run 1 (train shrub 844 px), so this isolates the subsampling change with nothing else moving.",
+      "3_smoke": "FOUR CHANGES AT ONCE relative to run 2 - do not read run 2 -> run 3 as a clean comparison, and do not attribute any change to a single cause. (1) Polygon subsampling retained at 100 px/polygon. (2) Shrub candidate review advanced from 401 to a larger fraction of the 1500 candidates. (3) Tiles 5 -> 10: five added by CHM shrub-band quintile stratification, taking site coverage from quintiles {1,5} to {1,2,3,4,5} (instructions5.md 2A). Train now spans Q1/Q3/Q4, test Q2/Q4/Q5. (4) Shadow masks on the ORIGINAL five tiles changed: run_stage1_6_detect_shadows.py pools its luma threshold across tiles, so adding five shifted the site-wide 20th percentile and re-cut shadow everywhere. Also note the k-means labeling zones were refit across all ten tiles, renumbering clusters, and a 0.1% cluster size floor was introduced so degenerate clusters (2 at 1 pixel, 11 at 0.08%) no longer gate coverage.",
+      "3": "The finished run 3: same configuration as 3_smoke (10 quintile-stratified tiles, subsampling at 100 px/polygon) but executed once labelling passes the gate in run_stage2_4_check_hand_labeling_progress.py. Compare against 3_smoke, not against run 2."
+    }
+  },
+  "tiles_note": "10 tiles. The original 5 occupied only site-wide CHM shrub-band quintiles 1 and 5 (train at the floor 0.116-0.121, test at the ceiling 0.373-0.546, site median 0.181), so the middle of the site was unrepresented. The 5 added tiles were chosen one per quintile from all 70 flown tiles, excluding anything within 2 km of an existing labelled tile, taking the most spatially isolated candidate in each stratum. Train now spans quintiles 1,3,4; test spans 2,4,5."
+}
