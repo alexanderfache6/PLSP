@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Step 1b - SLIC segmentation and per-segment features (instructions5.md Step 1b).
 
 Segments each tile at 1 m and summarizes the Step 1a feature stack per segment.
@@ -28,14 +27,12 @@ from pathlib import Path
 
 import numpy as np
 import rasterio
+from helpers import resolve_config_path
 from scipy import ndimage as ndi
+from skimage.segmentation import slic
 
 HERE = Path(__file__).resolve().parent
 EPS = 1e-9
-
-
-def resolve(root, *parts):
-    return Path(str(root)).expanduser().joinpath(*parts)
 
 
 def load_stack(path):
@@ -46,11 +43,10 @@ def load_stack(path):
     return names, arr, profile
 
 
-def slic_labels(stack, names, cfg):
+def slic_labels(stack, names, config):
     """SLIC on the framework-A bands, with compactness calibrated to hit a target count."""
-    from skimage.segmentation import slic
 
-    s1b = cfg["stage1_7_generate_segments"]
+    s1b = config["stage1_7_generate_segments"]
     chans = [names.index(n) for n in s1b["segmentation_bands"]]
     img = np.stack([np.nan_to_num(stack[i], nan=0.0) for i in chans], axis=-1)
     img = (img - img.mean(axis=(0, 1))) / (img.std(axis=(0, 1)) + EPS)
@@ -104,7 +100,7 @@ def segment_stats(labels, values, n_seg):
     return mean, std, skew, cnt
 
 
-def build_features(labels, stack, names, cfg, n_seg):
+def build_features(labels, stack, names, config, n_seg):
     """Return (feature_dict, d_columns, e_columns)."""
     idx = np.arange(1, n_seg + 1)
     feats = {"segment_id": idx}
@@ -137,32 +133,24 @@ def build_features(labels, stack, names, cfg, n_seg):
         feats[f"shape_{key}"] = col
         e_cols.append(f"shape_{key}")
     per = feats["shape_perimeter"]
-    feats["shape_circularity"] = np.where(
-        per > EPS, 4 * np.pi * feats["shape_area"] / (per**2 + EPS), 0.0
-    )
+    feats["shape_circularity"] = np.where(per > EPS, 4 * np.pi * feats["shape_area"] / (per**2 + EPS), 0.0)
     e_cols.append("shape_circularity")
 
     # ---- context (E only): neighbour contrast, and distance to the nearest tall object
     neighbours = segment_adjacency(labels, n_seg)
-    for name in cfg["stage1_7_generate_segments"]["context_bands"]:
+    for name in config["stage1_7_generate_segments"]["context_bands"]:
         if name not in names:
             continue
         own = feats[f"{name}_mean"]
-        nb = np.array(
-            [own[list(s)].mean() if s else own[i] for i, s in enumerate(neighbours)]
-        )
+        nb = np.array([own[list(s)].mean() if s else own[i] for i, s in enumerate(neighbours)])
         feats[f"ctx_{name}_nbmean"] = nb
         feats[f"ctx_{name}_contrast"] = own - nb
         e_cols += [f"ctx_{name}_nbmean", f"ctx_{name}_contrast"]
 
     if "CHM" in names:
         chm = np.nan_to_num(stack[names.index("CHM")], nan=0.0)
-        tall = chm >= cfg["parameters"]["H_TREE_MIN"]
-        dist = (
-            ndi.distance_transform_edt(~tall)
-            if tall.any()
-            else np.full(chm.shape, np.inf)
-        )
+        tall = chm >= config["parameters"]["H_TREE_MIN"]
+        dist = ndi.distance_transform_edt(~tall) if tall.any() else np.full(chm.shape, np.inf)
         dist = np.where(np.isfinite(dist), dist, chm.shape[0])
         feats["ctx_dist_to_tree_m"] = ndi.mean(dist, labels, idx)
         e_cols.append("ctx_dist_to_tree_m")
@@ -194,29 +182,25 @@ def main():
     ap.add_argument("--tiles", nargs="+")
     args = ap.parse_args()
 
-    cfg = json.loads(args.config.read_text())
-    site, year = cfg["site"], cfg["year"]
-    feat_dir = resolve(cfg["results_root"], "stage1_data_and_features", "features")
-    out_dir = resolve(cfg["results_root"], "stage1_data_and_features", "segments")
+    config = json.loads(args.config.read_text())
+    site, year = config["site"], config["year"]
+    feat_dir = resolve_config_path(config["results_root"], "stage1_data_and_features", "features")
+    out_dir = resolve_config_path(config["results_root"], "stage1_data_and_features", "segments")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     summary = []
     d_cols = e_cols = None
-    for tile in args.tiles or list(cfg["tiles"]):
+    for tile in args.tiles or list(config["tiles"]):
         src = feat_dir / f"features_{site}_{tile}_{year}.tif"
         if not src.exists():
             sys.exit(f"missing Step 1a features: {src}")
         names, stack, profile = load_stack(src)
 
-        seg, n_seg, compactness, request = slic_labels(stack, names, cfg)
-        feats, d_cols, e_cols = build_features(seg, stack, names, cfg, n_seg)
+        seg, n_seg, compactness, request = slic_labels(stack, names, config)
+        feats, d_cols, e_cols = build_features(seg, stack, names, config, n_seg)
 
-        lab_profile = dict(
-            profile, dtype="int32", count=1, nodata=0, compress="deflate"
-        )
-        with rasterio.open(
-            out_dir / f"segments_{site}_{tile}_{year}.tif", "w", **lab_profile
-        ) as ds:
+        lab_profile = dict(profile, dtype="int32", count=1, nodata=0, compress="deflate")
+        with rasterio.open(out_dir / f"segments_{site}_{tile}_{year}.tif", "w", **lab_profile) as ds:
             ds.write(seg.astype("int32"), 1)
 
         cols = list(feats)
@@ -227,10 +211,7 @@ def main():
             data=table,
         )
         px = feats["n_pixels"]
-        print(
-            f"[{tile}] segments={n_seg:>6} (requested {request})  compactness={compactness:.2f}  "
-            f"px/seg mean={px.mean():.1f} median={np.median(px):.0f}  features={len(cols) - 1}"
-        )
+        print(f"[{tile}] segments={n_seg:>6} (requested {request})  compactness={compactness:.2f}  px/seg mean={px.mean():.1f} median={np.median(px):.0f}  features={len(cols) - 1}")
         summary.append(
             {
                 "tile": tile,
@@ -245,12 +226,9 @@ def main():
     spec = {
         "site": site,
         "year": year,
-        "segmentation_bands": cfg["stage1_7_generate_segments"]["segmentation_bands"],
-        "segmentation_note": (
-            "SLIC runs on framework-A (RGB-derived) bands only, so every framework "
-            "shares one segmentation and A-E differ by input features alone."
-        ),
-        "target_segments": cfg["stage1_7_generate_segments"]["target_segments"],
+        "segmentation_bands": config["stage1_7_generate_segments"]["segmentation_bands"],
+        "segmentation_note": ("SLIC runs on framework-A (RGB-derived) bands only, so every framework shares one segmentation and A-E differ by input features alone."),
+        "target_segments": config["stage1_7_generate_segments"]["target_segments"],
         "framework_features": {
             "D": d_cols,
             "E": d_cols + e_cols,
@@ -258,18 +236,11 @@ def main():
             "B": None,
             "C": None,
         },
-        "framework_feature_note": (
-            "A/B/C use the same per-band means as D, restricted to their band groups "
-            "in the Step 1a band spec. D = per-segment means of all 20 bands. "
-            "E = D plus distribution, shape and context features, and serves as the "
-            "accuracy ceiling: if E does not beat D materially, D wins on simplicity."
-        ),
+        "framework_feature_note": ("A/B/C use the same per-band means as D, restricted to their band groups in the Step 1a band spec. D = per-segment means of all 20 bands. E = D plus distribution, shape and context features, and serves as the accuracy ceiling: if E does not beat D materially, D wins on simplicity."),
         "n_features": {"D": len(d_cols), "E": len(d_cols) + len(e_cols)},
         "tiles": summary,
     }
-    (out_dir / f"segments_{site}_{year}_spec.json").write_text(
-        json.dumps(spec, indent=2) + "\n"
-    )
+    (out_dir / f"segments_{site}_{year}_spec.json").write_text(json.dumps(spec, indent=2) + "\n")
     print(f"\nD features: {len(d_cols)}   E features: {len(d_cols) + len(e_cols)}")
     print(f"wrote {out_dir / f'segments_{site}_{year}_spec.json'}")
 

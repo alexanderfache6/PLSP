@@ -102,6 +102,7 @@ import geopandas as gpd
 import numpy as np
 import rasterio
 import xarray as xr
+from helpers import resolve_config_path
 from rasterio.transform import from_origin
 from shapely.geometry import box
 
@@ -112,25 +113,18 @@ PASS, FAIL, REPORT = "PASS", "FAIL", "REPORT"
 COORD_TOLERANCE_M = 1e-6
 
 
-def resolve(root, *parts):
-    """Expand a config path and join sub-paths onto it."""
-    return Path(str(root)).expanduser().joinpath(*parts)
-
-
-def lsp_path(cfg):
+def lsp_path(config):
     """Full path to the LSP netCDF the grid is derived from.
 
     instructions5.md section 5.1 flags the naming trap: the directory carries the
     `_NEON` suffix and the filename does not. Both are derived here from the one
     `site_name` config key so the two strings cannot drift apart.
     """
-    grid = cfg["stage1_3_planet_grid"]
-    site_dir = cfg["site_name"]
+    grid = config["stage1_3_planet_grid"]
+    site_dir = config["site_name"]
     site_name = site_dir[: -len("_NEON")] if site_dir.endswith("_NEON") else site_dir
-    filename = (
-        f"{cfg['ameriflux_id']}_NEON_{site_name}_PLSP_{grid['grid_source_year']}.nc"
-    )
-    return resolve(grid["planet_data_root"], grid["lsp_subdir"], site_dir, filename)
+    filename = f"{config['ameriflux_id']}_NEON_{site_name}_PLSP_{grid['grid_source_year']}.nc"
+    return resolve_config_path(grid["planet_data_root"], grid["lsp_subdir"], site_dir, filename)
 
 
 def epsg_from_crs_variable(crs_attrs):
@@ -177,10 +171,7 @@ def read_grid(nc_path):
         "step_x": step_x,
         "step_y": step_y,
         "epsg": epsg_from_crs_variable(crs_attrs),
-        "crs_attributes": {
-            k: (float(v) if isinstance(v, (int, float, np.floating)) else str(v))
-            for k, v in crs_attrs.items()
-        },
+        "crs_attributes": {k: (float(v) if isinstance(v, (int, float, np.floating)) else str(v)) for k, v in crs_attrs.items()},
     }
     if step_x is None or step_y is None:
         return grid
@@ -220,9 +211,7 @@ def tile_alignment(tile, grid, tile_size_m):
         "northing": northing,
         "offset_x_m": round(float(offset_x), 6),
         "offset_y_m": round(float(offset_y), 6),
-        "congruent": bool(
-            offset_x <= COORD_TOLERANCE_M and offset_y <= COORD_TOLERANCE_M
-        ),
+        "congruent": bool(offset_x <= COORD_TOLERANCE_M and offset_y <= COORD_TOLERANCE_M),
         "overlap_fraction": round(float(overlap.area / tile_geom.area), 6),
         "cropped_area_m2": round(float(overlap.area), 3),
         "geometry": tile_geom,
@@ -264,9 +253,7 @@ def verification_windows(tiles, grid, tile_size_m, window_m):
             {
                 "tile": tile,
                 "position": "corner",
-                "geometry": box(
-                    easting - half, northing - half, easting + half, northing + half
-                ),
+                "geometry": box(easting - half, northing - half, easting + half, northing + half),
             }
         )
         windows.append(
@@ -289,9 +276,7 @@ def build_cell_layers(windows, grid, analysis_grid_m):
     planet_records, analysis_records = [], []
     for window in windows:
         bounds = window["geometry"].bounds
-        for geom in cell_grid(
-            *bounds, grid["planet_pixel_m"], grid["x_min"], grid["y_max"]
-        ):
+        for geom in cell_grid(*bounds, grid["planet_pixel_m"], grid["x_min"], grid["y_max"]):
             planet_records.append(
                 {
                     "tile": window["tile"],
@@ -338,9 +323,7 @@ def export_verification_raster(nc_path, variable, grid, out_path):
     if fill is not None:
         data[raw == fill] = np.nan
     data = data * scale + offset
-    transform = from_origin(
-        grid["x_min"], grid["y_max"], grid["planet_pixel_m"], grid["planet_pixel_m"]
-    )
+    transform = from_origin(grid["x_min"], grid["y_max"], grid["planet_pixel_m"], grid["planet_pixel_m"])
     profile = {
         "driver": "GTiff",
         "height": data.shape[0],
@@ -445,11 +428,7 @@ def run_checks(grid, analysis_grid_m, expected_crs, tile_rows):
         },
     )
 
-    partial = {
-        r["tile"]: r["overlap_fraction"]
-        for r in tile_rows
-        if r["overlap_fraction"] < 1.0
-    }
+    partial = {r["tile"]: r["overlap_fraction"] for r in tile_rows if r["overlap_fraction"] < 1.0}
     empty = [r["tile"] for r in tile_rows if r["overlap_fraction"] <= 0.0]
     add(
         12.2,
@@ -466,60 +445,52 @@ def run_checks(grid, analysis_grid_m, expected_crs, tile_rows):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Define the PlanetScope grid and the nested 1 m analysis grid, and export both for QGIS verification."
-    )
+    parser = argparse.ArgumentParser(description="Define the PlanetScope grid and the nested 1 m analysis grid, and export both for QGIS verification.")
     parser.add_argument("config", help="site config JSON, e.g. config/srer_2022.json")
     args = parser.parse_args()
 
-    cfg = json.loads(Path(args.config).read_text())
-    site, year = cfg["site"], cfg["year"]
-    grid_cfg = cfg["stage1_3_planet_grid"]
-    analysis_grid_m = float(cfg["stage1_5_generate_features"]["analysis_grid_m"])
+    config = json.loads(Path(args.config).read_text())
+    site, year = config["site"], config["year"]
+    grid_cfg = config["stage1_3_planet_grid"]
+    analysis_grid_m = float(config["stage1_5_generate_features"]["analysis_grid_m"])
     tile_size_m = float(grid_cfg["neon_tile_size_m"])
     window_m = float(grid_cfg["verification_window_m"])
 
-    nc_path = lsp_path(cfg)
+    nc_path = lsp_path(config)
     print(f"LSP grid source: {nc_path}")
     if not nc_path.exists():
         raise SystemExit(f"FAIL - LSP netCDF not found: {nc_path}")
 
     grid = read_grid(nc_path)
-    tile_rows = [tile_alignment(tile, grid, tile_size_m) for tile in cfg["tiles"]]
-    checks = run_checks(grid, analysis_grid_m, cfg.get("expected_crs"), tile_rows)
+    tile_rows = [tile_alignment(tile, grid, tile_size_m) for tile in config["tiles"]]
+    checks = run_checks(grid, analysis_grid_m, config.get("expected_crs"), tile_rows)
 
     planet_pixel_m = grid.get("planet_pixel_m")
     n_factor = int(round(planet_pixel_m / analysis_grid_m)) if planet_pixel_m else None
 
     print("")
-    print(
-        f"CRS               {grid['epsg']} (config expects {cfg.get('expected_crs')})"
-    )
+    print(f"CRS               {grid['epsg']} (config expects {config.get('expected_crs')})")
     print(f"planet_pixel_m    {planet_pixel_m}")
     print(f"analysis_grid_m   {analysis_grid_m}")
     print(f"N                 {n_factor}")
     print(f"grid size         {grid['nx']} x {grid['ny']} Planet cells")
     print(f"origin (edge)     {grid['x_min']}, {grid['y_max']}")
-    print(
-        f"extent            x [{grid['x_min']}, {grid['x_max']}] y [{grid['y_min']}, {grid['y_max']}]"
-    )
+    print(f"extent            x [{grid['x_min']}, {grid['x_max']}] y [{grid['y_min']}, {grid['y_max']}]")
     print("")
     print("tile role offset_x offset_y congruent overlap")
     for row in tile_rows:
-        role = cfg["tiles"][row["tile"]]
-        print(
-            f"{row['tile']:17s} {role:5s} {row['offset_x_m']:8.1f} {row['offset_y_m']:8.1f} {str(row['congruent']):9s} {row['overlap_fraction'] * 100:5.1f}%"
-        )
+        role = config["tiles"][row["tile"]]
+        print(f"{row['tile']:17s} {role:5s} {row['offset_x_m']:8.1f} {row['offset_y_m']:8.1f} {str(row['congruent']):9s} {row['overlap_fraction'] * 100:5.1f}%")
     print("")
     for check in checks:
         print(f"[{check['status']:6s}] {check['check']:5s} {check['name']}")
 
-    out_dir = resolve(cfg["results_root"], "stage1_data_and_features", "qa")
+    out_dir = resolve_config_path(config["results_root"], "stage1_data_and_features", "qa")
     out_dir.mkdir(parents=True, exist_ok=True)
     gpkg_path = out_dir / f"planet_grid_{site}_{year}.gpkg"
     json_path = out_dir / f"planet_grid_{site}_{year}.json"
 
-    crs = grid["epsg"] or cfg.get("expected_crs")
+    crs = grid["epsg"] or config.get("expected_crs")
     footprint = gpd.GeoDataFrame(
         [
             {
@@ -528,9 +499,7 @@ def main():
                 "planet_pixel_m": planet_pixel_m,
                 "nx": grid["nx"],
                 "ny": grid["ny"],
-                "geometry": box(
-                    grid["x_min"], grid["y_min"], grid["x_max"], grid["y_max"]
-                ),
+                "geometry": box(grid["x_min"], grid["y_min"], grid["x_max"], grid["y_max"]),
             }
         ],
         crs=crs,
@@ -539,7 +508,7 @@ def main():
         [
             {
                 **{k: v for k, v in row.items() if k != "cropped_geometry"},
-                "role": cfg["tiles"][row["tile"]],
+                "role": config["tiles"][row["tile"]],
             }
             for row in tile_rows
         ],
@@ -547,19 +516,15 @@ def main():
     )
     cropped_rows = [
         {
-            **{
-                k: v
-                for k, v in row.items()
-                if k not in ("geometry", "cropped_geometry")
-            },
-            "role": cfg["tiles"][row["tile"]],
+            **{k: v for k, v in row.items() if k not in ("geometry", "cropped_geometry")},
+            "role": config["tiles"][row["tile"]],
             "geometry": row["cropped_geometry"],
         }
         for row in tile_rows
         if not row["cropped_geometry"].is_empty
     ]
     cropped_gdf = gpd.GeoDataFrame(cropped_rows, crs=crs)
-    windows = verification_windows(list(cfg["tiles"]), grid, tile_size_m, window_m)
+    windows = verification_windows(list(config["tiles"]), grid, tile_size_m, window_m)
     windows_gdf = gpd.GeoDataFrame(windows, crs=crs)
     planet_records, analysis_records = build_cell_layers(windows, grid, analysis_grid_m)
     planet_gdf = gpd.GeoDataFrame(planet_records, crs=crs)
@@ -573,12 +538,8 @@ def main():
     analysis_gdf.to_file(gpkg_path, layer="analysis_cells_verification", driver="GPKG")
 
     variable = grid_cfg.get("verification_variable", "EVIamp")
-    raster_path = (
-        out_dir / f"planet_{variable}_{site}_{grid_cfg['grid_source_year']}.tif"
-    )
-    verification_raster = export_verification_raster(
-        nc_path, variable, grid, raster_path
-    )
+    raster_path = out_dir / f"planet_{variable}_{site}_{grid_cfg['grid_source_year']}.tif"
+    verification_raster = export_verification_raster(nc_path, variable, grid, raster_path)
 
     report = {
         "site": site,
@@ -603,10 +564,7 @@ def main():
             "y_max": grid.get("y_max"),
             "crs_attributes": grid["crs_attributes"],
         },
-        "tiles": [
-            {k: v for k, v in row.items() if k not in ("geometry", "cropped_geometry")}
-            for row in tile_rows
-        ],
+        "tiles": [{k: v for k, v in row.items() if k not in ("geometry", "cropped_geometry")} for row in tile_rows],
         "checks": checks,
         "outputs": {
             "geopackage": str(gpkg_path),
@@ -621,9 +579,7 @@ def main():
     print(f"wrote {gpkg_path}")
     print(f"wrote {json_path}")
     if verification_raster:
-        print(
-            f"wrote {raster_path} ({verification_raster['long_name']}, {verification_raster['valid_min']:.4f} - {verification_raster['valid_max']:.4f}, {verification_raster['fill_pixels']} fill pixels)"
-        )
+        print(f"wrote {raster_path} ({verification_raster['long_name']}, {verification_raster['valid_min']:.4f} - {verification_raster['valid_max']:.4f}, {verification_raster['fill_pixels']} fill pixels)")
 
     blocking = [c for c in checks if c["status"] == FAIL and c["blocker"]]
     if blocking:
@@ -631,9 +587,7 @@ def main():
         print(f"BLOCKING FAILURES: {len(blocking)} - Step 3 must not run")
         raise SystemExit(1)
     print("")
-    print(
-        "Grid defined. Next: run run_stage1_4_create_qgis_grid_verification_project.py in the LCSC_QGIS environment and confirm alignment by eye before any Step 3 aggregation."
-    )
+    print("Grid defined. Next: run run_stage1_4_create_qgis_grid_verification_project.py in the LCSC_QGIS environment and confirm alignment by eye before any Step 3 aggregation.")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 """Stage 4_1 - aggregate the 1 m ground truth to PlanetScope 3x3 blocks (instructions5.md section 5 Step 3).
 
 Turns the stage 3 per-pixel classification into per-Planet-pixel fractional
-cover: for every block of N x N one-metre cells, what share of it is bare,
+cover: for every block of N x N one-meter cells, what share of it is bare,
 grass, shrub and tree. These fractions are the training target for RF-B and the
 quantity the Step 6 area estimates are built on.
 
@@ -20,7 +19,7 @@ netCDF still agrees. Two independent derivations of the same grid is exactly how
 a half-pixel disagreement gets into a pipeline unnoticed.
 
 NOTHING IS RESAMPLED, SHIFTED OR REPROJECTED. The 1 m cells already nest exactly
-inside the Planet cells - whole-metre edges on both sides, 3 divides evenly - so
+inside the Planet cells - whole-meter edges on both sides, 3 divides evenly - so
 assigning a pixel to a block is integer arithmetic on coordinates and nothing
 more. See instructions5.md section 5 Step 3 for why shifting the tiles to remove
 their offsets would be actively wrong.
@@ -101,17 +100,11 @@ from pathlib import Path
 import numpy as np
 import rasterio
 import xarray as xr
+from constants import CLASS_CODES, CLASS_NAMES, NODATA
+from helpers import resolve_config_path
 from rasterio.transform import from_origin
 
-CLASS_NAMES = ["bare", "grass", "shrub", "tree"]
-CLASS_CODES = [0, 1, 2, 3]
-NODATA_CLASS = 255
-COORD_TOLERANCE_M = 1e-6
-
-
-def resolve(root, *parts):
-    """Expand a config path and join sub-paths onto it."""
-    return Path(str(root)).expanduser().joinpath(*parts)
+COORDINATE_TOLERANCE_M = 1e-6
 
 
 def load_grid(qa_dir, site, year):
@@ -123,37 +116,27 @@ def load_grid(qa_dir, site, year):
     """
     path = qa_dir / f"planet_grid_{site}_{year}.json"
     if not path.exists():
-        raise SystemExit(
-            f"FAIL - {path} not found. Run run_stage1_3_define_planet_grid.py first."
-        )
+        raise SystemExit(f"FAIL - {path} not found. Run run_stage1_3_define_planet_grid.py first.")
     report = json.loads(path.read_text())
     grid = report["grid"]
     if grid["N"] is None or grid["planet_pixel_m"] is None:
-        raise SystemExit(
-            "FAIL - the stage 1_3 report holds no usable grid; its blocking checks did not pass."
-        )
+        raise SystemExit("FAIL - the stage 1_3 report holds no usable grid; its blocking checks did not pass.")
     return grid, report
 
 
-def assert_netcdf_agrees(cfg, grid):
+def assert_netcdf_agrees(config, grid):
     """Re-open the LSP netCDF only to confirm it still matches the recorded grid.
 
     Cheap insurance against the product being regenerated on a different grid
     while the stage 1_3 report on disk goes stale.
     """
-    settings = cfg["stage1_3_planet_grid"]
-    site_dir = cfg["site_name"]
+    settings = config["stage1_3_planet_grid"]
+    site_dir = config["site_name"]
     site_name = site_dir[: -len("_NEON")] if site_dir.endswith("_NEON") else site_dir
-    filename = (
-        f"{cfg['ameriflux_id']}_NEON_{site_name}_PLSP_{settings['grid_source_year']}.nc"
-    )
-    path = resolve(
-        settings["planet_data_root"], settings["lsp_subdir"], site_dir, filename
-    )
+    filename = f"{config['ameriflux_id']}_NEON_{site_name}_PLSP_{settings['grid_source_year']}.nc"
+    path = resolve_config_path(settings["planet_data_root"], settings["lsp_subdir"], site_dir, filename)
     if not path.exists():
-        print(
-            f"WARNING - LSP netCDF not found at {path}, grid agreement not re-checked"
-        )
+        print(f"WARNING - LSP netCDF not found at {path}, grid agreement not re-checked")
         return
     with xr.open_dataset(path) as ds:
         x = ds["x"].values.astype(np.float64)
@@ -169,10 +152,8 @@ def assert_netcdf_agrees(cfg, grid):
         ("ny", float(y.size), float(grid["ny"])),
     ]
     for name, observed, recorded in checks:
-        if abs(observed - recorded) > COORD_TOLERANCE_M:
-            raise SystemExit(
-                f"FAIL - LSP netCDF disagrees with the stage 1_3 record on {name}: {observed} vs {recorded}. Re-run run_stage1_3_define_planet_grid.py."
-            )
+        if abs(observed - recorded) > COORDINATE_TOLERANCE_M:
+            raise SystemExit(f"FAIL - LSP netCDF disagrees with the stage 1_3 record on {name}: {observed} vs {recorded}. Re-run run_stage1_3_define_planet_grid.py.")
     print("LSP netCDF agrees with the recorded grid")
 
 
@@ -225,16 +206,16 @@ def coverage_masks(paths, shape):
             chm = ds.read(1)
             nodata = ds.nodata
         if nodata is not None and chm.shape == shape:
-            masks["unflown"] = chm == nodata
+            masks["unflown"] = chm == nodata  # NOTE where there is no chm data, that means the pixels were missed by flights
     if paths.get("shadow") and paths["shadow"].exists():
         with rasterio.open(paths["shadow"]) as ds:
             shadow = ds.read(1)
         if shadow.shape == shape:
-            masks["shadow"] = shadow == 1
+            masks["shadow"] = shadow == 1  # NOTE there is shadow data but pixels marked as nodata are bad quality
     return masks
 
 
-def accumulate_tile(paths, grid, totals):
+def accumulate_site_tiles(paths, grid, totals):
     """Add one tile's valid pixels into the site-wide block accumulators.
 
     Inputs:  paths - dict with classification, probability, quality file paths;
@@ -250,7 +231,7 @@ def accumulate_tile(paths, grid, totals):
         quality = ds.read(1).astype(np.float32)
 
     flat, inside = block_index(transform, shape, grid)
-    labelled = classification != NODATA_CLASS
+    labelled = classification != NODATA
     finite = np.isfinite(quality)
     valid = labelled & finite & inside
 
@@ -259,21 +240,13 @@ def accumulate_tile(paths, grid, totals):
     n_cells = grid["nx"] * grid["ny"]
 
     totals["valid_count"] += np.bincount(flat_valid, minlength=n_cells).astype(np.int32)
-    totals["weight_sum"] += np.bincount(
-        flat_valid, weights=weights, minlength=n_cells
-    ).astype(np.float32)
+    totals["weight_sum"] += np.bincount(flat_valid, weights=weights, minlength=n_cells).astype(np.float32)
     for index, code in enumerate(CLASS_CODES):
         is_class = valid & (classification == code)
         flat_class = flat[is_class]
-        totals["hard"][index] += np.bincount(flat_class, minlength=n_cells).astype(
-            np.int32
-        )
-        totals["weighted"][index] += np.bincount(
-            flat_class, weights=quality[is_class], minlength=n_cells
-        ).astype(np.float32)
-        totals["soft"][index] += np.bincount(
-            flat_valid, weights=probability[index][valid], minlength=n_cells
-        ).astype(np.float32)
+        totals["hard"][index] += np.bincount(flat_class, minlength=n_cells).astype(np.int32)
+        totals["weighted"][index] += np.bincount(flat_class, weights=quality[is_class], minlength=n_cells).astype(np.float32)
+        totals["soft"][index] += np.bincount(flat_valid, weights=probability[index][valid], minlength=n_cells).astype(np.float32)
 
     masks = coverage_masks(paths, shape)
     unflown = masks["unflown"]
@@ -285,7 +258,18 @@ def accumulate_tile(paths, grid, totals):
         accounted |= unflown
     if shadow is not None:
         accounted |= shadow
-    stats = {"pixels_total": int(classification.size), "pixels_unflown": int(unflown.sum()) if unflown is not None else None, "pixels_flown": flown_total, "flight_coverage": float(flown_total / classification.size), "pixels_lost_to_shadow": lost_shadow, "pixels_lost_other": int(((~labelled) & ~accounted).sum()), "pixels_masked_total": int((~labelled).sum()), "pixels_outside_footprint": int((labelled & ~inside).sum()), "pixels_used": int(valid.sum()), "used_share_of_flown": float(valid.sum() / flown_total) if flown_total else None,}
+    stats = {
+        "pixels_total": int(classification.size),
+        "pixels_unflown": int(unflown.sum()) if unflown is not None else None,
+        "pixels_flown": flown_total,
+        "flight_coverage": float(flown_total / classification.size),
+        "pixels_lost_to_shadow": lost_shadow,
+        "pixels_lost_other": int(((~labelled) & ~accounted).sum()),
+        "pixels_masked_total": int((~labelled).sum()),
+        "pixels_outside_footprint": int((labelled & ~inside).sum()),
+        "pixels_used": int(valid.sum()),
+        "used_share_of_flown": float(valid.sum() / flown_total) if flown_total else None,
+    }
     return stats, np.unique(flat_valid)
 
 
@@ -304,11 +288,7 @@ def area_bias_from_confusion(confusion):
     bias = {}
     for index, name in enumerate(CLASS_NAMES):
         reference = true_total[index]
-        bias[name] = (
-            float((predicted_total[index] - reference) / reference)
-            if reference
-            else None
-        )
+        bias[name] = float((predicted_total[index] - reference) / reference) if reference else None
     return bias
 
 
@@ -339,20 +319,14 @@ def write_raster(path, data, grid, dtype, nodata, descriptions=None):
         for band in range(count):
             dst.set_band_description(
                 band + 1,
-                (descriptions or CLASS_NAMES)[band]
-                if count > 1
-                else (descriptions or ["value"])[0],
+                (descriptions or CLASS_NAMES)[band] if count > 1 else (descriptions or ["value"])[0],
             )
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Aggregate the 1 m ground-truth classification to PlanetScope N x N blocks."
-    )
+    parser = argparse.ArgumentParser(description="Aggregate the 1 m ground-truth classification to PlanetScope N x N blocks.")
     parser.add_argument("config", help="site config JSON, e.g. config/srer_2022.json")
-    parser.add_argument(
-        "--run", required=True, help="stage 3 run label to aggregate, e.g. 3"
-    )
+    parser.add_argument("--run", required=True, help="stage 3 run label to aggregate, e.g. 3")
     parser.add_argument(
         "--frameworks",
         nargs="+",
@@ -361,48 +335,39 @@ def main():
     )
     args = parser.parse_args()
 
-    cfg = json.loads(Path(args.config).read_text())
-    site, year = cfg["site"], cfg["year"]
-    settings = cfg["stage4_1_aggregation"]
+    config = json.loads(Path(args.config).read_text())
+    site, year = config["site"], config["year"]
+    settings = config["stage4_1_aggregation"]
     min_valid = int(settings["min_valid_pixels_per_block"])
 
-    results = Path(str(cfg["results_root"])).expanduser()
+    results = Path(str(config["results_root"])).expanduser()
     qa_dir = results / "stage1_data_and_features" / "qa"
     shadow_dir = results / "stage1_data_and_features" / "shadow"
     run_dir = results / "stage3_classification" / f"run{args.run}"
     out_dir = results / "stage4_aggregation"
-    data_dir = Path(str(cfg["data_root"])).expanduser() / cfg["site_name"]
-    chm_product = cfg["products"]["chm"]
+    data_dir = Path(str(config["data_root"])).expanduser() / config["site_name"]
+    chm_product = config["products"]["chm"]
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    grid, grid_report = load_grid(qa_dir, site, year)
-    factor = int(grid["N"])
-    per_block = factor * factor
-    assert_netcdf_agrees(cfg, grid)
+    grid, _ = load_grid(qa_dir, site, year)
+    grid_px_size_factor = int(grid["N"])
+    per_block = grid_px_size_factor * grid_px_size_factor
+    assert_netcdf_agrees(config, grid)
 
     print("")
-    print(
-        f"planet pixel {grid['planet_pixel_m']} m, N = {factor}, block = {per_block} one-metre pixels"
-    )
-    print(
-        f"grid {grid['nx']} x {grid['ny']} blocks, origin {grid['origin_x']}, {grid['origin_y']}"
-    )
+    print(f"planet pixel {grid['planet_pixel_m']} m, N = {grid_px_size_factor}, block = {per_block} one-meter pixels")
+    print(f"grid {grid['nx']} x {grid['ny']} blocks, origin {grid['origin_x']}, {grid['origin_y']}")
     print(f"retention: keep blocks with >= {min_valid} of {per_block} valid pixels")
     print(f"source: run {args.run}, frameworks {' '.join(args.frameworks)}")
     print("")
 
-    stage3_report = json.loads(
-        (run_dir / f"stage3_1_report_{site}_{year}.json").read_text()
-    )
+    stage3_report = json.loads((run_dir / f"stage3_1_report_{site}_{year}.json").read_text())
     n_cells = grid["nx"] * grid["ny"]
     report = {
         "site": site,
         "year": year,
         "source_run": args.run,
-        "grid": {
-            k: grid[k]
-            for k in ("epsg", "planet_pixel_m", "N", "nx", "ny", "origin_x", "origin_y")
-        },
+        "grid": {k: grid[k] for k in ("epsg", "planet_pixel_m", "N", "nx", "ny", "origin_x", "origin_y")},
         "min_valid_pixels_per_block": min_valid,
         "planet_qa_applied": False,
         "planet_qa_note": "No PlanetScope QA masking at this stage. Blocks lose pixels only to ground-truth nodata, which already carries the shadow mask and tile edge margin. PLSP QA (NumCycles, QA) masks the phenology side and is applied at RF-B training.",
@@ -425,21 +390,18 @@ def main():
         }
         tile_stats, tile_blocks = {}, {}
 
-        for tile in cfg["tiles"]:
+        for tile in config["tiles"]:
             paths = {
-                "classification": framework_dir
-                / f"classification_{framework}_{site}_{tile}_{year}.tif",
-                "probability": framework_dir
-                / f"class_probability_{framework}_{site}_{tile}_{year}.tif",
-                "quality": framework_dir
-                / f"prediction_quality_{framework}_{site}_{tile}_{year}.tif",
+                "classification": framework_dir / f"classification_{framework}_{site}_{tile}_{year}.tif",
+                "probability": framework_dir / f"class_probability_{framework}_{site}_{tile}_{year}.tif",
+                "quality": framework_dir / f"prediction_quality_{framework}_{site}_{tile}_{year}.tif",
             }
             if not all(p.exists() for p in paths.values()):
                 print(f"[{tile}] SKIP - missing stage 3 outputs")
                 continue
             paths["chm"] = data_dir / chm_product["folder"] / chm_product["pattern"].format(tile=tile)
             paths["shadow"] = shadow_dir / f"shadow_mask_ref_{site}_{tile}_{year}.tif"
-            stats, blocks = accumulate_tile(paths, grid, totals)
+            stats, blocks = accumulate_site_tiles(paths, grid, totals)
             tile_stats[tile] = stats
             tile_blocks[tile] = blocks
             shadow_pct = stats["pixels_lost_to_shadow"] / stats["pixels_flown"] if stats["pixels_lost_to_shadow"] is not None and stats["pixels_flown"] else 0.0
@@ -451,15 +413,9 @@ def main():
         denominator = np.where(touched, valid_count, 1).astype(np.float32)
         weight_total = np.where(totals["weight_sum"] > 0, totals["weight_sum"], np.nan)
 
-        hard = np.stack([totals["hard"][i] / denominator for i in range(4)]).astype(
-            np.float32
-        )
-        soft = np.stack([totals["soft"][i] / denominator for i in range(4)]).astype(
-            np.float32
-        )
-        weighted = np.stack(
-            [totals["weighted"][i] / weight_total for i in range(4)]
-        ).astype(np.float32)
+        hard = np.stack([totals["hard"][i] / denominator for i in range(4)]).astype(np.float32)
+        soft = np.stack([totals["soft"][i] / denominator for i in range(4)]).astype(np.float32)
+        weighted = np.stack([totals["weighted"][i] / weight_total for i in range(4)]).astype(np.float32)
         block_quality = (totals["weight_sum"] / denominator).astype(np.float32)
 
         drop = ~keep
@@ -508,39 +464,23 @@ def main():
             ["valid_pixel_count"],
         )
 
-        histogram = {
-            str(k): int(((valid_count == k) & touched).sum())
-            for k in range(per_block + 1)
-        }
+        histogram = {str(k): int(((valid_count == k) & touched).sum()) for k in range(per_block + 1)}
         touched_total = int(touched.sum())
-        retained = {
-            str(cut): int((valid_count >= cut).sum()) for cut in range(1, per_block + 1)
-        }
-        bias = area_bias_from_confusion(
-            stage3_report["frameworks"][framework]["confusion"]
-        )
+        retained = {str(cut): int((valid_count >= cut).sum()) for cut in range(1, per_block + 1)}
+        bias = area_bias_from_confusion(stage3_report["frameworks"][framework]["confusion"])
 
         per_tile = {}
         for tile, blocks in tile_blocks.items():
             counts = valid_count[blocks]
             per_tile[tile] = {
-                "role": cfg["tiles"][tile],
+                "role": config["tiles"][tile],
                 "blocks_touched": int(blocks.size),
                 "blocks_retained": int((counts >= min_valid).sum()),
                 "blocks_full": int((counts == per_block).sum()),
-                "retention": float((counts >= min_valid).mean())
-                if blocks.size
-                else None,
+                "retention": float((counts >= min_valid).mean()) if blocks.size else None,
             }
 
-        mean_fraction = (
-            {
-                name: float(np.nanmean(hard[i][keep]))
-                for i, name in enumerate(CLASS_NAMES)
-            }
-            if keep.any()
-            else {}
-        )
+        mean_fraction = {name: float(np.nanmean(hard[i][keep])) for i, name in enumerate(CLASS_NAMES)} if keep.any() else {}
         report["frameworks"][framework] = {
             "tiles": tile_stats,
             "per_tile_blocks": per_tile,
@@ -548,10 +488,7 @@ def main():
             "blocks_retained": int(keep.sum()),
             "retention": float(keep.sum() / touched_total) if touched_total else None,
             "valid_pixel_histogram": histogram,
-            "valid_pixel_histogram_pct": {
-                k: (v / touched_total if touched_total else None)
-                for k, v in histogram.items()
-            },
+            "valid_pixel_histogram_pct": {k: (v / touched_total if touched_total else None) for k, v in histogram.items()},
             "retained_at_cut": retained,
             "mean_hard_fraction": mean_fraction,
             "source_area_bias": bias,
@@ -559,21 +496,13 @@ def main():
         }
 
         print("")
-        print(
-            f"blocks touched {touched_total}, retained at >= {min_valid} valid: {int(keep.sum())} ({keep.sum() / touched_total:.2%})"
-        )
+        print(f"blocks touched {touched_total}, retained at >= {min_valid} valid: {int(keep.sum())} ({keep.sum() / touched_total:.2%})")
         print("valid pixels per block:")
         for k in range(per_block + 1):
             n = histogram[str(k)]
-            print(
-                f"{k:>2} of {per_block}   {n:>9}   {n / touched_total:6.2%}"
-                if touched_total
-                else f"{k:>2} of {per_block}   {n:>9}"
-            )
+            print(f"{k:>2} of {per_block}   {n:>9}   {n / touched_total:6.2%}" if touched_total else f"{k:>2} of {per_block}   {n:>9}")
         print("")
-        print(
-            f"retained at cut 9: {retained['9']}, at 8: {retained['8']}, at 7: {retained['7']}"
-        )
+        print(f"retained at cut 9: {retained['9']}, at 8: {retained['8']}, at 7: {retained['7']}")
         print("mean hard fraction over retained blocks:")
         for name in CLASS_NAMES:
             print(f"{name:<6} {mean_fraction.get(name, float('nan')):.4f}")

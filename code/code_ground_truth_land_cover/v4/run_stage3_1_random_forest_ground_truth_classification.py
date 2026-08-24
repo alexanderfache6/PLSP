@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Step 1d - per-pixel Random Forest classification (RF-A).
 
 RF-A classifies at 1 m and outputs a hard class per pixel; the fractions used by
@@ -69,20 +68,17 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import rasterio
+from constants import CLASS_COLORS, CLASS_LABELS, NODATA
+from helpers import resolve_config_path
 from rasterio.features import rasterize
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
-
-CLASS_LABELS = {0: "bare", 1: "grass", 2: "shrub", 3: "tree"}
-CLASS_COLORS = {0: "#c2b280", 1: "#7cb342", 2: "#8d6e63", 3: "#1b5e20"}
-NODATA = 255
 
 FRAMEWORK_GROUPS = {
     "A": ["chromatic", "rgb_index", "brightness"],
     "B": ["chromatic", "rgb_index", "brightness", "nir_index"],
     "C": ["chromatic", "rgb_index", "brightness", "nir_index", "texture"],
     "D": ["chromatic", "rgb_index", "brightness", "nir_index", "texture", "chm"],
-    "E": ["chromatic", "rgb_index", "brightness", "nir_index", "texture", "chm"],
 }
 
 
@@ -103,14 +99,8 @@ def run_label(value):
     import argparse as _argparse
 
     if not re.fullmatch(r"[A-Za-z0-9_-]+", value):
-        raise _argparse.ArgumentTypeError(
-            f"run label {value!r} must contain only letters, digits, underscore or dash - it becomes a directory name"
-        )
+        raise _argparse.ArgumentTypeError(f"run label {value!r} must contain only letters, digits, underscore or dash - it becomes a directory name")
     return value
-
-
-def resolve(root, *parts):
-    return Path(str(root)).expanduser().joinpath(*parts)
 
 
 def hex_to_rgb(value):
@@ -143,18 +133,18 @@ def framework_band_indices(band_order, bands_meta, framework):
     return indices, names
 
 
-def read_labels(lab_dir, site, tile, year):
+def read_labels(label_dir, site, tile, year):
     """Training labels for a tile - hand-drawn polygons plus accepted candidates.
 
     The union is the same one run_stage2_4_check_hand_labeling_progress.py counts. An
     accepted CHM candidate was confirmed against RGB by the analyst, which is
     the same act as drawing one, so it is an ordinary label here.
 
-    Inputs:  lab_dir - Path to stage2_labeling; site, tile, year
+    Inputs:  label_dir - Path to stage2_labeling; site, tile, year
     Outputs: GeoDataFrame with class_code and geometry, or None
     """
     frames = []
-    drawn = lab_dir / f"training_polygons_{site}_{tile}_{year}.gpkg"
+    drawn = label_dir / f"training_polygons_{site}_{tile}_{year}.gpkg"
     if drawn.exists():
         try:
             gdf = gpd.read_file(drawn)
@@ -162,23 +152,17 @@ def read_labels(lab_dir, site, tile, year):
                 frames.append(gdf[["class_code", "geometry"]])
         except Exception:
             pass
-    review = lab_dir / f"shrub_review_{site}_{tile}_{year}.gpkg"
+    review = label_dir / f"shrub_review_{site}_{tile}_{year}.gpkg"
     if review.exists():
         for kind in ("polygon", "point"):
             try:
-                gdf = gpd.read_file(
-                    review, layer=f"shrub_review_{site}_{tile}_{year}_{kind}"
-                )
+                gdf = gpd.read_file(review, layer=f"shrub_review_{site}_{tile}_{year}_{kind}")
             except Exception:
                 continue
             if not len(gdf) or "reviewed" not in gdf.columns:
                 continue
             reviewed = gdf["reviewed"].fillna(0).astype(int) == 1
-            rejected = (
-                gdf["rejected"].fillna(0).astype(int) == 1
-                if "rejected" in gdf.columns
-                else False
-            )
+            rejected = gdf["rejected"].fillna(0).astype(int) == 1 if "rejected" in gdf.columns else False
             keep = gdf[reviewed & ~rejected]
             if len(keep):
                 frames.append(keep[["class_code", "geometry"]])
@@ -258,9 +242,7 @@ def subsample_by_polygon(ids, train_mask, max_per_polygon, rng):
     return kept
 
 
-def load_tile(
-    feat_dir, lab_dir, shadow_dir, site, tile, year, indices, max_per_polygon, rng
-):
+def load_tile(feature_dir, label_dir, shadow_dir, site, tile, year, indices, max_per_polygon, rng):
     """Feature matrix, label vector, and geometry for one tile.
 
     VALIDITY IS COMPUTED OVER THE FULL BAND STACK, not over the framework's
@@ -274,12 +256,12 @@ def load_tile(
     Shadow pixels are dropped from training: section 5 Step 1c resolves shadow
     to tree or to nodata, so a shadowed pixel carries no reliable class.
 
-    Inputs:  feat_dir, lab_dir, shadow_dir - Paths; site, tile, year; indices -
+    Inputs:  feature_dir, label_dir, shadow_dir - Paths; site, tile, year; indices -
              feature band column indices for the framework
     Outputs: (X float32 [n, k], y uint8 [n], stack float32 [k, rows, cols],
               valid bool [rows, cols], profile, label raster uint8)
     """
-    with rasterio.open(feat_dir / f"features_{site}_{tile}_{year}.tif") as ds:
+    with rasterio.open(feature_dir / f"features_{site}_{tile}_{year}.tif") as ds:
         full = ds.read().astype("float32")
         profile, transform, shape = ds.profile, ds.transform, (ds.height, ds.width)
 
@@ -292,7 +274,7 @@ def load_tile(
             shadow = ds.read(1).astype(bool)
         finite &= ~shadow
 
-    labels = read_labels(lab_dir, site, tile, year)
+    labels = read_labels(label_dir, site, tile, year)
     if labels is not None:
         label_raster, polygon_ids = rasterize_labels(labels, shape, transform)
     else:
@@ -306,7 +288,7 @@ def load_tile(
     return X, y, stack, finite, profile, label_raster
 
 
-def fit_forest(X, y, seed):
+def fit_random_forest_A_models(X, y, seed):
     """Fit RF-A on per-pixel samples.
 
     class_weight is balanced because the classes are severely unequal in pixels
@@ -348,11 +330,7 @@ def per_class_scores(y_true, y_pred):
         tp = int((true_c & pred_c).sum())
         recall = tp / support if support else float("nan")
         precision = tp / int(pred_c.sum()) if pred_c.sum() else float("nan")
-        f1 = (
-            (2 * precision * recall / (precision + recall))
-            if (precision > 0 and recall > 0)
-            else 0.0
-        )
+        f1 = (2 * precision * recall / (precision + recall)) if (precision > 0 and recall > 0) else 0.0
         scores[code] = {
             "recall": recall,
             "precision": precision,
@@ -379,12 +357,8 @@ def print_scores(title, scores, macro_f1, overall):
         if not s["support"]:
             print(f"{label:<8}{0:>9}{'-':>9}{'-':>11}{'-':>8}")
             continue
-        print(
-            f"{label:<8}{s['support']:>9}{s['recall']:>9.3f}{s['precision']:>11.3f}{s['f1']:>8.3f}"
-        )
-    print(
-        f"macro-F1 {macro_f1:.3f}   overall {overall:.3f}  (overall is dominated by bare and grass - judge on per-class)"
-    )
+        print(f"{label:<8}{s['support']:>9}{s['recall']:>9.3f}{s['precision']:>11.3f}{s['f1']:>8.3f}")
+    print(f"macro-F1 {macro_f1:.3f}   overall {overall:.3f}  (overall is dominated by bare and grass - judge on per-class)")
 
 
 def main():
@@ -420,47 +394,35 @@ def main():
     )
     args = ap.parse_args()
 
-    cfg = json.loads(args.config.read_text())
-    site, year = cfg["site"], cfg["year"]
-    seed = cfg["BASE_SEED"] + year
-    results = resolve(cfg["results_root"])
-    feat_dir = results / "stage1_data_and_features" / "features"
-    seg_dir = results / "stage1_data_and_features" / "segments"
+    config = json.loads(args.config.read_text())
+    site, year = config["site"], config["year"]
+    seed = config["BASE_SEED"] + year
+    results = resolve_config_path(config["results_root"])
+    feature_dir = results / "stage1_data_and_features" / "features"
+    segments_dir = results / "stage1_data_and_features" / "segments"
     shadow_dir = results / "stage1_data_and_features" / "shadow"
-    lab_dir = results / "stage2_labeling"
+    label_dir = results / "stage2_labeling"
 
     # run directory: step 1d outputs are run-scoped, features/segments/shadow are not
     run_dir = results / "stage3_classification" / f"run{args.run}"
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    settings = cfg.get("stage3_1_classification", {})
-    max_per_polygon = (
-        args.max_pixels_per_polygon
-        if args.max_pixels_per_polygon is not None
-        else settings.get("max_pixels_per_polygon")
-    )
+    settings = config.get("stage3_1_classification", {})
+    max_per_polygon = args.max_pixels_per_polygon if args.max_pixels_per_polygon is not None else settings.get("max_pixels_per_polygon")
     max_per_polygon = max_per_polygon or None
 
-    manifest = json.loads((feat_dir / f"features_{site}_{year}_bands.json").read_text())
+    manifest = json.loads((feature_dir / f"features_{site}_{year}_bands.json").read_text())
     band_order, bands_meta = manifest["band_order"], manifest["bands"]
 
-    train_tiles = [t for t, role in cfg["tiles"].items() if role == "train"]
-    test_tiles = [t for t, role in cfg["tiles"].items() if role == "test"]
+    train_tiles = [t for t, role in config["tiles"].items() if role == "train"]
+    test_tiles = [t for t, role in config["tiles"].items() if role == "test"]
 
     print(f"Step 1d - RF-A per-pixel classification - {site} {year}")
     print("=" * 74)
-    print(
-        f"run {args.run}   seed {seed}   train tiles {len(train_tiles)}   test tiles {len(test_tiles)}"
-    )
-    print(
-        f"polygon subsampling: {('max ' + str(max_per_polygon) + ' px per polygon') if max_per_polygon else 'OFF - every polygon contributes all its pixels'}"
-    )
-    print(
-        "DIAGNOSTIC ONLY - cross-validation over training polygons is not map accuracy."
-    )
-    print(
-        "Step 6 accuracy needs the Olofsson protocol on an independent sample (section 6)."
-    )
+    print(f"run {args.run}   seed {seed}   train tiles {len(train_tiles)}   test tiles {len(test_tiles)}")
+    print(f"polygon subsampling: {('max ' + str(max_per_polygon) + ' px per polygon') if max_per_polygon else 'OFF - every polygon contributes all its pixels'}")
+    print("DIAGNOSTIC ONLY - cross-validation over training polygons is not map accuracy.")
+    print("Step 6 accuracy needs the Olofsson protocol on an independent sample (section 6).")
 
     # the report ACCUMULATES across runs. Running one framework must not erase
     # the others: a fresh dict here would mean `--frameworks C` silently deleted
@@ -490,9 +452,7 @@ def main():
     if run_note:
         print(f"\nrun {args.run} note: {run_note}\n")
     else:
-        print(
-            f"\nNOTE: no run_notes entry for run {args.run} in config stage3_1_classification.run_notes - record what this run changes\n"
-        )
+        print(f"\nNOTE: no run_notes entry for run {args.run} in config stage3_1_classification.run_notes - record what this run changes\n")
 
     report = {
         "run": args.run,
@@ -504,7 +464,7 @@ def main():
         "validation": "leave-one-tile-out over train",
         "note": "diagnostic, not a Step 6 accuracy assessment",
         "run_note": run_note,
-        "tiles": dict(cfg["tiles"]),
+        "tiles": dict(config["tiles"]),
         "frameworks": {},
     }
     if report_path.exists():
@@ -513,17 +473,13 @@ def main():
             report["frameworks"] = previous.get("frameworks", {})
             kept = [k for k in sorted(report["frameworks"]) if k not in args.frameworks]
             if kept:
-                print(
-                    f"carrying forward earlier results for framework(s): {', '.join(kept)}"
-                )
+                print(f"carrying forward earlier results for framework(s): {', '.join(kept)}")
         except Exception as exc:
             print(f"warning: could not read the existing report, starting fresh: {exc}")
 
     for framework in args.frameworks:
         indices, names = framework_band_indices(band_order, bands_meta, framework)
-        print(
-            f"\n{'=' * 74}\nframework {framework} - {len(names)} features: {', '.join(names)}"
-        )
+        print(f"\n{'=' * 74}\nframework {framework} - {len(names)} features: {', '.join(names)}")
 
         cache = {}
         for tile in train_tiles + test_tiles:
@@ -531,8 +487,8 @@ def main():
             # framework subsamples the SAME pixels and the section 4.1
             # deconfounding survives subsampling
             cache[tile] = load_tile(
-                feat_dir,
-                lab_dir,
+                feature_dir,
+                label_dir,
                 shadow_dir,
                 site,
                 tile,
@@ -545,10 +501,7 @@ def main():
         counts = Counter()
         for tile in train_tiles:
             counts.update(cache[tile][1].tolist())
-        print(
-            "train pixels per class: "
-            + ", ".join(f"{CLASS_LABELS[c]} {counts.get(c, 0)}" for c in CLASS_LABELS)
-        )
+        print("train pixels per class: " + ", ".join(f"{CLASS_LABELS[c]} {counts.get(c, 0)}" for c in CLASS_LABELS))
         if min(counts.get(c, 0) for c in CLASS_LABELS) == 0:
             print("skipping: a class has no training pixels in the train block")
             continue
@@ -563,12 +516,10 @@ def main():
             Xh, yh = cache[held][0], cache[held][1]
             if not len(yh) or len(np.unique(y)) < 2:
                 continue
-            model = fit_forest(X, y, seed)
+            model = fit_random_forest_A_models(X, y, seed)
             pred = model.predict(Xh)
             scores, macro, overall = per_class_scores(yh, pred)
-            print_scores(
-                f"held-out tile {held}  ({len(yh)} labelled px)", scores, macro, overall
-            )
+            print_scores(f"held-out tile {held}  ({len(yh)} labelled px)", scores, macro, overall)
             folds.append(
                 {
                     "held_out": held,
@@ -589,15 +540,10 @@ def main():
             print("\nconfusion (rows true, cols predicted)")
             print(f"{'':<8}" + "".join(f"{CLASS_LABELS[c]:>8}" for c in CLASS_LABELS))
             for i, code in enumerate(CLASS_LABELS):
-                print(
-                    f"{CLASS_LABELS[code]:<8}"
-                    + "".join(f"{cm[i, j]:>8}" for j in range(len(CLASS_LABELS)))
-                )
+                print(f"{CLASS_LABELS[code]:<8}" + "".join(f"{cm[i, j]:>8}" for j in range(len(CLASS_LABELS))))
             report["frameworks"][framework] = {
                 "features": names,
-                "train_pixels_per_class": {
-                    CLASS_LABELS[c]: int(counts.get(c, 0)) for c in CLASS_LABELS
-                },
+                "train_pixels_per_class": {CLASS_LABELS[c]: int(counts.get(c, 0)) for c in CLASS_LABELS},
                 "folds": folds,
                 "pooled": {
                     "macro_f1": macro,
@@ -613,14 +559,10 @@ def main():
             # ------------------------------------------------------------- full prediction
         X = np.vstack([cache[t][0] for t in train_tiles])
         y = np.concatenate([cache[t][1] for t in train_tiles])
-        model = fit_forest(X, y, seed)
-        importance = sorted(
-            zip(names, model.feature_importances_), key=lambda kv: -kv[1]
-        )
+        model = fit_random_forest_A_models(X, y, seed)
+        importance = sorted(zip(names, model.feature_importances_), key=lambda kv: -kv[1])
         print("\ntop features: " + ", ".join(f"{n} {v:.3f}" for n, v in importance[:8]))
-        report["frameworks"].setdefault(framework, {})["feature_importance"] = {
-            n: float(v) for n, v in importance
-        }
+        report["frameworks"].setdefault(framework, {})["feature_importance"] = {n: float(v) for n, v in importance}
 
         out_dir = run_dir / framework
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -641,9 +583,7 @@ def main():
                 ds.write(out, 1)
                 # colour table travels inside the file, so QGIS and GDAL both render
                 # the locked section 3 palette with no sidecar (section 12 Q10)
-                ds.write_colormap(
-                    1, {code: hex_to_rgb(CLASS_COLORS[code]) for code in CLASS_LABELS}
-                )
+                ds.write_colormap(1, {code: hex_to_rgb(CLASS_COLORS[code]) for code in CLASS_LABELS})
 
                 # NaN, not zero, outside the valid mask. predict_proba always sums
                 # to 1 for a classified pixel, so an all-zero pixel could only ever
@@ -693,14 +633,8 @@ def main():
 
             share = {CLASS_LABELS[c]: float((out == c).mean()) for c in CLASS_LABELS}
             masked = float((out == NODATA).mean())
-            median_quality = (
-                float(np.nanmedian(quality)) if good.any() else float("nan")
-            )
-            print(
-                f"[{tile}] "
-                + " ".join(f"{k2} {v:.1%}" for k2, v in share.items())
-                + f"   masked {masked:.1%}   median quality {median_quality:.2f}"
-            )
+            median_quality = float(np.nanmedian(quality)) if good.any() else float("nan")
+            print(f"[{tile}] " + " ".join(f"{k2} {v:.1%}" for k2, v in share.items()) + f"   masked {masked:.1%}   median quality {median_quality:.2f}")
 
     report_path.write_text(json.dumps(report, indent=2, default=float) + "\n")
     print(f"\nwrote {report_path}")

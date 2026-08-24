@@ -691,7 +691,7 @@ Purpose: unguided hand labeling drifts toward the visually obvious. A labeler na
 
 #### Minimum polygon area is CLASS-SPECIFIC
 
-**Why a minimum exists at all**: very small polygons are dominated by edge pixels — the most mixed and least reliable — and are the most vulnerable to coregistration error, since a sub-metre shift can move the whole polygon off the object. A 3×3 polygon is the smallest with even one non-boundary pixel.
+**Why a minimum exists at all**: very small polygons are dominated by edge pixels — the most mixed and least reliable — and are the most vulnerable to coregistration error, since a sub-meter shift can move the whole polygon off the object. A 3×3 polygon is the smallest with even one non-boundary pixel.
 
 **Why it must not be uniform.** A single floor does not bind equally. Bare and grass form large contiguous patches; shrubs at SRER are isolated creosote and burroweed with crowns of roughly 1–3 m². A uniform 9 m² floor is therefore free for bare and grass and lands in the **middle of the shrub size distribution**, filtering shrub by size while leaving the abundant classes untouched.
 
@@ -1090,7 +1090,7 @@ QA-failing Planet cells are excluded from Steps 3–5. Log retention statistics,
 
 > **RESOLVED — the grid is measured, not assumed. `run_stage1_3_define_planet_grid.py`, SRER, from `US-xSR_..._PLSP_2021.nc` (2026-08).**
 >
-> An earlier draft of this section said "expected 4". **That was wrong.** The PlanetScope LSP pixel is **3 m**, so **N = 3** and a Planet block is **9 one-metre cells, not 16**. Every downstream count that assumed 16 changes accordingly.
+> An earlier draft of this section said "expected 4". **That was wrong.** The PlanetScope LSP pixel is **3 m**, so **N = 3** and a Planet block is **9 one-meter cells, not 16**. Every downstream count that assumed 16 changes accordingly.
 >
 > | Quantity | Measured value |
 > |---|---|
@@ -1124,7 +1124,7 @@ QA-failing Planet cells are excluded from Steps 3–5. Log retention statistics,
 >
 > **Consequence, binding on Step 3**: tile boundaries cut through Planet cells on all four edges of every tile. **Aggregate from a site-wide mosaic, or carry a one-cell halo per tile — never block each tile in isolation.** Doing so would emit partial blocks all around every tile, which would then fail the retention rule and be dropped, silently deleting the tile perimeter from the fraction product.
 >
-> **DO NOT SHIFT OR RESAMPLE THE TILES TO REMOVE THE OFFSET. This is the natural reading of the offset table and it is wrong.** The 1 m data is already aligned to the Planet grid, exactly: 1 m cells sit on whole-metre boundaries, Planet cell edges sit on whole metres divisible by 3, so **every 1 m cell lies wholly inside exactly one Planet cell, everywhere on the site, with no cell ever split.** Nothing is misaligned and there is nothing to correct.
+> **DO NOT SHIFT OR RESAMPLE THE TILES TO REMOVE THE OFFSET. This is the natural reading of the offset table and it is wrong.** The 1 m data is already aligned to the Planet grid, exactly: 1 m cells sit on whole-meter boundaries, Planet cell edges sit on whole metres divisible by 3, so **every 1 m cell lies wholly inside exactly one Planet cell, everywhere on the site, with no cell ever split.** Nothing is misaligned and there is nothing to correct.
 >
 > What the offset actually describes is **where the first whole block starts inside a tile's array** — not where the ground is. A tile with `offset_x = 1` has its first complete Planet column beginning at array column 2, and its leading 2 columns belonging to a Planet cell shared with the neighbouring tile. **That is an indexing fact, resolved by index arithmetic and a halo, not by moving pixels.**
 >

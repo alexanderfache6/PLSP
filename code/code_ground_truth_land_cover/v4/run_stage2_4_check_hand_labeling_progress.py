@@ -74,11 +74,11 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import rasterio
+from constants import CLASS_LABELS
 from rasterio.features import rasterize
 from shapely.validation import make_valid
 
 HERE = Path(__file__).resolve().parent
-CLASS_LABELS = {0: "bare", 1: "grass", 2: "shrub", 3: "tree"}
 MIN_PER_CLASS = 50
 POINT_TYPES = {"Point", "MultiPoint"}
 
@@ -113,14 +113,7 @@ def drop_out_of_tile(lab_dir, site, year, tiles):
                 keep.append(False)
                 continue
             gb = geom.bounds
-            keep.append(
-                not (
-                    gb[0] < bounds.left
-                    or gb[2] > bounds.right
-                    or gb[1] < bounds.bottom
-                    or gb[3] > bounds.top
-                )
-            )
+            keep.append(not (gb[0] < bounds.left or gb[2] > bounds.right or gb[1] < bounds.bottom or gb[3] > bounds.top))
         n_drop = len(keep) - sum(keep)
         if not n_drop:
             continue
@@ -129,15 +122,11 @@ def drop_out_of_tile(lab_dir, site, year, tiles):
         kept.to_file(staged, driver="GPKG", layer=path.stem, geometry_type="Polygon")
         if len(gpd.read_file(staged)) != len(kept):
             staged.unlink(missing_ok=True)
-            print(
-                f"[{tile}] ABORTED drop - staged file did not round-trip, original left untouched"
-            )
+            print(f"[{tile}] ABORTED drop - staged file did not round-trip, original left untouched")
             continue
         staged.replace(path)
         removed += n_drop
-        print(
-            f"[{tile}] removed {n_drop} polygon(s) extending outside the tile, {len(kept)} kept"
-        )
+        print(f"[{tile}] removed {n_drop} polygon(s) extending outside the tile, {len(kept)} kept")
     return removed
 
 
@@ -163,17 +152,17 @@ def cluster_pixel_share(lab_dir, site, year, tiles, k):
     return {c: (totals[c] / valid if valid else 0.0) for c in range(1, k + 1)}
 
 
-def class_minimum_areas(cfg):
+def class_minimum_areas(config):
     """Per-class minimum polygon area in m2, keyed by integer class code.
 
     Accepts either the class-specific mapping (instructions5.md 4.2) or a bare
     scalar from an older config, which is applied to every class so existing
     configs keep working.
 
-    Inputs:  cfg - the parsed site config dict
+    Inputs:  config - the parsed site config dict
     Outputs: dict of {class_code: float minimum area in m2}
     """
-    raw = cfg["stage2_1_labeling_zones"]["min_polygon_area_m2"]
+    raw = config["stage2_1_labeling_zones"]["min_polygon_area_m2"]
     if isinstance(raw, dict):
         return {int(code): float(value) for code, value in raw.items()}
     return {code: float(raw) for code in CLASS_LABELS}
@@ -205,16 +194,8 @@ def shrub_review_state(lab_dir, site, tile, year, swept):
     if not frames:
         return None
     gdf = pd.concat(frames, ignore_index=True)
-    reviewed = (
-        gdf["reviewed"].fillna(0).astype(int) == 1
-        if "reviewed" in gdf.columns
-        else pd.Series(False, index=gdf.index)
-    )
-    rejected = (
-        gdf["rejected"].fillna(0).astype(int) == 1
-        if "rejected" in gdf.columns
-        else pd.Series(False, index=gdf.index)
-    )
+    reviewed = gdf["reviewed"].fillna(0).astype(int) == 1 if "reviewed" in gdf.columns else pd.Series(False, index=gdf.index)
+    rejected = gdf["rejected"].fillna(0).astype(int) == 1 if "rejected" in gdf.columns else pd.Series(False, index=gdf.index)
     # a swept tile counts every unrejected candidate as looked at and kept
     seen = pd.Series(True, index=gdf.index) if swept else (reviewed | rejected)
     accepted = seen & ~rejected
@@ -256,11 +237,7 @@ def read_accepted_candidates(lab_dir, site, tile, year, swept):
         gdf = read_layer_named(path, f"shrub_review_{site}_{tile}_{year}_{kind}")
         if gdf is None or not len(gdf):
             continue
-        rejected = (
-            gdf["rejected"].fillna(0).astype(int) == 1
-            if "rejected" in gdf.columns
-            else pd.Series(False, index=gdf.index)
-        )
+        rejected = gdf["rejected"].fillna(0).astype(int) == 1 if "rejected" in gdf.columns else pd.Series(False, index=gdf.index)
         if swept:
             keep = gdf[~rejected]
         elif "reviewed" in gdf.columns:
@@ -326,12 +303,7 @@ def fill_attributes(lab_dir, site, year, tiles):
             continue
         with rasterio.open(lab_dir / f"cluster_map_{site}_{tile}_{year}.tif") as ds:
             clusters, transform, shape = ds.read(1), ds.transform, ds.shape
-        ids = [
-            None
-            if g is None or g.is_empty
-            else majority_cluster(g, clusters, transform, shape)
-            for g in polys.geometry
-        ]
+        ids = [None if g is None or g.is_empty else majority_cluster(g, clusters, transform, shape) for g in polys.geometry]
         polys["tile"] = tile
         polys["cluster_id"] = pd.array(ids, dtype="Int64")
         # written to a sibling file and swapped in, never in place. to_file on an
@@ -342,23 +314,17 @@ def fill_attributes(lab_dir, site, year, tiles):
         polys.to_file(staged, driver="GPKG", layer=path.stem, geometry_type="Polygon")
         if len(gpd.read_file(staged)) != len(polys):
             staged.unlink(missing_ok=True)
-            print(
-                f"[{tile}] ABORTED fill - staged file did not round-trip, original left untouched"
-            )
+            print(f"[{tile}] ABORTED fill - staged file did not round-trip, original left untouched")
             continue
         staged.replace(path)
         n_set = int(sum(i is not None for i in ids))
-        print(
-            f"[{tile}] filled tile + cluster_id on {len(polys)} polygon(s), {n_set} got a cluster"
-        )
+        print(f"[{tile}] filled tile + cluster_id on {len(polys)} polygon(s), {n_set} got a cluster")
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("config", type=Path)
-    ap.add_argument(
-        "--json", action="store_true", help="print the machine-readable report"
-    )
+    ap.add_argument("--json", action="store_true", help="print the machine-readable report")
     ap.add_argument(
         "--fill",
         action="store_true",
@@ -371,25 +337,21 @@ def main():
     )
     args = ap.parse_args()
 
-    cfg = json.loads(args.config.read_text())
-    site, year = cfg["site"], cfg["year"]
-    k = cfg["stage2_1_labeling_zones"]["k"]
-    min_area = class_minimum_areas(cfg)
-    swept_tiles = set(
-        cfg.get("stage2_2_shrub_candidates", {}).get("reviewed_tiles", [])
-    )
-    lab_dir = resolve(cfg["results_root"], "stage2_labeling")
+    config = json.loads(args.config.read_text())
+    site, year = config["site"], config["year"]
+    k = config["stage2_1_labeling_zones"]["k"]
+    min_area = class_minimum_areas(config)
+    swept_tiles = set(config.get("stage2_2_shrub_candidates", {}).get("reviewed_tiles", []))
+    lab_dir = resolve(config["results_root"], "stage2_labeling")
 
     if args.drop_out_of_tile:
-        print(
-            "removing polygons that extend outside their tile (this deletes drawn work)"
-        )
-        n = drop_out_of_tile(lab_dir, site, year, cfg["tiles"])
+        print("removing polygons that extend outside their tile (this deletes drawn work)")
+        n = drop_out_of_tile(lab_dir, site, year, config["tiles"])
         print(f"removed {n} polygon(s)\n")
 
     if args.fill:
         print("filling derived attributes (this writes to the polygon GeoPackages)")
-        fill_attributes(lab_dir, site, year, cfg["tiles"])
+        fill_attributes(lab_dir, site, year, config["tiles"])
         print()
 
     poly_counts = defaultdict(Counter)  # role -> class -> n polygons
@@ -406,7 +368,7 @@ def main():
     repaired_count = [0]
     per_tile = []
 
-    for tile, role in cfg["tiles"].items():
+    for tile, role in config["tiles"].items():
         row = {
             "tile": tile,
             "role": role,
@@ -428,9 +390,7 @@ def main():
                     problems.append(f"{tile}: zone has class_code {code}, outside 0-3")
 
         polys = read_layer(lab_dir / f"training_polygons_{site}_{tile}_{year}.gpkg")
-        accepted = read_accepted_candidates(
-            lab_dir, site, tile, year, tile in swept_tiles
-        )
+        accepted = read_accepted_candidates(lab_dir, site, tile, year, tile in swept_tiles)
         if accepted is not None and len(accepted):
             row["accepted_candidates"] = len(accepted)
             accepted = accepted[["class_code", "geometry"]].copy()
@@ -438,9 +398,7 @@ def main():
                 polys = gpd.GeoDataFrame(accepted, crs=accepted.crs)
             else:
                 polys = gpd.GeoDataFrame(
-                    pd.concat(
-                        [polys[["class_code", "geometry"]], accepted], ignore_index=True
-                    ),
+                    pd.concat([polys[["class_code", "geometry"]], accepted], ignore_index=True),
                     crs=polys.crs,
                 )
         if polys is not None and len(polys):
@@ -464,9 +422,7 @@ def main():
                         geom = repaired
                         repaired_count[0] += 1
                     else:
-                        problems.append(
-                            f"{tile} #{i}: invalid geometry, not repairable"
-                        )
+                        problems.append(f"{tile} #{i}: invalid geometry, not repairable")
                         continue
                 if code is None or (isinstance(code, float) and np.isnan(code)):
                     problems.append(f"{tile} #{i}: class_code not set")
@@ -485,21 +441,14 @@ def main():
                     floor = min_area[code]
                     if geom.area < floor:
                         # ignored, not a fault - excluded from every count below
-                        undersized.append(
-                            f"{tile} #{i}: {CLASS_LABELS[code]} {geom.area:.1f} m2 < {floor:g} m2 floor"
-                        )
+                        undersized.append(f"{tile} #{i}: {CLASS_LABELS[code]} {geom.area:.1f} m2 < {floor:g} m2 floor")
                         undersized_by_class[code] += 1
                         continue
                     poly_counts[role][code] += 1
                     tile_counts[tile][code] += 1
                     areas[code].append(geom.area)
                 gb = geom.bounds
-                if (
-                    gb[0] < bounds.left
-                    or gb[2] > bounds.right
-                    or gb[1] < bounds.bottom
-                    or gb[3] > bounds.top
-                ):
+                if gb[0] < bounds.left or gb[2] > bounds.right or gb[1] < bounds.bottom or gb[3] > bounds.top:
                     problems.append(f"{tile} #{i}: extends outside the tile")
                     continue
                 # which part of feature space this polygon actually covers
@@ -516,41 +465,29 @@ def main():
         per_tile.append(row)
 
     # ------------------------------------------------------------------ report
-    roles = sorted({r for r in cfg["tiles"].values()})
+    roles = sorted({r for r in config["tiles"].values()})
     print(f"Stage 2 labeling progress - {site} {year}\n" + "=" * 62)
 
     print("\nper tile")
-    header = (
-        f"{'tile':<18}{'role':<7}"
-        + "".join(f"{CLASS_LABELS[c]:>7}" for c in CLASS_LABELS)
-        + f"{'total':>7}{'chm':>6}{'clusters':>10}{'sites filled':>14}"
-    )
+    header = f"{'tile':<18}{'role':<7}" + "".join(f"{CLASS_LABELS[c]:>7}" for c in CLASS_LABELS) + f"{'total':>7}{'chm':>6}{'clusters':>10}{'sites filled':>14}"
     print(header)
     for r in per_tile:
         tile = r["tile"]
         cells = "".join(f"{tile_counts[tile][c]:>7}" for c in CLASS_LABELS)
         total = sum(tile_counts[tile][c] for c in CLASS_LABELS)
         n_clusters = len(tile_cluster_hits[tile])
-        print(
-            f"{tile:<18}{r['role']:<7}{cells}{total:>7}{r['accepted_candidates']:>6}{n_clusters:>7}/{k:<2}{r['sites_filled']:>7} /{r['sites']:>5}"
-        )
+        print(f"{tile:<18}{r['role']:<7}{cells}{total:>7}{r['accepted_candidates']:>6}{n_clusters:>7}/{k:<2}{r['sites_filled']:>7} /{r['sites']:>5}")
     # per-class counts are per tile; the gate in check 1 is per ROLE, so a tile
     # being light in a class is only a problem if its whole block is
     print("-" * len(header))
     for role in sorted({r["role"] for r in per_tile}):
         tiles = [r["tile"] for r in per_tile if r["role"] == role]
-        cells = "".join(
-            f"{sum(tile_counts[t][c] for t in tiles):>7}" for c in CLASS_LABELS
-        )
+        cells = "".join(f"{sum(tile_counts[t][c] for t in tiles):>7}" for c in CLASS_LABELS)
         total = sum(sum(tile_counts[t][c] for c in CLASS_LABELS) for t in tiles)
         chm = sum(r["accepted_candidates"] for r in per_tile if r["role"] == role)
-        print(
-            f"{role + ' total':<18}{'':<7}{cells}{total:>7}{chm:>6}{len(cluster_hits[role]):>7}/{k:<2}"
-        )
+        print(f"{role + ' total':<18}{'':<7}{cells}{total:>7}{chm:>6}{len(cluster_hits[role]):>7}/{k:<2}")
     if not swept_tiles:
-        print(
-            "note: no tiles listed in stage2_2_shrub_candidates.reviewed_tiles - shrub candidates count only where reviewed = 1 is set per feature"
-        )
+        print("note: no tiles listed in stage2_2_shrub_candidates.reviewed_tiles - shrub candidates count only where reviewed = 1 is set per feature")
     # polygons is the union of hand-drawn and accepted CHM candidates; the
     # second column shows how much came from the accelerator
     # zones and polygons are one-to-many by design: a zone may yield several
@@ -568,72 +505,52 @@ def main():
             cells.append(f"{n:>8} {'ok ' if ok else 'SHORT'}")
         print(f"{code} {label:<6}" + "".join(f"{c:>14}" for c in cells))
 
-    shares = cluster_pixel_share(lab_dir, site, year, cfg["tiles"], k)
-    floor = cfg["stage2_1_labeling_zones"].get("cluster_min_pixel_fraction", 0.001)
+    shares = cluster_pixel_share(lab_dir, site, year, config["tiles"], k)
+    floor = config["stage2_1_labeling_zones"].get("cluster_min_pixel_fraction", 0.001)
     ignored = sorted(c for c in shares if shares[c] < floor)
     required = sorted(set(range(1, k + 1)) - set(ignored))
 
-    print(
-        f"\ncheck 2 - cluster coverage by labeled polygons (floor {floor:.3%} of site pixels)"
-    )
+    print(f"\ncheck 2 - cluster coverage by labeled polygons (floor {floor:.3%} of site pixels)")
     print("cluster sizes: " + ", ".join(f"{c}:{shares[c]:.2%}" for c in sorted(shares)))
     if ignored:
-        print(
-            "ignored below floor: "
-            + ", ".join(f"{c} ({shares[c]:.4%})" for c in ignored)
-            + " - too small to label, excluded from the gate"
-        )
+        print("ignored below floor: " + ", ".join(f"{c} ({shares[c]:.4%})" for c in ignored) + " - too small to label, excluded from the gate")
     for role in roles:
         missing = sorted(set(required) - cluster_hits[role])
         state = "all covered" if not missing else f"missing {missing}"
-        print(
-            f"{role:<7} {len(cluster_hits[role] & set(required))}/{len(required)} required clusters   {state}"
-        )
+        print(f"{role:<7} {len(cluster_hits[role] & set(required))}/{len(required)} required clusters   {state}")
         gate_ok &= not missing
 
     print("\ncheck 3 - polygon area against the class minimum")
     if any(areas.values()) or sum(points.values()):
-        print(
-            f"{'class':<8}{'floor':>7}{'n':>5}{'min':>9}{'median':>9}{'max':>9}{'total m2':>11}{'points':>8}{'ignored':>9}"
-        )
+        print(f"{'class':<8}{'floor':>7}{'n':>5}{'min':>9}{'median':>9}{'max':>9}{'total m2':>11}{'points':>8}{'ignored':>9}")
         for code, label in CLASS_LABELS.items():
             a = areas[code]
             floor = f"{min_area[code]:g}"
             if a:
-                print(
-                    f"{code} {label:<6}{floor:>7}{len(a):>5}{min(a):>9.1f}{np.median(a):>9.1f}{max(a):>9.1f}{sum(a):>11.0f}{points[code]:>8}{undersized_by_class[code]:>9}"
-                )
+                print(f"{code} {label:<6}{floor:>7}{len(a):>5}{min(a):>9.1f}{np.median(a):>9.1f}{max(a):>9.1f}{sum(a):>11.0f}{points[code]:>8}{undersized_by_class[code]:>9}")
             elif points[code] or undersized_by_class[code]:
-                print(
-                    f"{code} {label:<6}{floor:>7}{0:>5}{'-':>9}{'-':>9}{'-':>9}{0:>11}{points[code]:>8}{undersized_by_class[code]:>9}"
-                )
+                print(f"{code} {label:<6}{floor:>7}{0:>5}{'-':>9}{'-':>9}{'-':>9}{0:>11}{points[code]:>8}{undersized_by_class[code]:>9}")
         # a class median sitting near its floor means polygons are being drawn
         # to the floor rather than to the object, which imports background into
         # the class - instructions5.md 4.2
         for code, label in CLASS_LABELS.items():
             a = areas[code]
             if len(a) >= 5 and np.median(a) < 1.5 * min_area[code]:
-                print(
-                    f"note: {label} median {np.median(a):.1f} m2 sits close to its {min_area[code]:g} m2 floor - check polygons are not being stretched to qualify"
-                )
+                print(f"note: {label} median {np.median(a):.1f} m2 sits close to its {min_area[code]:g} m2 floor - check polygons are not being stretched to qualify")
     else:
         print("no polygons drawn yet")
 
     if undersized:
         # reference only: these do not gate and are not deleted, they simply
         # take no part in training - instructions5.md 4.2
-        print(
-            f"\nignored, below the class floor ({len(undersized)}) - excluded from the counts above, not a gate failure"
-        )
+        print(f"\nignored, below the class floor ({len(undersized)}) - excluded from the counts above, not a gate failure")
         for u in undersized[:10]:
             print(f"{u}")
         if len(undersized) > 10:
             print(f"... and {len(undersized) - 10} more")
 
     if repaired_count[0]:
-        print(
-            f"\nrepaired in memory: {repaired_count[0]} self-intersecting geometries - a corner-pinch artifact of vectorizing CHM candidates, benign and not a gate failure. Nothing on disk was modified."
-        )
+        print(f"\nrepaired in memory: {repaired_count[0]} self-intersecting geometries - a corner-pinch artifact of vectorizing CHM candidates, benign and not a gate failure. Nothing on disk was modified.")
 
     print(f"\ncheck 4-5 - geometry and class_code problems: {len(problems)}")
     for p in problems[:15]:
@@ -642,41 +559,26 @@ def main():
         print(f"... and {len(problems) - 15} more")
     gate_ok &= not problems
 
-    review_rows = [
-        (tile, role, shrub_review_state(lab_dir, site, tile, year, tile in swept_tiles))
-        for tile, role in cfg["tiles"].items()
-    ]
+    review_rows = [(tile, role, shrub_review_state(lab_dir, site, tile, year, tile in swept_tiles)) for tile, role in config["tiles"].items()]
     if any(state for _, _, state in review_rows):
         print("\ncheck 7 - shrub candidate review (reported, not gated)")
-        print(
-            f"{'tile':<18}{'role':<7}{'cands':>7}{'reviewed':>10}{'rejected':>10}{'accepted':>10}{'pending':>9}{'accept':>8}"
-        )
+        print(f"{'tile':<18}{'role':<7}{'cands':>7}{'reviewed':>10}{'rejected':>10}{'accepted':>10}{'pending':>9}{'accept':>8}")
         agg = Counter()
         for tile, role, state in review_rows:
             if state is None:
                 print(f"{tile:<18}{role:<7}{'no review file':>44}")
                 continue
-            print(
-                f"{tile:<18}{role:<7}{state['candidates']:>7}{state['reviewed']:>10}{state['rejected']:>10}{state['accepted']:>10}{state['pending']:>9}{state['accept_pct']:>7.0f}%"
-            )
+            print(f"{tile:<18}{role:<7}{state['candidates']:>7}{state['reviewed']:>10}{state['rejected']:>10}{state['accepted']:>10}{state['pending']:>9}{state['accept_pct']:>7.0f}%")
             for key in ("candidates", "reviewed", "rejected", "accepted", "pending"):
                 agg[key] += state[key]
-        overall = (
-            (100.0 * agg["accepted"] / agg["reviewed"]) if agg["reviewed"] else 0.0
-        )
-        print(
-            f"{'TOTAL':<18}{'':<7}{agg['candidates']:>7}{agg['reviewed']:>10}{agg['rejected']:>10}{agg['accepted']:>10}{agg['pending']:>9}{overall:>7.0f}%"
-        )
+        overall = (100.0 * agg["accepted"] / agg["reviewed"]) if agg["reviewed"] else 0.0
+        print(f"{'TOTAL':<18}{'':<7}{agg['candidates']:>7}{agg['reviewed']:>10}{agg['rejected']:>10}{agg['accepted']:>10}{agg['pending']:>9}{overall:>7.0f}%")
         if agg["candidates"]:
-            print(
-                f"{agg['reviewed']}/{agg['candidates']} candidates reviewed ({100.0 * agg['reviewed'] / agg['candidates']:.1f}%)"
-            )
+            print(f"{agg['reviewed']}/{agg['candidates']} candidates reviewed ({100.0 * agg['reviewed'] / agg['candidates']:.1f}%)")
         # a persistently low accept rate is evidence about the height band, not
         # about the candidates - instructions5.md 3 safeguards 1-2
         if agg["reviewed"] >= 30 and overall < 30.0:
-            print(
-                f"note: accept rate {overall:.0f}% is low - H_GRASS_MAX / H_TREE_MIN may need revisiting"
-            )
+            print(f"note: accept rate {overall:.0f}% is low - H_GRASS_MAX / H_TREE_MIN may need revisiting")
 
     print("\ncheck 6 - candidate site fill rate")
     for role in roles:
@@ -689,12 +591,7 @@ def main():
     if gate_ok:
         print("GATE PASSED - Stage 2 complete, Step 1d can proceed.")
     else:
-        need = {
-            f"{r}/{CLASS_LABELS[c]}": MIN_PER_CLASS - poly_counts[r][c]
-            for r in roles
-            for c in CLASS_LABELS
-            if poly_counts[r][c] < MIN_PER_CLASS
-        }
+        need = {f"{r}/{CLASS_LABELS[c]}": MIN_PER_CLASS - poly_counts[r][c] for r in roles for c in CLASS_LABELS if poly_counts[r][c] < MIN_PER_CLASS}
         print("GATE NOT PASSED - still needed:")
         if need:
             print("polygons: " + ", ".join(f"{kk} +{vv}" for kk, vv in need.items()))
@@ -712,23 +609,14 @@ def main():
             "gate_passed": bool(gate_ok),
             "min_per_class_per_role": MIN_PER_CLASS,
             "per_tile": per_tile,
-            "polygons_per_class_per_role": {
-                r: {CLASS_LABELS[c]: poly_counts[r][c] for c in CLASS_LABELS}
-                for r in roles
-            },
+            "polygons_per_class_per_role": {r: {CLASS_LABELS[c]: poly_counts[r][c] for c in CLASS_LABELS} for r in roles},
             "clusters_covered": {r: sorted(cluster_hits[r]) for r in roles},
-            "clusters_missing": {
-                r: sorted(set(range(1, k + 1)) - cluster_hits[r]) for r in roles
-            },
+            "clusters_missing": {r: sorted(set(range(1, k + 1)) - cluster_hits[r]) for r in roles},
             "problems": problems,
             "min_polygon_area_m2": {CLASS_LABELS[c]: min_area[c] for c in CLASS_LABELS},
-            "point_labels_per_class": {
-                CLASS_LABELS[c]: points[c] for c in CLASS_LABELS
-            },
+            "point_labels_per_class": {CLASS_LABELS[c]: points[c] for c in CLASS_LABELS},
             "ignored_below_floor": undersized,
-            "ignored_per_class": {
-                CLASS_LABELS[c]: undersized_by_class[c] for c in CLASS_LABELS
-            },
+            "ignored_per_class": {CLASS_LABELS[c]: undersized_by_class[c] for c in CLASS_LABELS},
         }
         out = lab_dir / f"labeling_progress_{site}_{year}.json"
         out.write_text(json.dumps(report, indent=2) + "\n")

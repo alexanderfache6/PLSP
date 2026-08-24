@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Step 0 - data audit and grid definition (instructions5.md section 5 Step 0, section 11).
 
 Runs the section 11 checklist against a site/year and writes both a machine-readable
@@ -63,9 +62,9 @@ def resolve(root, *parts):
     return Path(str(root)).expanduser().joinpath(*parts)
 
 
-def tile_paths(cfg, site_dir, tile):
+def tile_paths(config, site_dir, tile):
     """Every expected file for one tile, keyed by product/index."""
-    p = cfg["products"]
+    p = config["products"]
     out = {
         "rgb": site_dir / p["rgb"]["folder"] / p["rgb"]["pattern"].format(tile=tile),
         "chm": site_dir / p["chm"]["folder"] / p["chm"]["pattern"].format(tile=tile),
@@ -197,11 +196,11 @@ def best_shift(a, b, max_shift):
     # ---------------------------------------------------------------- 11.1 inventory
 
 
-def check_inventory(audit, cfg, site_dir):
-    tiles = list(cfg["tiles"])
+def check_inventory(audit, config, site_dir):
+    tiles = list(config["tiles"])
     expected, missing = [], []
     for tile in tiles:
-        for key, path in tile_paths(cfg, site_dir, tile).items():
+        for key, path in tile_paths(config, site_dir, tile).items():
             expected.append(str(path))
             if not path.exists():
                 missing.append(f"{tile}/{key}: {path}")
@@ -222,8 +221,8 @@ def check_inventory(audit, cfg, site_dir):
     # 2 - SAVI/EVI filenames follow the NDVI pattern (never verified before)
     pattern_ok, pattern_detail = True, {}
     for tile in tiles:
-        for index in cfg["products"]["vi"]["indices"]:
-            path = tile_paths(cfg, site_dir, tile)[f"vi_{index}"]
+        for index in config["products"]["vi"]["indices"]:
+            path = tile_paths(config, site_dir, tile)[f"vi_{index}"]
             pattern_detail[f"{tile}/{index}"] = path.exists()
             pattern_ok &= path.exists()
     audit.add(
@@ -237,9 +236,9 @@ def check_inventory(audit, cfg, site_dir):
     # 3, 4 - dimensions per product
     for num, key, label in ((3, "rgb", "RGB"), (4, "chm", "CHM")):
         sizes, bad = {}, []
-        spec = cfg["products"][key]
+        spec = config["products"][key]
         for tile in tiles:
-            path = tile_paths(cfg, site_dir, tile)[key]
+            path = tile_paths(config, site_dir, tile)[key]
             if not path.exists():
                 continue
             with rasterio.open(path) as ds:
@@ -254,9 +253,9 @@ def check_inventory(audit, cfg, site_dir):
         )
         # 4 also covers the VI grid
     vi_sizes, vi_bad = {}, []
-    spec = cfg["products"]["vi"]
+    spec = config["products"]["vi"]
     for tile in tiles:
-        path = tile_paths(cfg, site_dir, tile)["vi_SAVI"]
+        path = tile_paths(config, site_dir, tile)["vi_SAVI"]
         if not path.exists():
             continue
         with rasterio.open(path) as ds:
@@ -273,7 +272,7 @@ def check_inventory(audit, cfg, site_dir):
     # 5 - no duplicate or overlapping footprints
     bounds = {}
     for tile in tiles:
-        path = tile_paths(cfg, site_dir, tile)["chm"]
+        path = tile_paths(config, site_dir, tile)["chm"]
         if path.exists():
             with rasterio.open(path) as ds:
                 bounds[tile] = [round(v, 3) for v in ds.bounds]
@@ -301,18 +300,18 @@ def check_inventory(audit, cfg, site_dir):
     # ------------------------------------------------- 11.2 georeferencing and alignment
 
 
-def check_georeferencing(audit, cfg, site_dir):
-    tiles = list(cfg["tiles"])
+def check_georeferencing(audit, config, site_dir):
+    tiles = list(config["tiles"])
     crs_seen, origins, _ = {}, {}, []
     for tile in tiles:
-        for key, path in tile_paths(cfg, site_dir, tile).items():
+        for key, path in tile_paths(config, site_dir, tile).items():
             if not path.exists():
                 continue
             with rasterio.open(path) as ds:
                 crs_seen.setdefault(str(ds.crs), []).append(f"{tile}/{key}")
                 origins[f"{tile}/{key}"] = [ds.transform.c, ds.transform.f]
 
-    expected_crs = cfg["expected_crs"]
+    expected_crs = config["expected_crs"]
     utm_zone = None
     if len(crs_seen) == 1:
         only = next(iter(crs_seen))
@@ -335,7 +334,7 @@ def check_georeferencing(audit, cfg, site_dir):
     # 7 - VI and CHM 1 m grids share an identical origin
     offsets = {}
     for tile in tiles:
-        paths = tile_paths(cfg, site_dir, tile)
+        paths = tile_paths(config, site_dir, tile)
         if not (paths["chm"].exists() and paths["vi_SAVI"].exists()):
             continue
         with rasterio.open(paths["chm"]) as c, rasterio.open(paths["vi_SAVI"]) as v:
@@ -355,7 +354,7 @@ def check_georeferencing(audit, cfg, site_dir):
     # 8 - RGB 10 cm grid nests exactly within the 1 m grid
     nesting = {}
     for tile in tiles:
-        paths = tile_paths(cfg, site_dir, tile)
+        paths = tile_paths(config, site_dir, tile)
         if not (paths["chm"].exists() and paths["rgb"].exists()):
             continue
         with rasterio.open(paths["chm"]) as c, rasterio.open(paths["rgb"]) as r:
@@ -376,11 +375,11 @@ def check_georeferencing(audit, cfg, site_dir):
     )
 
     # 9 - coregistration: RGB (degraded to 1 m) against CHM and SAVI
-    limit = cfg["thresholds"]["coreg_blocker_m"]
+    limit = config["thresholds"]["coreg_blocker_m"]
     coreg = {}
     worst = 0.0
     for tile in tiles:
-        paths = tile_paths(cfg, site_dir, tile)
+        paths = tile_paths(config, site_dir, tile)
         if not all(paths[k].exists() for k in ("rgb", "chm", "vi_SAVI")):
             continue
         with rasterio.open(paths["rgb"]) as r:
@@ -395,8 +394,8 @@ def check_georeferencing(audit, cfg, site_dir):
             savi = v.read(1, masked=True).filled(0.0)
         n = min(rgb1m.shape[0], chm.shape[0], savi.shape[0])
         entry = {}
-        window = int(cfg["thresholds"].get("coreg_window_px", 100))
-        upsample = int(cfg["thresholds"].get("coreg_upsample", 20))
+        window = int(config["thresholds"].get("coreg_window_px", 100))
+        upsample = int(config["thresholds"].get("coreg_upsample", 20))
         # all three pairings: CHM vs SAVI involves no camera, so it separates a
         # camera registration problem from a whole-block geolocation difference
         pairs = (
@@ -441,15 +440,15 @@ def check_georeferencing(audit, cfg, site_dir):
         # ------------------------------------------------ 11.3 radiometry and value sanity
 
 
-def check_radiometry(audit, cfg, site_dir):
-    tiles = list(cfg["tiles"])
+def check_radiometry(audit, config, site_dir):
+    tiles = list(config["tiles"])
 
     # 13 - VI scale factor
     vi_stats = {}
     out_of_range = []
     for tile in tiles:
-        for index in cfg["products"]["vi"]["indices"]:
-            path = tile_paths(cfg, site_dir, tile)[f"vi_{index}"]
+        for index in config["products"]["vi"]["indices"]:
+            path = tile_paths(config, site_dir, tile)[f"vi_{index}"]
             if not path.exists():
                 continue
             with rasterio.open(path) as ds:
@@ -485,7 +484,7 @@ def check_radiometry(audit, cfg, site_dir):
     # 14 - RGB band count and dtype
     rgb_info, rgb_bad = {}, []
     for tile in tiles:
-        path = tile_paths(cfg, site_dir, tile)["rgb"]
+        path = tile_paths(config, site_dir, tile)["rgb"]
         if not path.exists():
             continue
         with rasterio.open(path) as ds:
@@ -509,7 +508,7 @@ def check_radiometry(audit, cfg, site_dir):
     nodata = {}
     undeclared = []
     for tile in tiles:
-        for key, path in tile_paths(cfg, site_dir, tile).items():
+        for key, path in tile_paths(config, site_dir, tile).items():
             if not path.exists():
                 continue
             with rasterio.open(path) as ds:
@@ -517,7 +516,7 @@ def check_radiometry(audit, cfg, site_dir):
                 if ds.nodata is None:
                     undeclared.append(f"{tile}/{key}")
                     # RGB carries no nodata value; recorded as an accepted decision, not a defect
-    accepted = cfg.get("decisions", {}).get("rgb_nodata_undeclared")
+    accepted = config.get("decisions", {}).get("rgb_nodata_undeclared")
     audit.add(
         15,
         "Nodata/fill declared per product and applied, not left as a raw sentinel",
@@ -531,10 +530,10 @@ def check_radiometry(audit, cfg, site_dir):
 
     # 16 - CHM range, and the man-made-structure mask it justifies
     chm_stats = {}
-    mask_limit = cfg["thresholds"]["chm_max_valid_m"]
+    mask_limit = config["thresholds"]["chm_max_valid_m"]
     total_masked = 0
     for tile in tiles:
-        path = tile_paths(cfg, site_dir, tile)["chm"]
+        path = tile_paths(config, site_dir, tile)["chm"]
         if not path.exists():
             continue
         with rasterio.open(path) as ds:
@@ -559,15 +558,15 @@ def check_radiometry(audit, cfg, site_dir):
             "per_tile": chm_stats,
             "chm_max_valid_m": mask_limit,
             "total_masked_px": total_masked,
-            "decision": cfg.get("decisions", {}).get("chm_max_valid_m"),
+            "decision": config.get("decisions", {}).get("chm_max_valid_m"),
         },
     )
 
     # 17 - CHM noise floor, proxied by the low tail over low-SAVI (bare) pixels
-    savi_bare_max = cfg["parameters"]["SAVI_BARE_MAX"]
+    savi_bare_max = config["parameters"]["SAVI_BARE_MAX"]
     noise = {}
     for tile in tiles:
-        paths = tile_paths(cfg, site_dir, tile)
+        paths = tile_paths(config, site_dir, tile)
         if not (paths["chm"].exists() and paths["vi_SAVI"].exists()):
             continue
         with rasterio.open(paths["chm"]) as c, rasterio.open(paths["vi_SAVI"]) as v:
@@ -589,7 +588,7 @@ def check_radiometry(audit, cfg, site_dir):
         REPORT,
         {
             "per_tile": noise,
-            "configured_H_GRASS_MAX_m": cfg["parameters"]["H_GRASS_MAX"],
+            "configured_H_GRASS_MAX_m": config["parameters"]["H_GRASS_MAX"],
             "suggested_H_GRASS_MAX_m": None,
             "note": (
                 "NO value is suggested from this proxy. Low SAVI is not the same as bare: "
@@ -604,9 +603,9 @@ def check_radiometry(audit, cfg, site_dir):
 
     # 18 - VI nodata percentage (bidirectional mosaics carry flightline gaps)
     gaps, flagged = {}, []
-    flag_pct = cfg["thresholds"]["vi_nodata_flag_pct"]
+    flag_pct = config["thresholds"]["vi_nodata_flag_pct"]
     for tile in tiles:
-        path = tile_paths(cfg, site_dir, tile)["vi_SAVI"]
+        path = tile_paths(config, site_dir, tile)["vi_SAVI"]
         if not path.exists():
             continue
         with rasterio.open(path) as ds:
@@ -627,9 +626,9 @@ def check_radiometry(audit, cfg, site_dir):
     # ------------------------------------------------------ deferred check groups
 
 
-def check_phenocam(audit, cfg, site_dir):
+def check_phenocam(audit, config, site_dir):
     """23 - locate the phenocam(s) on the tile grid and record which tile holds them."""
-    csv_rel = cfg.get("phenocam_csv")
+    csv_rel = config.get("phenocam_csv")
     if not csv_rel:
         return audit.defer(23, "Phenocam location vs tile grid", "phenocam_csv not set in config")
     csv_path = (HERE / csv_rel).resolve()
@@ -643,25 +642,25 @@ def check_phenocam(audit, cfg, site_dir):
     row = None
     with open(csv_path, newline="") as f:
         for r in _csv.DictReader(f):
-            if (r.get("site_id") or "").strip() == cfg["ameriflux_id"]:
+            if (r.get("site_id") or "").strip() == config["ameriflux_id"]:
                 row = r
                 break
     if row is None:
         return audit.defer(
             23,
             "Phenocam location vs tile grid",
-            f"{cfg['ameriflux_id']} not in {csv_path.name}",
+            f"{config['ameriflux_id']} not in {csv_path.name}",
         )
 
         # tile bounds from the CHM, which defines the 1 m analysis grid
     bounds = {}
-    for tile in cfg["tiles"]:
-        path = tile_paths(cfg, site_dir, tile)["chm"]
+    for tile in config["tiles"]:
+        path = tile_paths(config, site_dir, tile)["chm"]
         if path.exists():
             with rasterio.open(path) as ds:
                 bounds[tile] = ds.bounds
 
-    transformer = Transformer.from_crs("EPSG:4326", cfg["expected_crs"], always_xy=True)
+    transformer = Transformer.from_crs("EPSG:4326", config["expected_crs"], always_xy=True)
     cams, tiles_hit = {}, []
     for n in (1, 2):
         name = (row.get(f"phenocam{n}") or "").strip()
@@ -677,10 +676,10 @@ def check_phenocam(audit, cfg, site_dir):
             "easting": round(easting, 2),
             "northing": round(northing, 2),
             "in_tiles": inside,
-            "tile_roles": [cfg["tiles"][t] for t in inside],
+            "tile_roles": [config["tiles"][t] for t in inside],
         }
 
-    roles = {cfg["tiles"][t] for t in tiles_hit}
+    roles = {config["tiles"][t] for t in tiles_hit}
     if not tiles_hit:
         status, note = REPORT, "phenocam falls outside every configured tile"
     elif roles == {"train"}:
@@ -699,7 +698,7 @@ def check_phenocam(audit, cfg, site_dir):
         status,
         {
             "source": str(csv_path),
-            "crs": cfg["expected_crs"],
+            "crs": config["expected_crs"],
             "phenocams": cams,
             "tiles_hit": sorted(set(tiles_hit)),
             "roles_hit": sorted(roles),
@@ -742,7 +741,7 @@ def check_deferred(audit):
         # ------------------------------------------------------------------------ report
 
 
-def write_report(audit, cfg, out_dir, site, year):
+def write_report(audit, config, out_dir, site, year):
     out_dir.mkdir(parents=True, exist_ok=True)
     counts = {}
     for c in audit.checks:
@@ -751,7 +750,7 @@ def write_report(audit, cfg, out_dir, site, year):
     payload = {
         "site": site,
         "year": year,
-        "config": cfg,
+        "config": config,
         "summary": counts,
         "blocking_failures": [c["check"] for c in audit.blocking_failures],
         "checks": audit.checks,
@@ -781,10 +780,10 @@ def main():
     ap.add_argument("config", type=Path, help="site config json, e.g. config/srer_2022.json")
     args = ap.parse_args()
 
-    cfg = json.loads(args.config.read_text())
-    site, year = cfg["site"], cfg["year"]
-    site_dir = resolve(cfg["data_root"], cfg["site_name"])
-    out_dir = resolve(cfg["results_root"], "stage1_data_and_features", "qa")
+    config = json.loads(args.config.read_text())
+    site, year = config["site"], config["year"]
+    site_dir = resolve(config["data_root"], config["site_name"])
+    out_dir = resolve(config["results_root"], "stage1_data_and_features", "qa")
 
     if not site_dir.is_dir():
         sys.exit(f"data directory not found: {site_dir}")
@@ -792,13 +791,13 @@ def main():
     print(f"output   : {out_dir}\n")
 
     audit = Audit()
-    check_inventory(audit, cfg, site_dir)
-    check_georeferencing(audit, cfg, site_dir)
-    check_radiometry(audit, cfg, site_dir)
-    check_phenocam(audit, cfg, site_dir)
+    check_inventory(audit, config, site_dir)
+    check_georeferencing(audit, config, site_dir)
+    check_radiometry(audit, config, site_dir)
+    check_phenocam(audit, config, site_dir)
     check_deferred(audit)
 
-    json_path, txt_path, counts = write_report(audit, cfg, out_dir, site, year)
+    json_path, txt_path, counts = write_report(audit, config, out_dir, site, year)
     print(txt_path.read_text())
     print(f"wrote {json_path}")
     print(f"wrote {txt_path}")

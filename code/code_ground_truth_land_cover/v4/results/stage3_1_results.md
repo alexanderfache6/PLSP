@@ -430,7 +430,7 @@ Per-class area bias for `RF-A_C`, the figure that propagates into Step 3 fractio
 | **shrub** | **+8.8%** | **+6.9%** |
 | tree | +2.7% | +2.3% |
 
-**Shrub over-prediction falls from +8.8% to +6.9%.** Random per-pixel errors partly cancel when the 9 one-metre pixels of a Planet block aggregate (N = 3, measured 2026-08-18 - these sections originally said 16); systematic ones do not, so this is the number RF-B actually inherits. Still positive, so shrub fraction remains biased high — but less so.
+**Shrub over-prediction falls from +8.8% to +6.9%.** Random per-pixel errors partly cancel when the 9 one-meter pixels of a Planet block aggregate (N = 3, measured 2026-08-18 - these sections originally said 16); systematic ones do not, so this is the number RF-B actually inherits. Still positive, so shrub fraction remains biased high — but less so.
 
 ## 7.4 `RF-A_C` at run 2 — the current best transferable variant
 

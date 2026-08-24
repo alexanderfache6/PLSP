@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Step 1a - feature construction (instructions5.md section 5 Step 1a).
 
 Builds the per-tile 1 m feature stack.
@@ -28,6 +27,7 @@ from pathlib import Path
 
 import numpy as np
 import rasterio
+from helpers import resolve_config_path
 from rasterio.enums import Resampling
 from rasterio.transform import from_bounds
 from rasterio.warp import reproject
@@ -37,22 +37,14 @@ HERE = Path(__file__).resolve().parent
 EPS = 1e-6
 
 
-def resolve(root, *parts):
-    return Path(str(root)).expanduser().joinpath(*parts)
-
-
-def tile_paths(cfg, site_dir, tile):
-    p = cfg["products"]
+def tile_paths(config, site_dir, tile):
+    p = config["products"]
     out = {
         "rgb": site_dir / p["rgb"]["folder"] / p["rgb"]["pattern"].format(tile=tile),
         "chm": site_dir / p["chm"]["folder"] / p["chm"]["pattern"].format(tile=tile),
     }
     for index in p["vi"]["indices"]:
-        out[f"vi_{index}"] = (
-            site_dir
-            / p["vi"]["folder"]
-            / p["vi"]["pattern"].format(tile=tile, index=index)
-        )
+        out[f"vi_{index}"] = site_dir / p["vi"]["folder"] / p["vi"]["pattern"].format(tile=tile, index=index)
     return out
 
 
@@ -92,8 +84,7 @@ def rgb_indices(rgb):
         "ExR": exr,
         "ExGR": exg - exr,
         "VARI": (g - r) / (g + r - b + EPS),
-        "GLI": (2.0 * rgb[1] - rgb[0] - rgb[2])
-        / (2.0 * rgb[1] + rgb[0] + rgb[2] + EPS),
+        "GLI": (2.0 * rgb[1] - rgb[0] - rgb[2]) / (2.0 * rgb[1] + rgb[0] + rgb[2] + EPS),
     }
     # Rec. 709 luma, shared with Step 1c shadow detection
     out["luma"] = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
@@ -204,9 +195,9 @@ def to_analysis_grid(arr, src_transform, src_crs, dst_profile):
     return out
 
 
-def build_tile(cfg, site_dir, tile):
-    paths = tile_paths(cfg, site_dir, tile)
-    s1 = cfg["stage1_5_generate_features"]
+def build_tile(config, site_dir, tile):
+    paths = tile_paths(config, site_dir, tile)
+    s1 = config["stage1_5_generate_features"]
     scale = s1["texture_scale_m"]
     window = s1["texture_window_px"]
 
@@ -227,18 +218,12 @@ def build_tile(cfg, site_dir, tile):
     # --- computed at 0.6 m, then averaged to 1 m
     for name, arr in rgb_indices(rgb).items():
         bands[name] = to_analysis_grid(arr, rgb_transform, rgb_crs, grid)
-        group = (
-            "chromatic"
-            if name in ("r", "g", "b")
-            else ("brightness" if name in ("luma", "saturation") else "rgb_index")
-        )
+        group = "chromatic" if name in ("r", "g", "b") else ("brightness" if name in ("luma", "saturation") else "rgb_index")
         meta.append({"name": name, "group": group, "computed_at_m": scale})
 
     luma = rgb_indices(rgb)["luma"]
     texture = {}
-    texture.update(
-        glcm_features(luma, window, s1["glcm_levels"], tuple(s1["glcm_offset"]))
-    )
+    texture.update(glcm_features(luma, window, s1["glcm_levels"], tuple(s1["glcm_offset"])))
     texture["glcm_entropy"] = local_entropy(luma, window, s1["glcm_levels"])
     texture.update(lbp_features(luma, window, s1["lbp_points"], s1["lbp_radius"]))
     texture["std"] = local_std(luma, window)
@@ -247,13 +232,13 @@ def build_tile(cfg, site_dir, tile):
         meta.append({"name": name, "group": "texture", "computed_at_m": scale})
 
     # --- already native 1 m, carried through unchanged
-    for index in cfg["products"]["vi"]["indices"]:
+    for index in config["products"]["vi"]["indices"]:
         with rasterio.open(paths[f"vi_{index}"]) as ds:
             arr = ds.read(1, masked=True)
         bands[index] = arr.filled(np.nan).astype("float32")
         meta.append({"name": index, "group": "nir_index", "computed_at_m": 1.0})
 
-    mask_limit = cfg["thresholds"]["chm_max_valid_m"]
+    mask_limit = config["thresholds"]["chm_max_valid_m"]
     chm_masked = np.ma.masked_where(chm > mask_limit, chm)
     bands["CHM"] = chm_masked.filled(np.nan).astype("float32")
     meta.append(
@@ -266,11 +251,7 @@ def build_tile(cfg, site_dir, tile):
     )
 
     # --- section 11.7 edge margin, in 1 m cells
-    margin = int(
-        np.ceil(
-            (window // 2) * scale / cfg["stage1_5_generate_features"]["analysis_grid_m"]
-        )
-    )
+    margin = int(np.ceil((window // 2) * scale / config["stage1_5_generate_features"]["analysis_grid_m"]))
     if margin:
         for name in bands:
             bands[name][:margin, :] = np.nan
@@ -284,22 +265,20 @@ def build_tile(cfg, site_dir, tile):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("config", type=Path)
-    ap.add_argument(
-        "--tiles", nargs="+", help="subset of tiles (default: all in config)"
-    )
+    ap.add_argument("--tiles", nargs="+", help="subset of tiles (default: all in config)")
     args = ap.parse_args()
 
-    cfg = json.loads(args.config.read_text())
-    site, year = cfg["site"], cfg["year"]
-    site_dir = resolve(cfg["data_root"], cfg["site_name"])
-    out_dir = resolve(cfg["results_root"], "stage1_data_and_features", "features")
+    config = json.loads(args.config.read_text())
+    site, year = config["site"], config["year"]
+    site_dir = resolve_config_path(config["data_root"], config["site_name"])
+    out_dir = resolve_config_path(config["results_root"], "stage1_data_and_features", "features")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    tiles = args.tiles or list(cfg["tiles"])
+    tiles = args.tiles or list(config["tiles"])
     band_meta = None
     for tile in tiles:
         print(f"[{tile}] building features...", flush=True)
-        bands, meta, grid, margin = build_tile(cfg, site_dir, tile)
+        bands, meta, grid, margin = build_tile(config, site_dir, tile)
         band_meta = meta
 
         profile = {
@@ -320,10 +299,7 @@ def main():
                 ds.write(arr.astype("float32"), i)
                 ds.set_band_description(i, name)
         valid = {n: float(np.isfinite(a).mean()) for n, a in bands.items()}
-        print(
-            f"[{tile}] wrote {path.name}  bands={len(bands)}  "
-            f"edge margin={margin} m  min valid frac={min(valid.values()):.3f}"
-        )
+        print(f"[{tile}] wrote {path.name}  bands={len(bands)}  edge margin={margin} m  min valid frac={min(valid.values()):.3f}")
 
     if band_meta:
         # section 4.1 is authoritative (resolved). Each framework adds exactly one input
@@ -354,8 +330,8 @@ def main():
         spec = {
             "site": site,
             "year": year,
-            "texture_scale_m": cfg["stage1_5_generate_features"]["texture_scale_m"],
-            "analysis_grid_m": cfg["stage1_5_generate_features"]["analysis_grid_m"],
+            "texture_scale_m": config["stage1_5_generate_features"]["texture_scale_m"],
+            "analysis_grid_m": config["stage1_5_generate_features"]["analysis_grid_m"],
             "edge_margin_m": margin,
             "band_order": [b["name"] for b in band_meta],
             "bands": band_meta,
@@ -363,9 +339,7 @@ def main():
             "framework_note": note,
             "framework_caveat": caveat,
         }
-        (out_dir / f"features_{site}_{year}_bands.json").write_text(
-            json.dumps(spec, indent=2) + "\n"
-        )
+        (out_dir / f"features_{site}_{year}_bands.json").write_text(json.dumps(spec, indent=2) + "\n")
         print(f"\nwrote band spec: {out_dir / f'features_{site}_{year}_bands.json'}")
         print(f"bands ({len(band_meta)}): {', '.join(b['name'] for b in band_meta)}")
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Load every Step 4.2 labeling layer into QGIS, styled and ready to edit.
 
 Run inside QGIS: Plugins -> Python Console -> Show Editor -> Open Script -> Run,
@@ -28,6 +27,8 @@ everything rather than covering it:
 import json
 import os
 
+from constants import CLASS_COLORS, CLASS_LABELS, CLUSTER_COLORS, UNLABELLED_COLOR
+from helpers import expand_path
 from qgis.core import (
     QgsCategorizedSymbolRenderer,
     QgsColorRampShader,
@@ -48,38 +49,8 @@ from qgis.core import (
 from qgis.PyQt.QtGui import QColor
 
 # --------------------------------------------------------------------- CONFIG
-CONFIG = os.path.expanduser(
-    "~/Documents/GitHub/PLSP/code/code_ground_truth_land_cover/v4/config/srer_2022.json"
-)
+CONFIG = os.path.expanduser("~/Documents/GitHub/PLSP/code/code_ground_truth_land_cover/v4/config/srer_2022.json")
 # -----------------------------------------------------------------------------
-
-# LOCKED, section 3 - do not renumber or recolour
-CLASS_COLORS = {0: "#c2b280", 1: "#7cb342", 2: "#8d6e63", 3: "#1b5e20"}
-CLASS_LABELS = {0: "bare", 1: "grass", 2: "shrub", 3: "tree"}
-UNLABELLED_COLOR = "#e6007e"  # deliberately outside the earth/green family
-
-CLUSTER_COLORS = [
-    "#1f77b4",
-    "#ff7f0e",
-    "#2ca02c",
-    "#d62728",
-    "#9467bd",
-    "#8c564b",
-    "#e377c2",
-    "#7f7f7f",
-    "#bcbd22",
-    "#17becf",
-    "#aec7e8",
-    "#ffbb78",
-    "#98df8a",
-    "#ff9896",
-    "#c5b0d5",
-    "#c49c94",
-]
-
-
-def expand(root, *parts):
-    return os.path.join(os.path.expanduser(str(root)), *parts)
 
 
 def marker(color, size, outline, width):
@@ -109,19 +80,9 @@ def style_class_field(layer, geom):
     """Categorized renderer on class_code + a value-map dropdown for editing."""
     categories = []
     for code, colour in CLASS_COLORS.items():
-        symbol = (
-            marker(colour, "3", "black", "0.3")
-            if geom == "point"
-            else fill(colour, "black", "0.4", "solid")
-        )
-        categories.append(
-            QgsRendererCategory(code, symbol, f"{code} {CLASS_LABELS[code]}")
-        )
-    blank = (
-        marker(UNLABELLED_COLOR, "2.4", "white", "0.4")
-        if geom == "point"
-        else fill("transparent", UNLABELLED_COLOR, "0.5", "no")
-    )
+        symbol = marker(colour, "3", "black", "0.3") if geom == "point" else fill(colour, "black", "0.4", "solid")
+        categories.append(QgsRendererCategory(code, symbol, f"{code} {CLASS_LABELS[code]}"))
+    blank = marker(UNLABELLED_COLOR, "2.4", "white", "0.4") if geom == "point" else fill("transparent", UNLABELLED_COLOR, "0.5", "no")
     categories.append(QgsRendererCategory(None, blank, "unlabelled"))
     layer.setRenderer(QgsCategorizedSymbolRenderer("class_code", categories))
 
@@ -150,11 +111,7 @@ def style_review_state(layer, geom):
         if geom == "point":
             symbol = marker(colour, "2.6", "white", "0.4")
         else:
-            symbol = (
-                fill("transparent", colour, "0.6", "no")
-                if value == 0
-                else fill(colour, "black", "0.4", "solid")
-            )
+            symbol = fill("transparent", colour, "0.6", "no") if value == 0 else fill(colour, "black", "0.4", "solid")
         categories.append(QgsRendererCategory(value, symbol, label))
     layer.setRenderer(QgsCategorizedSymbolRenderer("reviewed", categories))
 
@@ -181,9 +138,7 @@ def pseudocolor(layer, vmin, vmax, ramp):
     items = []
     for i, colour in enumerate(ramp):
         value = vmin + (vmax - vmin) * i / (len(ramp) - 1)
-        items.append(
-            QgsColorRampShader.ColorRampItem(value, QColor(colour), f"{value:.2f}")
-        )
+        items.append(QgsColorRampShader.ColorRampItem(value, QColor(colour), f"{value:.2f}"))
     fcn.setColorRampItemList(items)
     shader.setRasterShaderFunction(fcn)
     layer.setRenderer(QgsSingleBandPseudoColorRenderer(layer.dataProvider(), 1, shader))
@@ -220,15 +175,13 @@ def set_derived_defaults(layer, tile, cluster_layer):
     layer.setEditFormConfig(form)
 
     # hover to check the derived values without opening the form
-    layer.setMapTipTemplate(
-        "<b>class</b> [% coalesce(class_code, 'UNLABELLED') %]<br><b>cluster</b> [% coalesce(cluster_id, '-') %]<br><b>tile</b> [% coalesce(tile, '-') %]<br><b>area</b> [% round($area, 1) %] m2"
-    )
+    layer.setMapTipTemplate("<b>class</b> [% coalesce(class_code, 'UNLABELLED') %]<br><b>cluster</b> [% coalesce(cluster_id, '-') %]<br><b>tile</b> [% coalesce(tile, '-') %]<br><b>area</b> [% round($area, 1) %] m2")
     layer.setDisplayExpression("coalesce(cluster_id, '-')")
 
 
-def build_tile_group(project, root, cfg, tile, role, data, lab_dir, site, year):
+def build_tile_group(project, root, config, tile, role, data, lab_dir, site, year):
     """Add one tile's six layers, in panel order, and return the editable ones."""
-    prod = cfg["products"]
+    prod = config["products"]
     group = root.addGroup(f"{role.upper()}  {tile}")
 
     poly_path = os.path.join(lab_dir, f"training_polygons_{site}_{tile}_{year}.gpkg")
@@ -266,19 +219,12 @@ def build_tile_group(project, root, cfg, tile, role, data, lab_dir, site, year):
         f"clusters k16  {tile}",
     )
     if clu.isValid():
-        classes = [
-            QgsPalettedRasterRenderer.Class(
-                i + 1, QColor(CLUSTER_COLORS[i]), f"cluster {i + 1}"
-            )
-            for i in range(cfg["stage2_1_labeling_zones"]["k"])
-        ]
+        classes = [QgsPalettedRasterRenderer.Class(i + 1, QColor(CLUSTER_COLORS[i]), f"cluster {i + 1}") for i in range(config["stage2_1_labeling_zones"]["k"])]
         clu.setRenderer(QgsPalettedRasterRenderer(clu.dataProvider(), 1, classes))
         clu.setOpacity(0.75)
 
     chm = QgsRasterLayer(
-        os.path.join(
-            data, prod["chm"]["folder"], prod["chm"]["pattern"].format(tile=tile)
-        ),
+        os.path.join(data, prod["chm"]["folder"], prod["chm"]["pattern"].format(tile=tile)),
         f"CHM  {tile}",
     )
     if chm.isValid():
@@ -299,16 +245,12 @@ def build_tile_group(project, root, cfg, tile, role, data, lab_dir, site, year):
         savi.setOpacity(0.75)
 
     if clu.isValid():
-        project.addMapLayer(
-            clu, False
-        )  # register early so raster_value() can resolve it by id
+        project.addMapLayer(clu, False)  # register early so raster_value() can resolve it by id
     if poly.isValid():
         set_derived_defaults(poly, tile, clu)
 
     rgb = QgsRasterLayer(
-        os.path.join(
-            data, prod["rgb"]["folder"], prod["rgb"]["pattern"].format(tile=tile)
-        ),
+        os.path.join(data, prod["rgb"]["folder"], prod["rgb"]["pattern"].format(tile=tile)),
         f"RGB 10cm  {tile}",
     )
     if rgb.isValid():
@@ -346,15 +288,15 @@ def build_tile_group(project, root, cfg, tile, role, data, lab_dir, site, year):
 
 
 def main():
-    cfg = json.load(open(CONFIG))
-    site, year = cfg["site"], cfg["year"]
-    results = os.path.expanduser(cfg["results_root"])
-    data = expand(cfg["data_root"], cfg["site_name"])
+    config = json.load(open(CONFIG))
+    site, year = config["site"], config["year"]
+    results = os.path.expanduser(config["results_root"])
+    data = expand_path(config["data_root"], config["site_name"])
     lab_dir = os.path.join(results, "stage2_labeling")
 
     project = QgsProject.instance()
     project.clear()
-    project.setCrs(QgsCoordinateReferenceSystem(cfg["expected_crs"]))
+    project.setCrs(QgsCoordinateReferenceSystem(config["expected_crs"]))
     # ABSOLUTE layer paths, deliberately. QGIS defaults to paths relative to the
     # .qgz, which silently break the moment the project file changes directory
     # depth - a rename of a results directory is enough, and the failure is
@@ -364,21 +306,15 @@ def main():
     root = project.layerTreeRoot()
 
     editable = []
-    for tile, role in cfg["tiles"].items():
-        editable += build_tile_group(
-            project, root, cfg, tile, role, data, lab_dir, site, year
-        )
+    for tile, role in config["tiles"].items():
+        editable += build_tile_group(project, root, config, tile, role, data, lab_dir, site, year)
 
     out = os.path.join(lab_dir, f"labeling_{site}_{year}.qgz")
     project.write(out)
-    print(
-        f"loaded {len(project.mapLayers())} layers into {len(cfg['tiles'])} tile groups"
-    )
+    print(f"loaded {len(project.mapLayers())} layers into {len(config['tiles'])} tile groups")
     print(f"editable layers: {len(editable)}")
     print(f"saved project: {out}")
-    print(
-        "\nclass_code is a dropdown (bare/grass/shrub/tree). Toggle editing per layer, fill or draw, then save the layer. Cluster maps are off by default - they are provenance only and must never be mapped to a class."
-    )
+    print("\nclass_code is a dropdown (bare/grass/shrub/tree). Toggle editing per layer, fill or draw, then save the layer. Cluster maps are off by default - they are provenance only and must never be mapped to a class.")
     print(
         "\nshrub review layers hold the stratified CHM candidate subset (section 4.2 stage 1b). Pending candidates are magenta and recolour to shrub brown once reviewed = 1. Accept: reviewed = 1. Reject: reviewed = 1 and rejected = 1, then clear class_code. The full shrub_candidates_* set is not loaded - it is provenance only and far too large to render."
     )

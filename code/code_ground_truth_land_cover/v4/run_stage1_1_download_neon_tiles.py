@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Download NEON AOP tiles for a site and place them where the pipeline expects.
 
 Wraps neonutilities.by_tile_aop, which fetches individual 1 km AOP tiles rather

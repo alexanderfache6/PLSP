@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Section 4.2 Stage 1 - K-means labeling zones (instructions5.md section 4.2).
 
 Clustering here is a TARGETING AID, not a label source. Unguided hand labeling
@@ -32,6 +31,7 @@ from pathlib import Path
 import geopandas as gpd
 import numpy as np
 import rasterio
+from helpers import resolve_config_path
 from scipy import ndimage as ndi
 from shapely.geometry import Point
 from sklearn.cluster import KMeans
@@ -39,10 +39,6 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 HERE = Path(__file__).resolve().parent
-
-
-def resolve(root, *parts):
-    return Path(str(root)).expanduser().joinpath(*parts)
 
 
 def load_tile(feat_dir, site, tile, year, drop):
@@ -59,27 +55,21 @@ def load_tile(feat_dir, site, tile, year, drop):
     return flat, valid, kept_names, arr, names, profile, transform, crs
 
 
-def fit_model(cfg, feat_dir, tiles, drop, seed):
+def fit_kmeans_model(config, feat_dir, tiles, drop, seed):
     """Pooled scaler + PCA whitening + K-means over all tiles."""
-    s = cfg["stage2_1_labeling_zones"]
+    s = config["stage2_1_labeling_zones"]
     rng = np.random.default_rng(seed)
     parts = []
     for tile in tiles:
-        flat, valid, kept_names, *_ = load_tile(
-            feat_dir, cfg["site"], tile, cfg["year"], drop
-        )
+        flat, valid, kept_names, *_ = load_tile(feat_dir, config["site"], tile, config["year"], drop)
         good = flat[valid]
         n = min(s["fit_sample_per_tile"], len(good))
         parts.append(good[rng.choice(len(good), n, replace=False)])
     X = np.vstack(parts)
 
     scaler = StandardScaler().fit(X)
-    pca = PCA(n_components=s["pca_variance"], whiten=True, random_state=seed).fit(
-        scaler.transform(X)
-    )
-    km = KMeans(n_clusters=s["k"], n_init=s["n_init"], random_state=seed).fit(
-        pca.transform(scaler.transform(X))
-    )
+    pca = PCA(n_components=s["pca_variance"], whiten=True, random_state=seed).fit(scaler.transform(X))
+    km = KMeans(n_clusters=s["k"], n_init=s["n_init"], random_state=seed).fit(pca.transform(scaler.transform(X)))
     return scaler, pca, km, kept_names, X
 
 
@@ -142,9 +132,7 @@ def filled_zone_count(path):
         return 0
     try:
         gdf = gpd.read_file(path)
-        return (
-            int(gdf["class_code"].notna().sum()) if "class_code" in gdf.columns else 0
-        )
+        return int(gdf["class_code"].notna().sum()) if "class_code" in gdf.columns else 0
     except Exception:
         return 0
 
@@ -185,19 +173,19 @@ def main():
     )
     args = ap.parse_args()
 
-    cfg = json.loads(args.config.read_text())
-    s = cfg["stage2_1_labeling_zones"]
-    site, year = cfg["site"], cfg["year"]
-    seed = cfg["BASE_SEED"] + year
+    config = json.loads(args.config.read_text())
+    s = config["stage2_1_labeling_zones"]
+    site, year = config["site"], config["year"]
+    seed = config["BASE_SEED"] + year
     drop = set(s["drop_collinear_bands"])
 
-    feat_dir = resolve(cfg["results_root"], "stage1_data_and_features", "features")
-    out_dir = resolve(cfg["results_root"], "stage2_labeling")
+    feat_dir = resolve_config_path(config["results_root"], "stage1_data_and_features", "features")
+    out_dir = resolve_config_path(config["results_root"], "stage2_labeling")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    tiles = list(cfg["tiles"])
+    tiles = list(config["tiles"])
     print(f"fitting k={s['k']} over {len(tiles)} tiles, seed={seed}")
-    scaler, pca, km, kept_names, X = fit_model(cfg, feat_dir, tiles, drop, seed)
+    scaler, pca, km, kept_names, X = fit_kmeans_model(config, feat_dir, tiles, drop, seed)
     print(f"features kept ({len(kept_names)}): {', '.join(kept_names)}")
     print(f"PCA components at {s['pca_variance']:.1%} variance: {pca.n_components_}\n")
 
@@ -206,25 +194,19 @@ def main():
     cluster_sums = np.zeros((s["k"] + 1, len(kept_names)))
 
     for tile in tiles:
-        flat, valid, _, arr, names, profile, transform, crs = load_tile(
-            feat_dir, site, tile, year, drop
-        )
+        flat, valid, _, arr, names, profile, transform, crs = load_tile(feat_dir, site, tile, year, drop)
         labels = np.zeros(flat.shape[0], dtype=np.uint8)
         Z = pca.transform(scaler.transform(flat[valid]))
         labels[valid] = km.predict(Z).astype(np.uint8) + 1  # 0 reserved for nodata
         lab2d = labels.reshape(profile["height"], profile["width"])
 
-        lab_profile = dict(
-            profile, dtype="uint8", count=1, nodata=0, compress="deflate"
-        )
-        with rasterio.open(
-            out_dir / f"cluster_map_{site}_{tile}_{year}.tif", "w", **lab_profile
-        ) as ds:
+        lab_profile = dict(profile, dtype="uint8", count=1, nodata=0, compress="deflate")
+        with rasterio.open(out_dir / f"cluster_map_{site}_{tile}_{year}.tif", "w", **lab_profile) as ds:
             ds.write(lab2d, 1)
 
         rows = []
-        role = cfg["tiles"][tile]
-        n_role_tiles = sum(1 for t, r in cfg["tiles"].items() if r == role)
+        role = config["tiles"][tile]
+        n_role_tiles = sum(1 for t, r in config["tiles"].items() if r == role)
         # budget is per cluster PER ROLE, split across that role's tiles: the
         # classifier only ever trains on train-block labels, so train coverage
         # must be guaranteed on its own rather than as a side effect of pooling
@@ -238,9 +220,7 @@ def main():
             if not sel.any():
                 continue
             inner, level_used = interior_mask_relaxed(lab2d, c, levels)
-            for y, x in sample_sites(
-                inner, per_tile_budget, s["min_separation_px"], rng
-            ):
+            for y, x in sample_sites(inner, per_tile_budget, s["min_separation_px"], rng):
                 east, north = rasterio.transform.xy(transform, y, x)
                 # class_code left empty: the analyst fills 0 bare, 1 grass, 2 shrub, 3 tree
                 rows.append(
@@ -263,9 +243,7 @@ def main():
         zone_path = out_dir / f"labeling_zones_{site}_{tile}_{year}.gpkg"
         filled = filled_zone_count(zone_path)
         if filled > 0 and not args.overwrite_zones:
-            print(
-                f"[{tile}] KEEPING {zone_path.name} - it holds {filled} filled candidate site(s). Pass --overwrite-zones to regenerate and lose them."
-            )
+            print(f"[{tile}] KEEPING {zone_path.name} - it holds {filled} filled candidate site(s). Pass --overwrite-zones to regenerate and lose them.")
         else:
             gdf.to_file(zone_path, driver="GPKG")
 
@@ -288,17 +266,12 @@ def main():
         # a week of labeling to it is not.
         poly_path = out_dir / f"training_polygons_{site}_{tile}_{year}.gpkg"
         if drawn_polygon_count(poly_path) > 0 and not args.overwrite_polygons:
-            print(
-                f"[{tile}] KEEPING {poly_path.name} - it holds {drawn_polygon_count(poly_path)} drawn polygon(s). Pass --overwrite-polygons to overwrite and lose them."
-            )
+            print(f"[{tile}] KEEPING {poly_path.name} - it holds {drawn_polygon_count(poly_path)} drawn polygon(s). Pass --overwrite-polygons to overwrite and lose them.")
         else:
             template.to_file(poly_path, driver="GPKG", geometry_type="Polygon")
 
         covered = gdf.cluster_id.nunique()
-        print(
-            f"[{tile}] {len(gdf):>4} candidate sites over {covered}/{s['k']} clusters"
-            f"   ({cfg['tiles'][tile]})"
-        )
+        print(f"[{tile}] {len(gdf):>4} candidate sites over {covered}/{s['k']} clusters   ({config['tiles'][tile]})")
         all_zones.append(gdf)
 
     # per-cluster feature means, so the analyst can see what each cluster is
@@ -329,17 +302,10 @@ def main():
         "interior_levels": s["interior_levels"],
         "min_polygon_area_m2": s["min_polygon_area_m2"],
         "class_codes": {"0": "bare", "1": "grass", "2": "shrub", "3": "tree"},
-        "analyst_note": (
-            "Fill class_code in labeling_zones (0-3) or draw polygons into "
-            "training_polygons. cluster_id is provenance only and must never be "
-            "mapped to a class. Every cluster must receive labels, and the per-class "
-            "minimum still applies: >= 50 polygons per class per tile role."
-        ),
+        "analyst_note": ("Fill class_code in labeling_zones (0-3) or draw polygons into training_polygons. cluster_id is provenance only and must never be mapped to a class. Every cluster must receive labels, and the per-class minimum still applies: >= 50 polygons per class per tile role."),
         "cluster_profiles": profile_rows,
     }
-    (out_dir / f"labeling_zones_{site}_{year}_spec.json").write_text(
-        json.dumps(spec, indent=2) + "\n"
-    )
+    (out_dir / f"labeling_zones_{site}_{year}_spec.json").write_text(json.dumps(spec, indent=2) + "\n")
 
     total = sum(len(g) for g in all_zones)
     print(f"\ntotal candidate sites: {total}")

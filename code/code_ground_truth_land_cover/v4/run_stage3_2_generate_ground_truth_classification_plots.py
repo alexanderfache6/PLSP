@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Step 1d diagnostics - plot the RF-A cross-validation report.
 
 Reads stage3_1_report_{SITE}_{YEAR}.json and renders one figure per framework:
@@ -38,12 +37,10 @@ import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from constants import CLASS_COLORS, CLASS_LABELS, CLASS_ORDER
+from helpers import resolve_config_path
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Patch
-
-CLASS_LABELS = {0: "bare", 1: "grass", 2: "shrub", 3: "tree"}
-CLASS_COLORS = {0: "#c2b280", 1: "#7cb342", 2: "#8d6e63", 3: "#1b5e20"}
-ORDER = ["bare", "grass", "shrub", "tree"]
 
 INK = "#1a1a1a"
 MUTED = "#6b6b6b"
@@ -51,14 +48,8 @@ GRID = "#e4e4e2"
 SURFACE = "#fcfcfb"
 # single hue, light to dark, chosen outside the class palette so magnitude is
 # never read as identity
-MAGNITUDE = LinearSegmentedColormap.from_list(
-    "magnitude", ["#f4f6f7", "#cfdde2", "#8fb3bf", "#4d8496", "#1f5566"]
-)
+MAGNITUDE = LinearSegmentedColormap.from_list("magnitude", ["#f4f6f7", "#cfdde2", "#8fb3bf", "#4d8496", "#1f5566"])
 BAR = "#4d8496"
-
-
-def resolve(root, *parts):
-    return Path(str(root)).expanduser().joinpath(*parts)
 
 
 def style_axes(ax):
@@ -86,10 +77,10 @@ def plot_training_balance(ax, counts):
     Inputs:  ax - Axes; counts - dict of {class label: n pixels}
     Outputs: None
     """
-    values = [counts.get(name, 0) for name in ORDER]
+    values = [counts.get(name, 0) for name in CLASS_ORDER]
     total = sum(values) or 1
     bars = ax.bar(
-        ORDER,
+        CLASS_ORDER,
         values,
         color=[CLASS_COLORS[c] for c in CLASS_LABELS],
         width=0.62,
@@ -126,10 +117,10 @@ def plot_per_class(ax, per_class):
     """
     metrics = ["recall", "precision", "f1"]
     width = 0.26
-    positions = np.arange(len(ORDER))
+    positions = np.arange(len(CLASS_ORDER))
     alphas = [0.45, 0.72, 1.0]
     for i, metric in enumerate(metrics):
-        values = [per_class.get(name, {}).get(metric, 0.0) or 0.0 for name in ORDER]
+        values = [per_class.get(name, {}).get(metric, 0.0) or 0.0 for name in CLASS_ORDER]
         colors = [CLASS_COLORS[c] for c in CLASS_LABELS]
         ax.bar(
             positions + (i - 1) * width,
@@ -141,18 +132,16 @@ def plot_per_class(ax, per_class):
             linewidth=1.2,
             label=metric,
         )
-    for i, name in enumerate(ORDER):
+    for i, name in enumerate(CLASS_ORDER):
         f1 = per_class.get(name, {}).get("f1", 0.0) or 0.0
         ax.text(i + width, f1 + 0.03, f"{f1:.2f}", ha="center", fontsize=8, color=INK)
     ax.set_xticks(positions)
-    ax.set_xticklabels(ORDER)
+    ax.set_xticklabels(CLASS_ORDER)
     ax.set_ylim(0, 1.12)
     ax.set_title("per-class scores", fontsize=10, color=INK, loc="left")
     # metric identity rides on shade, so it needs a legend of its own - the bar
     # colour is already spent on class identity and cannot carry a second job
-    proxies = [
-        Patch(facecolor=MUTED, alpha=alpha, edgecolor=SURFACE) for alpha in alphas
-    ]
+    proxies = [Patch(facecolor=MUTED, alpha=alpha, edgecolor=SURFACE) for alpha in alphas]
     ax.legend(
         proxies,
         metrics,
@@ -181,9 +170,7 @@ def plot_folds(ax, folds):
     macro = [f["macro_f1"] for f in folds]
     overall = [f["overall"] for f in folds]
     positions = np.arange(len(folds))
-    ax.bar(
-        positions - 0.17, macro, width=0.32, color=BAR, edgecolor=SURFACE, linewidth=1.2
-    )
+    ax.bar(positions - 0.17, macro, width=0.32, color=BAR, edgecolor=SURFACE, linewidth=1.2)
     ax.bar(
         positions + 0.17,
         overall,
@@ -222,8 +209,8 @@ def plot_confusion(ax, matrix):
     totals = counts.sum(axis=1, keepdims=True)
     rates = np.divide(counts, totals, out=np.zeros_like(counts), where=totals > 0)
     ax.imshow(rates, cmap=MAGNITUDE, vmin=0, vmax=1, aspect="auto")
-    for i in range(len(ORDER)):
-        for j in range(len(ORDER)):
+    for i in range(len(CLASS_ORDER)):
+        for j in range(len(CLASS_ORDER)):
             value = rates[i, j]
             ax.text(
                 j,
@@ -234,10 +221,10 @@ def plot_confusion(ax, matrix):
                 fontsize=8,
                 color=SURFACE if value > 0.55 else INK,
             )
-    ax.set_xticks(range(len(ORDER)))
-    ax.set_yticks(range(len(ORDER)))
-    ax.set_xticklabels(ORDER)
-    ax.set_yticklabels(ORDER)
+    ax.set_xticks(range(len(CLASS_ORDER)))
+    ax.set_yticks(range(len(CLASS_ORDER)))
+    ax.set_xticklabels(CLASS_ORDER)
+    ax.set_yticklabels(CLASS_ORDER)
     ax.set_xlabel("predicted", fontsize=9, color=MUTED)
     ax.set_ylabel("true", fontsize=9, color=MUTED)
     ax.set_title(
@@ -276,9 +263,7 @@ def plot_importance(ax, importance, top_n):
             color=INK,
         )
     ax.set_xlim(0, max(values) * 1.2)
-    ax.set_title(
-        f"feature importance, top {len(items)}", fontsize=10, color=INK, loc="left"
-    )
+    ax.set_title(f"feature importance, top {len(items)}", fontsize=10, color=INK, loc="left")
     style_axes(ax)
     ax.grid(True, axis="x", color=GRID, linewidth=0.6)
     ax.grid(False, axis="y")
@@ -292,13 +277,9 @@ def figure_for_framework(framework, block, site, year, out_dir, run):
     Outputs: Path written
     """
     fig = plt.figure(figsize=(15.5, 9.0), facecolor=SURFACE)
-    grid = fig.add_gridspec(
-        2, 3, hspace=0.42, wspace=0.26, left=0.06, right=0.97, top=0.86, bottom=0.08
-    )
+    grid = fig.add_gridspec(2, 3, hspace=0.42, wspace=0.26, left=0.06, right=0.97, top=0.86, bottom=0.08)
 
-    plot_training_balance(
-        fig.add_subplot(grid[0, 0]), block.get("train_pixels_per_class", {})
-    )
+    plot_training_balance(fig.add_subplot(grid[0, 0]), block.get("train_pixels_per_class", {}))
     pooled = block.get("pooled", {})
     plot_per_class(fig.add_subplot(grid[0, 1]), pooled.get("per_class", {}))
     plot_folds(fig.add_subplot(grid[0, 2]), block.get("folds", []))
@@ -353,27 +334,22 @@ def figure_comparison(frameworks, site, year, out_dir):
     if len(keys) < 2:
         return None
     fig, ax = plt.subplots(figsize=(10.5, 5.2), facecolor=SURFACE)
-    width = 0.8 / len(ORDER)
+    width = 0.8 / len(CLASS_ORDER)
     positions = np.arange(len(keys))
-    for i, name in enumerate(ORDER):
-        values = [
-            frameworks[k]["pooled"]["per_class"].get(name, {}).get("f1", 0.0) or 0.0
-            for k in keys
-        ]
-        offset = (i - (len(ORDER) - 1) / 2) * width
+    for i, name in enumerate(CLASS_ORDER):
+        values = [frameworks[k]["pooled"]["per_class"].get(name, {}).get("f1", 0.0) or 0.0 for k in keys]
+        offset = (i - (len(CLASS_ORDER) - 1) / 2) * width
         ax.bar(
             positions + offset,
             values,
             width=width * 0.9,
-            color=CLASS_COLORS[ORDER.index(name)],
+            color=CLASS_COLORS[CLASS_ORDER.index(name)],
             edgecolor=SURFACE,
             linewidth=1.4,
             label=name,
         )
         for x, value in zip(positions + offset, values):
-            ax.text(
-                x, value + 0.015, f"{value:.2f}", ha="center", fontsize=7, color=INK
-            )
+            ax.text(x, value + 0.015, f"{value:.2f}", ha="center", fontsize=7, color=INK)
     ax.set_xticks(positions)
     ax.set_xticklabels([f"RF-A_{k}" for k in keys])
     ax.set_ylim(0, 1.12)
@@ -386,7 +362,7 @@ def figure_comparison(frameworks, site, year, out_dir):
     ax.legend(
         frameon=False,
         fontsize=9,
-        ncol=len(ORDER),
+        ncol=len(CLASS_ORDER),
         loc="upper left",
         bbox_to_anchor=(0, 1.0),
     )
@@ -407,39 +383,29 @@ def main():
     )
     args = ap.parse_args()
 
-    cfg = json.loads(args.config.read_text())
-    site, year = cfg["site"], cfg["year"]
-    out_dir = resolve(cfg["results_root"], "stage3_classification", f"run{args.run}")
+    config = json.loads(args.config.read_text())
+    site, year = config["site"], config["year"]
+    out_dir = resolve_config_path(config["results_root"], "stage3_classification", f"run{args.run}")
     report_path = out_dir / f"stage3_1_report_{site}_{year}.json"
     if not report_path.exists():
-        print(
-            f"no report at {report_path} - run run_stage3_1_random_forest_ground_truth_classification.py --run {args.run} first"
-        )
+        print(f"no report at {report_path} - run run_stage3_1_random_forest_ground_truth_classification.py --run {args.run} first")
         return
     report = json.loads(report_path.read_text())
     frameworks = report.get("frameworks", {})
     if not frameworks:
-        print(
-            "no frameworks in the report - run run_stage3_1_random_forest_ground_truth_classification.py first"
-        )
+        print("no frameworks in the report - run run_stage3_1_random_forest_ground_truth_classification.py first")
         return
 
     cap = report.get("max_pixels_per_polygon")
     print(f"Step 1d diagnostics - {site} {year} - run {report.get('run', args.run)}")
-    print(
-        f"polygon subsampling: {('max ' + str(cap) + ' px per polygon') if cap else 'OFF'}"
-    )
+    print(f"polygon subsampling: {('max ' + str(cap) + ' px per polygon') if cap else 'OFF'}")
     print("=" * 62)
     for framework in sorted(frameworks):
         block = frameworks[framework]
-        path = figure_for_framework(
-            framework, block, site, year, out_dir, report.get("run", args.run)
-        )
+        path = figure_for_framework(framework, block, site, year, out_dir, report.get("run", args.run))
         pooled = block.get("pooled", {})
         shrub = pooled.get("per_class", {}).get("shrub", {})
-        print(
-            f"[{framework}] macro-F1 {pooled.get('macro_f1', float('nan')):.3f}   shrub F1 {shrub.get('f1', float('nan')):.3f}   -> {path.name}"
-        )
+        print(f"[{framework}] macro-F1 {pooled.get('macro_f1', float('nan')):.3f}   shrub F1 {shrub.get('f1', float('nan')):.3f}   -> {path.name}")
 
     path = figure_comparison(frameworks, site, year, out_dir)
     if path:

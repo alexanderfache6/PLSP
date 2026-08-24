@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Section 4.2 Stage 1b helper - CHM-derived shrub candidate proposals.
 
 Shrub is at once the hardest class to hand-label (small, isolated, numerous)
@@ -41,6 +40,7 @@ from pathlib import Path
 import geopandas as gpd
 import numpy as np
 import rasterio
+from helpers import resolve_config_path
 from rasterio.features import shapes
 from scipy import ndimage
 from shapely.geometry import shape
@@ -50,18 +50,14 @@ SHRUB_CODE = 2
 CONNECTIVITY = 8
 
 
-def resolve(root, *parts):
-    return Path(str(root)).expanduser().joinpath(*parts)
-
-
-def chm_path(cfg, site_dir, tile):
+def chm_path(config, site_dir, tile):
     """Path to a tile's canopy height model, from the config product block.
 
-    Inputs:  cfg - parsed site config; site_dir - Path to the site data dir;
+    Inputs:  config - parsed site config; site_dir - Path to the site data dir;
              tile - tile key string
     Outputs: Path to the CHM GeoTIFF
     """
-    product = cfg["products"]["chm"]
+    product = config["products"]["chm"]
     return site_dir / product["folder"] / product["pattern"].format(tile=tile)
 
 
@@ -115,9 +111,7 @@ def component_stats(labels, n, chm):
     means = ndimage.mean(heights, labels, index)
     minima = ndimage.minimum(heights, labels, index)
     maxima = ndimage.maximum(heights, labels, index)
-    p90 = ndimage.labeled_comprehension(
-        heights, labels, index, lambda v: float(np.percentile(v, 90)), float, 0.0
-    )
+    p90 = ndimage.labeled_comprehension(heights, labels, index, lambda v: float(np.percentile(v, 90)), float, 0.0)
     out = {}
     for i, label in enumerate(index):
         out[int(label)] = {
@@ -144,9 +138,7 @@ def component_geometries(labels, transform):
     Outputs: dict of {label: shapely geometry}, all valid
     """
     out = {}
-    for geom, value in shapes(
-        labels, mask=labels > 0, transform=transform, connectivity=CONNECTIVITY
-    ):
+    for geom, value in shapes(labels, mask=labels > 0, transform=transform, connectivity=CONNECTIVITY):
         label = int(value)
         if label > 0:
             polygon = shape(geom)
@@ -230,11 +222,7 @@ def mark_review_sample(records, n_sample, n_strata, rng):
     flagged = 0
     for i in range(n_strata):
         low, high = edges[i], edges[i + 1]
-        in_stratum = [
-            r
-            for r, a in zip(polygons, areas)
-            if (a >= low and a <= high if i == n_strata - 1 else a >= low and a < high)
-        ]
+        in_stratum = [r for r, a in zip(polygons, areas) if (a >= low and a <= high if i == n_strata - 1 else a >= low and a < high)]
         if not in_stratum:
             continue
         take = min(per_stratum, len(in_stratum))
@@ -319,40 +307,36 @@ def main():
     )
     args = ap.parse_args()
 
-    cfg = json.loads(args.config.read_text())
-    site, year = cfg["site"], cfg["year"]
-    params = cfg["parameters"]
-    settings = cfg["stage2_2_shrub_candidates"]
+    config = json.loads(args.config.read_text())
+    site, year = config["site"], config["year"]
+    params = config["parameters"]
+    settings = config["stage2_2_shrub_candidates"]
     grass_max, tree_min = params["H_GRASS_MAX"], params["H_TREE_MIN"]
-    chm_max_valid = cfg["thresholds"]["chm_max_valid_m"]
+    chm_max_valid = config["thresholds"]["chm_max_valid_m"]
     min_area = settings["min_component_area_m2"]
     max_area = settings["max_component_area_m2"]
     point_below_min = bool(settings["point_label_below_min"])
     erode_px = settings["erode_px"]
     n_sample = settings["review_sample_per_tile"]
     n_strata = settings["review_area_strata"]
-    seed = cfg["BASE_SEED"] + year
+    seed = config["BASE_SEED"] + year
 
-    site_dir = resolve(cfg["data_root"], cfg["site_name"])
-    out_dir = resolve(cfg["results_root"], "stage2_labeling")
+    site_dir = resolve_config_path(config["data_root"], config["site_name"])
+    out_dir = resolve_config_path(config["results_root"], "stage2_labeling")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"CHM shrub candidates - {site} {year}")
     print("=" * 62)
     print(f"shrub band  {grass_max} <= CHM < {tree_min} m")
-    print(
-        f"area bounds {min_area} to {max_area} m2, sub-minimum kept as points: {point_below_min}"
-    )
+    print(f"area bounds {min_area} to {max_area} m2, sub-minimum kept as points: {point_below_min}")
     print(f"erosion     {erode_px} px")
-    print(
-        f"review      {n_sample} per tile, stratified into {n_strata} area bands, seed {seed}"
-    )
+    print(f"review      {n_sample} per tile, stratified into {n_strata} area bands, seed {seed}")
 
     totals = {"polygon": 0, "point": 0, "too_large": 0, "dropped_small": 0, "review": 0}
     summary = []
 
-    for tile, role in cfg["tiles"].items():
-        path = chm_path(cfg, site_dir, tile)
+    for tile, role in config["tiles"].items():
+        path = chm_path(config, site_dir, tile)
         if not path.exists():
             print(f"[{tile}] CHM not found, skipping: {path}")
             continue
@@ -367,9 +351,7 @@ def main():
             continue
         stats = component_stats(labels, n, chm)
         geoms = component_geometries(labels, transform)
-        records, counts = build_candidates(
-            geoms, stats, min_area, max_area, point_below_min, tile
-        )
+        records, counts = build_candidates(geoms, stats, min_area, max_area, point_below_min, tile)
         rng = np.random.default_rng(seed)
         counts["review"] = mark_review_sample(records, n_sample, n_strata, rng)
 
@@ -377,56 +359,32 @@ def main():
         review_path = out_dir / f"shrub_review_{site}_{tile}_{year}.gpkg"
         decisions = review_decision_count(review_path)
         if decisions > 0 and not args.force:
-            print(
-                f"[{tile}] KEEPING {review_path.name} - it holds {decisions} review decision(s). Pass --force to overwrite and lose them."
-            )
+            print(f"[{tile}] KEEPING {review_path.name} - it holds {decisions} review decision(s). Pass --force to overwrite and lose them.")
             continue
         written = write_candidates(records, crs, out_path, review_path)
         for key in totals:
             totals[key] += counts[key]
-        summary.append(
-            {"tile": tile, "role": role, "components": n, **counts, "layers": written}
-        )
-        print(
-            f"[{tile}] {role:<5} {n:>6} components -> {counts['polygon']:>5} polygons, {counts['point']:>5} points, {counts['too_large']:>4} too large   review subset {counts['review']:>4}"
-        )
+        summary.append({"tile": tile, "role": role, "components": n, **counts, "layers": written})
+        print(f"[{tile}] {role:<5} {n:>6} components -> {counts['polygon']:>5} polygons, {counts['point']:>5} points, {counts['too_large']:>4} too large   review subset {counts['review']:>4}")
 
     print("\n" + "=" * 62)
-    print(
-        f"total  {totals['polygon']} polygon candidates, {totals['point']} point candidates"
-    )
-    print(
-        f"       {totals['too_large']} above {max_area} m2 (unlikely to be single shrubs), {totals['dropped_small']} sub-minimum dropped"
-    )
+    print(f"total  {totals['polygon']} polygon candidates, {totals['point']} point candidates")
+    print(f"       {totals['too_large']} above {max_area} m2 (unlikely to be single shrubs), {totals['dropped_small']} sub-minimum dropped")
     print(f"       {totals['review']} flagged for hand review across all tiles")
-    print(
-        "\nOpen the shrub_review_* files, not the full shrub_candidates_* set - the full"
-    )
-    print(
-        "set is provenance. The review subset is stratified by area so small, medium and"
-    )
-    print(
-        "large crowns are all offered; reviewing only the easy large ones would rebuild"
-    )
+    print("\nOpen the shrub_review_* files, not the full shrub_candidates_* set - the full")
+    print("set is provenance. The review subset is stratified by area so small, medium and")
+    print("large crowns are all offered; reviewing only the easy large ones would rebuild")
     print("the size bias this mechanism exists to remove.")
     print("\nCandidates are proposals, not labels. Review each one in QGIS:")
     print(" accept set reviewed = 1, leave class_code = 2")
     print(" edit adjust the geometry, set reviewed = 1, keep class_code = 2")
     print(" reject set reviewed = 1, rejected = 1, and clear class_code")
-    print(
-        "reviewed exists so an accepted candidate is distinguishable from one not yet"
-    )
-    print(
-        "looked at - without it, zero-click accept and untouched are identical, which is"
-    )
+    print("reviewed exists so an accepted candidate is distinguishable from one not yet")
+    print("looked at - without it, zero-click accept and untouched are identical, which is")
     print("unworkable at 150 per tile. Pending candidates render magenta, matching the")
     print("unlabelled convention used by the zone and polygon layers.")
-    print(
-        "A rejected candidate is retained deliberately - a CHM-band object that is not"
-    )
-    print(
-        "shrub is evidence about where the height rule fails (section 3 safeguards 1-2)."
-    )
+    print("A rejected candidate is retained deliberately - a CHM-band object that is not")
+    print("shrub is evidence about where the height rule fails (section 3 safeguards 1-2).")
     print("Track the accept/reject rate per tile: a low rate means H_GRASS_MAX or")
     print("H_TREE_MIN needs revisiting, not that the candidates were a bad idea.")
 

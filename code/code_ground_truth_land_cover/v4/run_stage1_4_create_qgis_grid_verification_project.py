@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Load the Step 0c grid layers into QGIS for the mandatory visual alignment check.
 
 Run inside QGIS: Plugins -> Python Console -> Show Editor -> Open Script -> Run.
@@ -8,7 +7,7 @@ it pulls a large Qt stack and must not contaminate the pipeline environment.
 WHY THIS EXISTS AS A SEPARATE STEP. instructions5.md section 5 Step 3 requires
 both grids exported and confirmed by eye against the NEON tiles BEFORE anything
 is computed. run_stage1_3_define_planet_grid.py proves the arithmetic is
-self-consistent - uniform spacing, integer N, whole-metre edges. It cannot prove
+self-consistent - uniform spacing, integer N, whole-meter edges. It cannot prove
 the grid sits where the imagery sits. A CRS mislabelled in the LSP product, a
 half-pixel centre/edge convention error, or a coregistration offset between the
 LSP product and the AOP flight would all pass every numeric check and still put
@@ -63,6 +62,7 @@ imagery is the thing being checked against.
 import json
 import os
 
+from helpers import expand_path
 from qgis.core import (
     QgsColorRampShader,
     QgsCoordinateReferenceSystem,
@@ -78,9 +78,7 @@ from qgis.core import (
 from qgis.PyQt.QtGui import QColor
 
 # --------------------------------------------------------------------- CONFIG
-CONFIG = os.path.expanduser(
-    "~/Documents/GitHub/PLSP/code/code_ground_truth_land_cover/v4/config/srer_2022.json"
-)
+CONFIG = os.path.expanduser("~/Documents/GitHub/PLSP/code/code_ground_truth_land_cover/v4/config/srer_2022.json")
 # -----------------------------------------------------------------------------
 
 ANALYSIS_COLOR = "#ffffff"
@@ -89,10 +87,6 @@ WINDOW_COLOR = "#00e5ff"
 TILE_COLOR = "#ffd400"
 CROPPED_COLOR = "#00c853"
 FOOTPRINT_COLOR = "#ff6d00"
-
-
-def expand(root, *parts):
-    return os.path.join(os.path.expanduser(str(root)), *parts)
 
 
 def hollow(color, width, style="solid"):
@@ -108,15 +102,11 @@ def hollow(color, width, style="solid"):
     )
 
 
-def add_vector(
-    project, root, gpkg, layer_name, title, color, width, style="solid", checked=True
-):
+def add_vector(project, root, gpkg, layer_name, title, color, width, style="solid", checked=True):
     """Register one GeoPackage layer with a hollow outline renderer."""
     layer = QgsVectorLayer(f"{gpkg}|layername={layer_name}", title, "ogr")
     if not layer.isValid():
-        print(
-            f"MISSING layer {layer_name} in {gpkg} - run run_stage1_3_define_planet_grid.py first"
-        )
+        print(f"MISSING layer {layer_name} in {gpkg} - run run_stage1_3_define_planet_grid.py first")
         return None
     layer.setRenderer(QgsSingleSymbolRenderer(hollow(color, width, style)))
     project.addMapLayer(layer, False)
@@ -139,9 +129,7 @@ def add_lsp_layer(project, root, path, title):
     """
     layer = QgsRasterLayer(path, title)
     if not layer.isValid():
-        print(
-            f"MISSING {path} - re-run run_stage1_3_define_planet_grid.py to export it"
-        )
+        print(f"MISSING {path} - re-run run_stage1_3_define_planet_grid.py to export it")
         return None
     stats = layer.dataProvider().bandStatistics(1)
     low, high = stats.minimumValue, stats.maximumValue
@@ -150,9 +138,7 @@ def add_lsp_layer(project, root, path, title):
     ramp.setColorRampItemList(
         [
             QgsColorRampShader.ColorRampItem(low, QColor("#f7f7c8"), f"{low:.3f}"),
-            QgsColorRampShader.ColorRampItem(
-                (low + high) / 2.0, QColor("#7cb342"), f"{(low + high) / 2.0:.3f}"
-            ),
+            QgsColorRampShader.ColorRampItem((low + high) / 2.0, QColor("#7cb342"), f"{(low + high) / 2.0:.3f}"),
             QgsColorRampShader.ColorRampItem(high, QColor("#1b5e20"), f"{high:.3f}"),
         ]
     )
@@ -165,17 +151,17 @@ def add_lsp_layer(project, root, path, title):
     return layer
 
 
-def add_rgb_group(project, root, cfg, data_dir):
+def add_rgb_group(project, root, config, data_dir):
     """The 10 cm RGB basemap, one layer per tile, in a collapsed group.
 
     Check 3 above is the whole reason this is loaded: grid edges are compared
     against real edges in the imagery, not against other grid lines.
     """
     group = root.addGroup("RGB 10 cm basemap")
-    pattern = cfg["products"]["rgb"]
+    pattern = config["products"]["rgb"]
     loaded = 0
-    for tile in cfg["tiles"]:
-        path = expand(data_dir, pattern["folder"], pattern["pattern"].format(tile=tile))
+    for tile in config["tiles"]:
+        path = expand_path(data_dir, pattern["folder"], pattern["pattern"].format(tile=tile))
         if not os.path.exists(path):
             continue
         layer = QgsRasterLayer(path, f"RGB {tile}")
@@ -189,27 +175,25 @@ def add_rgb_group(project, root, cfg, data_dir):
     return loaded
 
 
-def first_corner_window(cfg):
+def first_corner_window(config):
     """South-west corner window of the first configured tile, for the zoom hint."""
-    tile = next(iter(cfg["tiles"]))
+    tile = next(iter(config["tiles"]))
     easting, northing = (int(v) for v in tile.split("_"))
-    half = float(cfg["stage1_3_planet_grid"]["verification_window_m"]) / 2.0
+    half = float(config["stage1_3_planet_grid"]["verification_window_m"]) / 2.0
     return tile, easting - half, northing - half, easting + half, northing + half
 
 
 def main():
-    cfg = json.load(open(CONFIG))
-    site, year = cfg["site"], cfg["year"]
-    qa_dir = expand(cfg["results_root"], "stage1_data_and_features", "qa")
+    config = json.load(open(CONFIG))
+    site, year = config["site"], config["year"]
+    qa_dir = expand_path(config["results_root"], "stage1_data_and_features", "qa")
     gpkg = os.path.join(qa_dir, f"planet_grid_{site}_{year}.gpkg")
     if not os.path.exists(gpkg):
-        raise SystemExit(
-            f"MISSING {gpkg} - run run_stage1_3_define_planet_grid.py first"
-        )
+        raise SystemExit(f"MISSING {gpkg} - run run_stage1_3_define_planet_grid.py first")
 
     project = QgsProject.instance()
     project.clear()
-    project.setCrs(QgsCoordinateReferenceSystem(cfg["expected_crs"]))
+    project.setCrs(QgsCoordinateReferenceSystem(config["expected_crs"]))
     # ABSOLUTE layer paths, deliberately. QGIS defaults to paths relative to the
     # .qgz, which silently break the moment the project file changes directory
     # depth - a rename of a results directory is enough, and the failure is
@@ -274,30 +258,26 @@ def main():
         "1.0",
     )
 
-    variable = cfg["stage1_3_planet_grid"].get("verification_variable", "EVIamp")
-    lsp_year = cfg["stage1_3_planet_grid"]["grid_source_year"]
+    variable = config["stage1_3_planet_grid"].get("verification_variable", "EVIamp")
+    lsp_year = config["stage1_3_planet_grid"]["grid_source_year"]
     lsp_path = os.path.join(qa_dir, f"planet_{variable}_{site}_{lsp_year}.tif")
     lsp_layer = add_lsp_layer(project, root, lsp_path, f"PLSP {variable} {lsp_year}")
 
-    data_dir = expand(cfg["data_root"], cfg["site_name"])
-    rgb_count = add_rgb_group(project, root, cfg, data_dir)
+    data_dir = expand_path(config["data_root"], config["site_name"])
+    rgb_count = add_rgb_group(project, root, config, data_dir)
 
     out = os.path.join(qa_dir, f"grid_verification_{site}_{year}.qgz")
     project.write(out)
 
-    tile, x_min, y_min, x_max, y_max = first_corner_window(cfg)
-    grid = cfg["stage1_3_planet_grid"]["measured"]
+    tile, x_min, y_min, x_max, y_max = first_corner_window(config)
+    grid = config["stage1_3_planet_grid"]["measured"]
     print(f"loaded {len(project.mapLayers())} layers ({rgb_count} RGB tiles)")
     print(f"saved project: {out}")
     print("")
-    print(
-        f"planet pixel {grid['planet_pixel_m']} m, N = {grid['N']}, origin {grid['origin_x']}, {grid['origin_y']}"
-    )
+    print(f"planet pixel {grid['planet_pixel_m']} m, N = {grid['N']}, origin {grid['origin_x']}, {grid['origin_y']}")
     print("")
     print(f"ZOOM HERE FIRST - south-west corner window of {tile}:")
-    print(
-        f"{x_min:.0f},{y_min:.0f} : {x_max:.0f},{y_max:.0f} (paste into the coordinate box, or use Zoom to Layer on verification windows)"
-    )
+    print(f"{x_min:.0f},{y_min:.0f} : {x_max:.0f},{y_max:.0f} (paste into the coordinate box, or use Zoom to Layer on verification windows)")
     print("")
     print(
         "Confirm, in order: (1) three 1 m cells span each 3 m cell with no sliver; (2) the tile boundary cutting through planet cells is expected - no SRER tile is congruent in both axes; (3) cell edges line up with real edges in the RGB, not systematically offset from them; (4) tile footprints cropped covers the ground truth that will enter Steps 3-6."
