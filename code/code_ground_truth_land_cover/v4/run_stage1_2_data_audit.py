@@ -2,7 +2,7 @@
 """Step 0 - data audit and grid definition (instructions5.md section 5 Step 0, section 11).
 
 Runs the section 11 checklist against a site/year and writes both a machine-readable
-`data_audit_{SITE}_{YEAR}.json` and a human-readable summary into `00_qa/`.
+`data_audit_{SITE}_{YEAR}.json` and a human-readable summary into `stage1_data_and_features/qa/`.
 
 Checks are grouped as in the spec:
   11.1 inventory                 1-5
@@ -17,7 +17,7 @@ states what is outstanding rather than silently omitting it.
 
 All site-specific values come from the config file (R8) - nothing is hard-coded here.
 
-Usage:  python run_step0_data_audit.py config/srer_2022.json
+Usage:  python run_stage1_2_data_audit.py config/srer_2022.json
 """
 
 import argparse
@@ -40,7 +40,15 @@ class Audit:
         self.checks = []
 
     def add(self, num, name, status, observed, blocker=False):
-        self.checks.append({"check": str(num), "name": name, "status": status, "blocker": bool(blocker), "observed": observed,})
+        self.checks.append(
+            {
+                "check": str(num),
+                "name": name,
+                "status": status,
+                "blocker": bool(blocker),
+                "observed": observed,
+            }
+        )
         return status
 
     def defer(self, num, name, reason):
@@ -58,7 +66,10 @@ def resolve(root, *parts):
 def tile_paths(cfg, site_dir, tile):
     """Every expected file for one tile, keyed by product/index."""
     p = cfg["products"]
-    out = {"rgb": site_dir / p["rgb"]["folder"] / p["rgb"]["pattern"].format(tile=tile), "chm": site_dir / p["chm"]["folder"] / p["chm"]["pattern"].format(tile=tile),}
+    out = {
+        "rgb": site_dir / p["rgb"]["folder"] / p["rgb"]["pattern"].format(tile=tile),
+        "chm": site_dir / p["chm"]["folder"] / p["chm"]["pattern"].format(tile=tile),
+    }
     for index in p["vi"]["indices"]:
         out[f"vi_{index}"] = site_dir / p["vi"]["folder"] / p["vi"]["pattern"].format(tile=tile, index=index)
     return out
@@ -109,7 +120,15 @@ def shift_field(a, b, window_px, upsample=20, min_std=1e-6):
             if wa.std() < min_std or wb.std() < min_std:
                 continue
             dy, dx = subpixel_shift(wa, wb, upsample)
-            rows.append({"y": y + window_px // 2, "x": x + window_px // 2, "dy": round(dy, 4), "dx": round(dx, 4), "offset": round(float(np.hypot(dx, dy)), 4),})
+            rows.append(
+                {
+                    "y": y + window_px // 2,
+                    "x": x + window_px // 2,
+                    "dy": round(dy, 4),
+                    "dx": round(dx, 4),
+                    "offset": round(float(np.hypot(dx, dy)), 4),
+                }
+            )
     return rows
 
 
@@ -125,7 +144,21 @@ def summarize_field(rows, limit_m):
     mad = float(np.median(np.abs(offs - np.median(offs)))) * 1.4826
     se = mad / max(np.sqrt(len(offs)), 1.0)
     median_offset = float(np.hypot(med_dx, med_dy))
-    return {"n_windows": len(rows), "median_dy_m": round(med_dy, 3), "median_dx_m": round(med_dx, 3), "median_vector_offset_m": round(median_offset, 3), "median_of_offsets_m": round(float(np.median(offs)), 3), "mad_sigma_m": round(mad, 3), "se_of_median_m": round(se, 4), "ci95_m": [round(median_offset - 1.96 * se, 3), round(median_offset + 1.96 * se, 3)], "exceeds_limit": bool(median_offset - 1.96 * se > limit_m), "frac_windows_over_limit": round(float((offs > limit_m).mean()), 3),}
+    return {
+        "n_windows": len(rows),
+        "median_dy_m": round(med_dy, 3),
+        "median_dx_m": round(med_dx, 3),
+        "median_vector_offset_m": round(median_offset, 3),
+        "median_of_offsets_m": round(float(np.median(offs)), 3),
+        "mad_sigma_m": round(mad, 3),
+        "se_of_median_m": round(se, 4),
+        "ci95_m": [
+            round(median_offset - 1.96 * se, 3),
+            round(median_offset + 1.96 * se, 3),
+        ],
+        "exceeds_limit": bool(median_offset - 1.96 * se > limit_m),
+        "frac_windows_over_limit": round(float((offs > limit_m).mean()), 3),
+    }
 
 
 def best_shift(a, b, max_shift):
@@ -161,8 +194,7 @@ def best_shift(a, b, max_shift):
     dx = (ix - m) + float(np.clip(sub_x, -0.5, 0.5))
     return round(dy, 3), round(dx, 3), best_score
 
-
-# ---------------------------------------------------------------- 11.1 inventory
+    # ---------------------------------------------------------------- 11.1 inventory
 
 
 def check_inventory(audit, cfg, site_dir):
@@ -175,7 +207,17 @@ def check_inventory(audit, cfg, site_dir):
                 missing.append(f"{tile}/{key}: {path}")
 
     n_products = 3
-    audit.add(1, f"All {len(tiles)} tiles present for all {n_products} products", PASS if not missing else FAIL, {"expected_files": len(expected), "found": len(expected) - len(missing), "missing": missing,}, blocker=True,)
+    audit.add(
+        1,
+        f"All {len(tiles)} tiles present for all {n_products} products",
+        PASS if not missing else FAIL,
+        {
+            "expected_files": len(expected),
+            "found": len(expected) - len(missing),
+            "missing": missing,
+        },
+        blocker=True,
+    )
 
     # 2 - SAVI/EVI filenames follow the NDVI pattern (never verified before)
     pattern_ok, pattern_detail = True, {}
@@ -184,7 +226,13 @@ def check_inventory(audit, cfg, site_dir):
             path = tile_paths(cfg, site_dir, tile)[f"vi_{index}"]
             pattern_detail[f"{tile}/{index}"] = path.exists()
             pattern_ok &= path.exists()
-    audit.add(2, "SAVI/EVI filenames match the NDVI pattern", PASS if pattern_ok else FAIL, pattern_detail, blocker=True,)
+    audit.add(
+        2,
+        "SAVI/EVI filenames match the NDVI pattern",
+        PASS if pattern_ok else FAIL,
+        pattern_detail,
+        blocker=True,
+    )
 
     # 3, 4 - dimensions per product
     for num, key, label in ((3, "rgb", "RGB"), (4, "chm", "CHM")):
@@ -198,8 +246,13 @@ def check_inventory(audit, cfg, site_dir):
                 sizes[tile] = [ds.width, ds.height]
                 if [ds.width, ds.height] != spec["expected_size"]:
                     bad.append(tile)
-        audit.add(num, f"{label} tile dimensions = {spec['expected_size']} at {spec['expected_res']} m", PASS if not bad else REPORT, {"sizes": sizes, "unexpected": bad},)
-    # 4 also covers the VI grid
+        audit.add(
+            num,
+            f"{label} tile dimensions = {spec['expected_size']} at {spec['expected_res']} m",
+            PASS if not bad else REPORT,
+            {"sizes": sizes, "unexpected": bad},
+        )
+        # 4 also covers the VI grid
     vi_sizes, vi_bad = {}, []
     spec = cfg["products"]["vi"]
     for tile in tiles:
@@ -210,7 +263,12 @@ def check_inventory(audit, cfg, site_dir):
             vi_sizes[tile] = [ds.width, ds.height]
             if [ds.width, ds.height] != spec["expected_size"]:
                 vi_bad.append(tile)
-    audit.add("4b", f"VI tile dimensions = {spec['expected_size']} at {spec['expected_res']} m", PASS if not vi_bad else REPORT, {"sizes": vi_sizes, "unexpected": vi_bad},)
+    audit.add(
+        "4b",
+        f"VI tile dimensions = {spec['expected_size']} at {spec['expected_res']} m",
+        PASS if not vi_bad else REPORT,
+        {"sizes": vi_sizes, "unexpected": vi_bad},
+    )
 
     # 5 - no duplicate or overlapping footprints
     bounds = {}
@@ -228,16 +286,24 @@ def check_inventory(audit, cfg, site_dir):
             bx, by, bxm, bym = bounds[b]
             if ax < bxm and bx < axm and ay < bym and by < aym:
                 overlaps.append([a, b])
-    audit.add(5, "No duplicate or overlapping tile footprints", PASS if not overlaps else REPORT, {"bounds": bounds, "overlaps": overlaps, "duplicates": len(bounds) != len(set(map(tuple, bounds.values())))},)
+    audit.add(
+        5,
+        "No duplicate or overlapping tile footprints",
+        PASS if not overlaps else REPORT,
+        {
+            "bounds": bounds,
+            "overlaps": overlaps,
+            "duplicates": len(bounds) != len(set(map(tuple, bounds.values()))),
+        },
+    )
     return bounds
 
-
-# ------------------------------------------------- 11.2 georeferencing and alignment
+    # ------------------------------------------------- 11.2 georeferencing and alignment
 
 
 def check_georeferencing(audit, cfg, site_dir):
     tiles = list(cfg["tiles"])
-    crs_seen, origins, mismatched = {}, {}, []
+    crs_seen, origins, _ = {}, {}, []
     for tile in tiles:
         for key, path in tile_paths(cfg, site_dir, tile).items():
             if not path.exists():
@@ -254,7 +320,17 @@ def check_georeferencing(audit, cfg, site_dir):
             utm_zone = f"{int(only.split(':')[1]) - 32600}N"
         elif only.startswith("EPSG:327"):
             utm_zone = f"{int(only.split(':')[1]) - 32700}S"
-    audit.add(6, "CRS identical across all products and tiles; UTM zone recorded", PASS if list(crs_seen) == [expected_crs] else FAIL, {"crs_found": {k: len(v) for k, v in crs_seen.items()}, "expected": expected_crs, "utm_zone": utm_zone}, blocker=True,)
+    audit.add(
+        6,
+        "CRS identical across all products and tiles; UTM zone recorded",
+        PASS if list(crs_seen) == [expected_crs] else FAIL,
+        {
+            "crs_found": {k: len(v) for k, v in crs_seen.items()},
+            "expected": expected_crs,
+            "utm_zone": utm_zone,
+        },
+        blocker=True,
+    )
 
     # 7 - VI and CHM 1 m grids share an identical origin
     offsets = {}
@@ -263,9 +339,18 @@ def check_georeferencing(audit, cfg, site_dir):
         if not (paths["chm"].exists() and paths["vi_SAVI"].exists()):
             continue
         with rasterio.open(paths["chm"]) as c, rasterio.open(paths["vi_SAVI"]) as v:
-            offsets[tile] = [round(v.transform.c - c.transform.c, 6), round(v.transform.f - c.transform.f, 6),]
+            offsets[tile] = [
+                round(v.transform.c - c.transform.c, 6),
+                round(v.transform.f - c.transform.f, 6),
+            ]
     bad7 = [t for t, o in offsets.items() if o != [0.0, 0.0]]
-    audit.add(7, "VI and CHM 1 m grids share an identical origin (no half-pixel offset)", PASS if not bad7 else FAIL, {"vi_minus_chm_origin_m": offsets, "mismatched": bad7}, blocker=True,)
+    audit.add(
+        7,
+        "VI and CHM 1 m grids share an identical origin (no half-pixel offset)",
+        PASS if not bad7 else FAIL,
+        {"vi_minus_chm_origin_m": offsets, "mismatched": bad7},
+        blocker=True,
+    )
 
     # 8 - RGB 10 cm grid nests exactly within the 1 m grid
     nesting = {}
@@ -276,9 +361,19 @@ def check_georeferencing(audit, cfg, site_dir):
         with rasterio.open(paths["chm"]) as c, rasterio.open(paths["rgb"]) as r:
             dx, dy = r.transform.c - c.transform.c, r.transform.f - c.transform.f
             ratio = c.res[0] / r.res[0]
-            nesting[tile] = {"origin_delta_m": [round(dx, 6), round(dy, 6)], "res_ratio": round(ratio, 6), "nests": abs(dx) < 1e-6 and abs(dy) < 1e-6 and abs(ratio - round(ratio)) < 1e-6,}
+            nesting[tile] = {
+                "origin_delta_m": [round(dx, 6), round(dy, 6)],
+                "res_ratio": round(ratio, 6),
+                "nests": abs(dx) < 1e-6 and abs(dy) < 1e-6 and abs(ratio - round(ratio)) < 1e-6,
+            }
     bad8 = [t for t, v in nesting.items() if not v["nests"]]
-    audit.add(8, "RGB 10 cm grid nests exactly within the 1 m grid", PASS if not bad8 else FAIL, {"per_tile": nesting, "not_nesting": bad8}, blocker=True,)
+    audit.add(
+        8,
+        "RGB 10 cm grid nests exactly within the 1 m grid",
+        PASS if not bad8 else FAIL,
+        {"per_tile": nesting, "not_nesting": bad8},
+        blocker=True,
+    )
 
     # 9 - coregistration: RGB (degraded to 1 m) against CHM and SAVI
     limit = cfg["thresholds"]["coreg_blocker_m"]
@@ -304,7 +399,11 @@ def check_georeferencing(audit, cfg, site_dir):
         upsample = int(cfg["thresholds"].get("coreg_upsample", 20))
         # all three pairings: CHM vs SAVI involves no camera, so it separates a
         # camera registration problem from a whole-block geolocation difference
-        pairs = (("rgb_chm", rgb1m[:n, :n], chm[:n, :n]), ("rgb_savi", rgb1m[:n, :n], savi[:n, :n]), ("chm_savi", chm[:n, :n], savi[:n, :n]))
+        pairs = (
+            ("rgb_chm", rgb1m[:n, :n], chm[:n, :n]),
+            ("rgb_savi", rgb1m[:n, :n], savi[:n, :n]),
+            ("chm_savi", chm[:n, :n], savi[:n, :n]),
+        )
         for label, a, b in pairs:
             gdy, gdx = subpixel_shift(a, b, upsample)
             rows = shift_field(a, b, window, upsample)
@@ -316,16 +415,30 @@ def check_georeferencing(audit, cfg, site_dir):
             if label != "chm_savi":
                 worst = max(worst, stats.get("median_vector_offset_m", 0.0))
         coreg[tile] = entry
-    # significance, not a point estimate: fail only if the lower bound of the
-    # median's 95% CI is above the limit on a camera-bearing pair
+        # significance, not a point estimate: fail only if the lower bound of the
+        # median's 95% CI is above the limit on a camera-bearing pair
     significant = [f"{tile}/{label}" for tile, entry in coreg.items() for label, s in entry.items() if label != "chm_savi" and s.get("exceeds_limit")]
-    audit.add(9, f"Coregistration, per-window median offset (> {limit} m, CI-significant, is a blocker)", PASS if not significant else FAIL, {"per_tile": coreg, "worst_median_offset_m": round(worst, 3), "limit_m": limit, "significantly_over_limit": significant,}, blocker=True,)
+    audit.add(
+        9,
+        f"Coregistration, per-window median offset (> {limit} m, CI-significant, is a blocker)",
+        PASS if not significant else FAIL,
+        {
+            "per_tile": coreg,
+            "worst_median_offset_m": round(worst, 3),
+            "limit_m": limit,
+            "significantly_over_limit": significant,
+        },
+        blocker=True,
+    )
 
-    for num, name in ((10, "Planet LSP CRS matches and footprint covers all tiles"), (11, "Planet pixel size read from file; derive N"), (12, "Planet grid origin recorded; 1 m blocks tile it exactly"),):
+    for num, name in (
+        (10, "Planet LSP CRS matches and footprint covers all tiles"),
+        (11, "Planet pixel size read from file; derive N"),
+        (12, "Planet grid origin recorded; 1 m blocks tile it exactly"),
+    ):
         audit.defer(num, name, "PlanetScope LSP product for SRER 2022 not yet produced")
 
-
-# ------------------------------------------------ 11.3 radiometry and value sanity
+        # ------------------------------------------------ 11.3 radiometry and value sanity
 
 
 def check_radiometry(audit, cfg, site_dir):
@@ -342,14 +455,32 @@ def check_radiometry(audit, cfg, site_dir):
             with rasterio.open(path) as ds:
                 arr = ds.read(1, masked=True)
                 key = f"{tile}/{index}"
-                vi_stats[key] = {"dtype": ds.dtypes[0], "scales": list(ds.scales), "offsets": list(ds.offsets), "nodata": ds.nodata, "min": float(arr.min()), "max": float(arr.max()),}
+                vi_stats[key] = {
+                    "dtype": ds.dtypes[0],
+                    "scales": list(ds.scales),
+                    "offsets": list(ds.offsets),
+                    "nodata": ds.nodata,
+                    "min": float(arr.min()),
+                    "max": float(arr.max()),
+                }
                 # the [-1, 1] gate is for SAVI/NDVI only: EVI is unbounded by
                 # construction and routinely exceeds it over bright soil, so it
                 # is reported rather than treated as an unapplied scale factor
                 if index in ("SAVI", "NDVI") and not (-1.0 <= float(arr.min()) and float(arr.max()) <= 1.0):
                     out_of_range.append(key)
     evi_out = [k for k, v in vi_stats.items() if k.endswith("/EVI") and not (-1.0 <= v["min"] and v["max"] <= 1.0)]
-    audit.add(13, "VI scale factor applied; SAVI/NDVI land in [-1, 1]", PASS if not out_of_range else FAIL, {"per_index": vi_stats, "out_of_range_savi_ndvi": out_of_range, "evi_outside_unit_range": evi_out, "note": "EVI is unbounded by design; listed for information, not a failure",}, blocker=True,)
+    audit.add(
+        13,
+        "VI scale factor applied; SAVI/NDVI land in [-1, 1]",
+        PASS if not out_of_range else FAIL,
+        {
+            "per_index": vi_stats,
+            "out_of_range_savi_ndvi": out_of_range,
+            "evi_outside_unit_range": evi_out,
+            "note": "EVI is unbounded by design; listed for information, not a failure",
+        },
+        blocker=True,
+    )
 
     # 14 - RGB band count and dtype
     rgb_info, rgb_bad = {}, []
@@ -358,11 +489,21 @@ def check_radiometry(audit, cfg, site_dir):
         if not path.exists():
             continue
         with rasterio.open(path) as ds:
-            info = {"bands": ds.count, "dtype": ds.dtypes[0], "colorinterp": [str(c) for c in ds.colorinterp],}
+            info = {
+                "bands": ds.count,
+                "dtype": ds.dtypes[0],
+                "colorinterp": [str(c) for c in ds.colorinterp],
+            }
             rgb_info[tile] = info
             if ds.count != 3 or ds.dtypes[0] != "uint8":
                 rgb_bad.append(tile)
-    audit.add(14, "RGB band count 3 and dtype uint8; no alpha band", PASS if not rgb_bad else FAIL, {"per_tile": rgb_info, "unexpected": rgb_bad}, blocker=True,)
+    audit.add(
+        14,
+        "RGB band count 3 and dtype uint8; no alpha band",
+        PASS if not rgb_bad else FAIL,
+        {"per_tile": rgb_info, "unexpected": rgb_bad},
+        blocker=True,
+    )
 
     # 15 - nodata declared and applied per product
     nodata = {}
@@ -375,9 +516,18 @@ def check_radiometry(audit, cfg, site_dir):
                 nodata[f"{tile}/{key}"] = ds.nodata
                 if ds.nodata is None:
                     undeclared.append(f"{tile}/{key}")
-    # RGB carries no nodata value; recorded as an accepted decision, not a defect
+                    # RGB carries no nodata value; recorded as an accepted decision, not a defect
     accepted = cfg.get("decisions", {}).get("rgb_nodata_undeclared")
-    audit.add(15, "Nodata/fill declared per product and applied, not left as a raw sentinel", PASS if (not undeclared or accepted) else REPORT, {"per_file": nodata, "undeclared": sorted(set(undeclared)), "decision": accepted,},)
+    audit.add(
+        15,
+        "Nodata/fill declared per product and applied, not left as a raw sentinel",
+        PASS if (not undeclared or accepted) else REPORT,
+        {
+            "per_file": nodata,
+            "undeclared": sorted(set(undeclared)),
+            "decision": accepted,
+        },
+    )
 
     # 16 - CHM range, and the man-made-structure mask it justifies
     chm_stats = {}
@@ -393,8 +543,25 @@ def check_radiometry(audit, cfg, site_dir):
             valid = int(arr.count())
             total_masked += over
             kept = arr[arr <= mask_limit]
-            chm_stats[tile] = {"min": round(float(arr.min()), 3), "max_raw": round(float(arr.max()), 3), "max_after_mask": round(float(kept.max()), 3) if kept.count() else None, "negatives": int((arr < 0).sum()), "masked_px": over, "masked_pct": round(100.0 * over / valid, 6) if valid else None,}
-    audit.add(16, f"CHM range; values > {mask_limit:g} m masked as man-made structures", PASS, {"per_tile": chm_stats, "chm_max_valid_m": mask_limit, "total_masked_px": total_masked, "decision": cfg.get("decisions", {}).get("chm_max_valid_m"),},)
+            chm_stats[tile] = {
+                "min": round(float(arr.min()), 3),
+                "max_raw": round(float(arr.max()), 3),
+                "max_after_mask": round(float(kept.max()), 3) if kept.count() else None,
+                "negatives": int((arr < 0).sum()),
+                "masked_px": over,
+                "masked_pct": round(100.0 * over / valid, 6) if valid else None,
+            }
+    audit.add(
+        16,
+        f"CHM range; values > {mask_limit:g} m masked as man-made structures",
+        PASS,
+        {
+            "per_tile": chm_stats,
+            "chm_max_valid_m": mask_limit,
+            "total_masked_px": total_masked,
+            "decision": cfg.get("decisions", {}).get("chm_max_valid_m"),
+        },
+    )
 
     # 17 - CHM noise floor, proxied by the low tail over low-SAVI (bare) pixels
     savi_bare_max = cfg["parameters"]["SAVI_BARE_MAX"]
@@ -408,8 +575,32 @@ def check_radiometry(audit, cfg, site_dir):
             savi = v.read(1, masked=True)
         bare = np.asarray(chm[(savi < savi_bare_max) & ~savi.mask & ~chm.mask])
         if bare.size:
-            noise[tile] = {"n_low_savi_px": int(bare.size), "frac_exactly_zero": round(float((bare == 0).mean()), 4), "p50": round(float(np.percentile(bare, 50)), 3), "p95": round(float(np.percentile(bare, 95)), 3), "p99": round(float(np.percentile(bare, 99)), 3), "max": round(float(bare.max()), 3),}
-    audit.add(17, f"CHM distribution over low-SAVI (< {savi_bare_max}) pixels - input to H_GRASS_MAX", REPORT, {"per_tile": noise, "configured_H_GRASS_MAX_m": cfg["parameters"]["H_GRASS_MAX"], "suggested_H_GRASS_MAX_m": None, "note": ("NO value is suggested from this proxy. Low SAVI is not the same as bare: " "the p95 of 1.3-1.7 m is woody vegetation, not sensor noise, so using it " "would set H_GRASS_MAX near H_TREE_MIN and collapse the shrub class. " "The median is 0.0 m on every tile, which is the only defensible read here. " "Section 3 safeguard 2 requires visually-confirmed bare polygons - " "deferred to that step."),},)
+            noise[tile] = {
+                "n_low_savi_px": int(bare.size),
+                "frac_exactly_zero": round(float((bare == 0).mean()), 4),
+                "p50": round(float(np.percentile(bare, 50)), 3),
+                "p95": round(float(np.percentile(bare, 95)), 3),
+                "p99": round(float(np.percentile(bare, 99)), 3),
+                "max": round(float(bare.max()), 3),
+            }
+    audit.add(
+        17,
+        f"CHM distribution over low-SAVI (< {savi_bare_max}) pixels - input to H_GRASS_MAX",
+        REPORT,
+        {
+            "per_tile": noise,
+            "configured_H_GRASS_MAX_m": cfg["parameters"]["H_GRASS_MAX"],
+            "suggested_H_GRASS_MAX_m": None,
+            "note": (
+                "NO value is suggested from this proxy. Low SAVI is not the same as bare: "
+                "the p95 of 1.3-1.7 m is woody vegetation, not sensor noise, so using it "
+                "would set H_GRASS_MAX near H_TREE_MIN and collapse the shrub class. "
+                "The median is 0.0 m on every tile, which is the only defensible read here. "
+                "Section 3 safeguard 2 requires visually-confirmed bare polygons - "
+                "deferred to that step."
+            ),
+        },
+    )
 
     # 18 - VI nodata percentage (bidirectional mosaics carry flightline gaps)
     gaps, flagged = {}, []
@@ -424,12 +615,16 @@ def check_radiometry(audit, cfg, site_dir):
             gaps[tile] = round(pct, 4)
             if pct > flag_pct:
                 flagged.append(tile)
-    audit.add(18, f"Per-tile nodata % in the VI mosaic (> {flag_pct}% flags the tile)", PASS if not flagged else REPORT, {"nodata_pct": gaps, "flagged": flagged},)
+    audit.add(
+        18,
+        f"Per-tile nodata % in the VI mosaic (> {flag_pct}% flags the tile)",
+        PASS if not flagged else REPORT,
+        {"nodata_pct": gaps, "flagged": flagged},
+    )
 
     audit.defer(19, "Visual scan for cloud, cloud shadow and mosaic seams in RGB", "manual step")
 
-
-# ------------------------------------------------------ deferred check groups
+    # ------------------------------------------------------ deferred check groups
 
 
 def check_phenocam(audit, cfg, site_dir):
@@ -452,9 +647,13 @@ def check_phenocam(audit, cfg, site_dir):
                 row = r
                 break
     if row is None:
-        return audit.defer(23, "Phenocam location vs tile grid", f"{cfg['ameriflux_id']} not in {csv_path.name}")
+        return audit.defer(
+            23,
+            "Phenocam location vs tile grid",
+            f"{cfg['ameriflux_id']} not in {csv_path.name}",
+        )
 
-    # tile bounds from the CHM, which defines the 1 m analysis grid
+        # tile bounds from the CHM, which defines the 1 m analysis grid
     bounds = {}
     for tile in cfg["tiles"]:
         path = tile_paths(cfg, site_dir, tile)["chm"]
@@ -472,7 +671,14 @@ def check_phenocam(audit, cfg, site_dir):
         easting, northing = transformer.transform(float(lon), float(lat))
         inside = [t for t, b in bounds.items() if b.left <= easting <= b.right and b.bottom <= northing <= b.top]
         tiles_hit += inside
-        cams[name] = {"lat": float(lat), "lon": float(lon), "easting": round(easting, 2), "northing": round(northing, 2), "in_tiles": inside, "tile_roles": [cfg["tiles"][t] for t in inside],}
+        cams[name] = {
+            "lat": float(lat),
+            "lon": float(lon),
+            "easting": round(easting, 2),
+            "northing": round(northing, 2),
+            "in_tiles": inside,
+            "tile_roles": [cfg["tiles"][t] for t in inside],
+        }
 
     roles = {cfg["tiles"][t] for t in tiles_hit}
     if not tiles_hit:
@@ -480,20 +686,60 @@ def check_phenocam(audit, cfg, site_dir):
     elif roles == {"train"}:
         status, note = PASS, "phenocam sits in a train tile"
     else:
-        status, note = (REPORT, "phenocam sits in a TEST tile - instructions5.md section 2A states it is in the " "511000 train block, which the coordinates contradict. Using it as an independent " "phenology reference (Step 5) is still valid, but it is held-out data, so it cannot " "also inform training or labeling without leaking the test block.",)
-    return audit.add(23, "Phenocam location vs the tile grid", status, {"source": str(csv_path), "crs": cfg["expected_crs"], "phenocams": cams, "tiles_hit": sorted(set(tiles_hit)), "roles_hit": sorted(roles), "note": note,},)
+        status, note = (
+            REPORT,
+            "phenocam sits in a TEST tile - instructions5.md section 2A states it is in the "
+            "511000 train block, which the coordinates contradict. Using it as an independent "
+            "phenology reference (Step 5) is still valid, but it is held-out data, so it cannot "
+            "also inform training or labeling without leaking the test block.",
+        )
+    return audit.add(
+        23,
+        "Phenocam location vs the tile grid",
+        status,
+        {
+            "source": str(csv_path),
+            "crs": cfg["expected_crs"],
+            "phenocams": cams,
+            "tiles_hit": sorted(set(tiles_hit)),
+            "roles_hit": sorted(roles),
+            "note": note,
+        },
+    )
 
 
 def check_deferred(audit):
-    for num, name, reason in (("19a", "Class rasters use the locked section 3 codes", "needs Step 1 outputs"), (20, "Per-class pixel counts under the reference rules", "needs Step 1 outputs"), (21, "Train and test blocks contain all four classes", "needs Step 1 outputs"), (22, "Expected pure end-member counts per class", "needs Step 3/4"), ("22a", "Distribution of the 1 m and block confidence layers", "needs Step 1/3"), ("22b", "Hard vs soft fraction agreement per block", "needs Step 3"),):
+    for num, name, reason in (
+        ("19a", "Class rasters use the locked section 3 codes", "needs Step 1 outputs"),
+        (
+            20,
+            "Per-class pixel counts under the reference rules",
+            "needs Step 1 outputs",
+        ),
+        (21, "Train and test blocks contain all four classes", "needs Step 1 outputs"),
+        (22, "Expected pure end-member counts per class", "needs Step 3/4"),
+        (
+            "22a",
+            "Distribution of the 1 m and block confidence layers",
+            "needs Step 1/3",
+        ),
+        ("22b", "Hard vs soft fraction agreement per block", "needs Step 3"),
+    ):
         audit.defer(num, name, reason)
     for num in range(24, 30):
-        audit.defer(num, "Cross-site check (section 11.5)", "transfer site (US-Wkg) not yet processed")
+        audit.defer(
+            num,
+            "Cross-site check (section 11.5)",
+            "transfer site (US-Wkg) not yet processed",
+        )
     for num in (30, "30a", "30b", "30c", 31, 32, 33, 34, 35):
-        audit.defer(num, "PlanetScope LSP product check (section 11.6)", "PLSP SRER 2022 not yet produced")
+        audit.defer(
+            num,
+            "PlanetScope LSP product check (section 11.6)",
+            "PLSP SRER 2022 not yet produced",
+        )
 
-
-# ------------------------------------------------------------------------ report
+        # ------------------------------------------------------------------------ report
 
 
 def write_report(audit, cfg, out_dir, site, year):
@@ -502,13 +748,25 @@ def write_report(audit, cfg, out_dir, site, year):
     for c in audit.checks:
         counts[c["status"]] = counts.get(c["status"], 0) + 1
 
-    payload = {"site": site, "year": year, "config": cfg, "summary": counts, "blocking_failures": [c["check"] for c in audit.blocking_failures], "checks": audit.checks,}
+    payload = {
+        "site": site,
+        "year": year,
+        "config": cfg,
+        "summary": counts,
+        "blocking_failures": [c["check"] for c in audit.blocking_failures],
+        "checks": audit.checks,
+    }
     json_path = out_dir / f"data_audit_{site}_{year}.json"
     json_path.write_text(json.dumps(payload, indent=2, default=str) + "\n")
 
-    lines = [f"Step 0 data audit - {site} {year}", "=" * 64, "  ".join(f"{k}={v}" for k, v in sorted(counts.items())), "",]
+    lines = [
+        f"Step 0 data audit - {site} {year}",
+        "=" * 64,
+        " ".join(f"{k}={v}" for k, v in sorted(counts.items())),
+        "",
+    ]
     for c in audit.checks:
-        mark = {PASS: "ok  ", FAIL: "FAIL", REPORT: "note", DEFERRED: "----"}[c["status"]]
+        mark = {PASS: "ok ", FAIL: "FAIL", REPORT: "note", DEFERRED: "----"}[c["status"]]
         flag = " [BLOCKER]" if c["blocker"] and c["status"] == FAIL else ""
         lines.append(f"  {mark} #{c['check']:<4} {c['name']}{flag}")
         if c["status"] == DEFERRED:
@@ -526,7 +784,7 @@ def main():
     cfg = json.loads(args.config.read_text())
     site, year = cfg["site"], cfg["year"]
     site_dir = resolve(cfg["data_root"], cfg["site_name"])
-    out_dir = resolve(cfg["results_root"], "00_qa")
+    out_dir = resolve(cfg["results_root"], "stage1_data_and_features", "qa")
 
     if not site_dir.is_dir():
         sys.exit(f"data directory not found: {site_dir}")
