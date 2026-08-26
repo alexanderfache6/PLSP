@@ -53,6 +53,25 @@ Excluding nodata is the right way to compute cover, so these numbers are not wro
 
 **Recommendation, not yet acted on**: replace both tiles with fully-flown alternatives from the same quintiles — 14 tiles per quintile were available — and add two selection criteria that were missing: **require ~100% flight coverage, and require the tile to sit wholly inside the PlanetScope footprint.** Neither was checked when the five tiles were chosen.
 
+## 2.2 Replacement tiles — determined
+
+All 70 CHM tiles are already on disk, so every candidate was evaluated without downloading anything. **60 of 70 tiles are fully flown, 63 sit wholly inside the Planet footprint, 54 satisfy both.** The entire northern row at northing 3532000 — all ten tiles — is 4–24% flown, which is why both bad tiles came from it.
+
+Quintile edges recomputed over the 54 eligible tiles: **0.116 / 0.132 / 0.157 / 0.188 / 0.291 / 0.546**. Every kept tile holds its previous quintile under this recomputation, so only the two replacements move.
+
+| replaces | new tile | role | shrub | to opposite role | to same role |
+|---|---|---|---|---|---|
+| `511000_3532000` (Q4 train) | **`517000_3531000`** | train | 0.273 | 2.00 km | 4.47 km |
+| `520000_3532000` (Q2 test) | **`516000_3528000`** | test | 0.138 | **2.24 km** | 2.24 km |
+
+Candidates were ranked by **distance to the opposite role** — a train tile far from test tiles and vice versa — because that is what protects the leave-one-tile-out split from spatial autocorrelation. `516000_3528000` is the only Q2 test candidate exceeding 2 km from any train tile. Full criteria and runners-up are in `instructions5.md` §2A.
+
+Only RGB and the vegetation indices need downloading:
+
+```
+python run_stage1_1_download_neon_tiles.py --site SRER --year 2022 --tiles-to-download 517000_3531000 516000_3528000
+```
+
 ---
 
 # 3. Block retention
@@ -114,7 +133,7 @@ Shrub is under-predicted by 14.7%. **Random per-pixel error partly cancels acros
 
 # 5. Open items
 
-1. **Replace the two part-flown tiles** and add flight-coverage and footprint-containment gates to tile selection (§2.1). This is the highest-value fix here, because it affects run 3's training set as well as this stage.
+1. **Download and hand-label `517000_3531000` and `516000_3528000`** (§2.2), then re-run stage 3 and stage 4. This is the highest-value fix here, because it affects run 3's training set as well as this stage. The labelling is the real cost; the download is two tiles of RGB and VI.
 2. **Shrub bias remains the binding problem** and is a feature-space issue, not a sample-size one (`stage3_1_results.md` §9.4). Outputs stay provisional until it is addressed.
 3. **Only `RF-A_C` has been aggregated.** Running `RF-A_D` as well would measure what the CHM circularity does to the fractions, which is cheap and worth knowing.
 4. **The soft-mean and confidence-weighted estimates have not yet been compared** against the hard count. Blocks where they diverge are mixture- or ambiguity-dominated and are the ones worth inspecting first.

@@ -29,10 +29,10 @@ They diverge because the pipeline is not executed in the order it is described. 
 
 | Stage | What it does | Spec steps covered | Results directory |
 |---|---|---|---|
-| **1** | data setup and feature generation | Step 0, Step 1a–1c | `stage1_data_and_features/` (with `qa/`, `features/`, `segments/`, `shadow/`) |
+| **1** | data setup and feature generation | Step 0, Step 1a–1c | `stage1_data_and_features/` (with `qa/`, `features/`, `shadow/`, and the retired `segments/`) |
 | **2** | hand labeling | §4.2 | `stage2_labeling/` |
 | **3** | ground-truth classification | Step 1d–1e | `stage3_classification/run{N}/` |
-| **4** | aggregation to Planet scale | Step 2, Step 3 | `stage4_aggregation/` |
+| **4** | aggregation to Planet scale | Step 2, Step 3 | `stage4_aggregation/` — `run_stage4_1_aggregate_to_planet_blocks.py` |
 | **5** | pure end members | Step 4 | `stage5_pure_endmembers/` |
 | **6** | phenology regression | Step 5 | `stage6_rf_phenology/` |
 | **7** | accuracy assessment | Step 6 | `stage7_accuracy_assessment/` |
@@ -40,6 +40,21 @@ They diverge because the pipeline is not executed in the order it is described. 
 | **9** | transferability | Step 8 | `stage9_transferability_wkg/` |
 
 **Config keys follow the stage of the script that reads them** — `stage1_3_planet_grid`, `stage2_1_labeling_zones`, `stage3_1_classification`, `stage4_1_aggregation` — so a key is traceable to exactly one script.
+
+### 0.2 Shared modules — `constants.py` and `helpers.py`
+
+Two unnumbered modules sit alongside the `run_stage*` scripts. **They carry no stage number because they are imported, never run.**
+
+| Module | Holds | Rule |
+|---|---|---|
+| `constants.py` | `CLASS_LABELS`, `CLASS_NAMES`, `CLASS_CODES`, `CLASS_ORDER`, `CLASS_COLORS`, `UNLABELLED_COLOR`, `CLUSTER_COLORS`, `NODATA`, `FRAMEWORK_ORDER` | The **locked** §3 class codes and colours live here and nowhere else |
+| `helpers.py` | `resolve_config_path` (Path-style), `expand_path` (os.path-style, for the PyQGIS scripts) | Path resolution against a config root |
+
+**Import them; never redeclare their contents locally.** Before these modules existed, every script carried its own copy of the class codes and colours, which is exactly how a "locked" palette silently forks — one script's shrub brown drifts from another's and the maps stop being comparable. The locked-ness in §3 is only enforceable because there is one definition.
+
+They deliberately hold **no site-specific values** — those are config (R8). `constants.py` is the class system, which is fixed across every site by design; anything that varies by site does not belong there.
+
+> **Two path helpers, not one, and that is intentional.** `resolve_config_path` returns a `pathlib.Path` for the pipeline scripts; `expand_path` returns a string for the PyQGIS scripts, whose APIs take strings. Merging them would push a conversion into every QGIS call site.
 
 > **NAMING COLLISION, stated so it is not tripped over.** §4.2 uses "Stage 1 / Stage 1b / Stage 2" for the three *labeling* phases (k-means zones, CHM shrub candidates, hand labeling). Those are internal to §4.2 and are **unrelated** to the execution stages above — all three of them live inside execution stage 2. Read "Stage" inside §4.2 as a labeling phase; everywhere else it means execution order.
 
@@ -354,6 +369,42 @@ Five tiles were added, chosen **one per quintile**, excluding any candidate with
 > 2. **The tile must sit wholly inside the PlanetScope footprint**, or its ground truth has no Planet pixel to aggregate into.
 >
 > **Recommended**: replace both tiles with fully-flown alternatives from the same quintiles — 14 tiles were available per quintile — and re-run stage 3 and stage 4.
+
+#### Tile eligibility — the four criteria, in order
+
+Measured over all 70 flown tiles from the **CHM product, which is already downloaded site-wide**, so candidates cost nothing to evaluate (2026-08-18):
+
+1. **Flight coverage ~100%**, tested on CHM — the binding product. **60 of 70 pass.**
+2. **Wholly inside the PlanetScope footprint.** 63 of 70 pass; **54 pass both 1 and 2.**
+3. **Quintile of CHM shrub-band cover**, recomputed over the 54 eligible tiles.
+4. **≥ 2 km from every already-labelled tile**, and among survivors take the one **furthest from the opposite role** — a train tile far from test tiles and vice versa, since that is what protects the leave-one-tile-out split from spatial autocorrelation.
+
+**The whole northern row is ineligible**, which is why both bad tiles came from it:
+
+| northing 3532000 tiles | flown |
+|---|---|
+| `511000` … `520000`, all ten | **4.09% – 24.37%** |
+
+**Quintile edges on the 54 eligible tiles**: 0.116 / 0.132 / 0.157 / 0.188 / 0.291 / 0.546. The kept tiles' quintiles are unchanged under this recomputation, so only the two replacements move.
+
+Dropping the two leaves **train on Q1, Q3** and **test on Q4, Q5** — so the replacements must restore Q4 train and Q2 test, matching the original design intent.
+
+#### RESOLVED — the two replacement tiles
+
+| | replaces | new tile | role | shrub | to opposite role | why |
+|---|---|---|---|---|---|---|
+| **1** | `511000_3532000` | **`517000_3531000`** | train | **0.273** | 2.00 km | Closest match to the 0.270 it replaces, and 4.47 km from the nearest other train tile — the most spatially independent Q4 fold available |
+| **2** | `520000_3532000` | **`516000_3528000`** | test | **0.138** | **2.24 km** | The **only** candidate exceeding 2 km from the opposite role, which is the criterion that matters most for a test tile |
+
+Runners-up, recorded so the choice is reviewable: Q4 train `518000_3531000` (0.263, 2.00 km); Q2 test `515000_3528000` (0.146, 2.00 km) and `517000_3526000` (0.142, 2.00 km).
+
+Only **RGB and the vegetation indices** need downloading — CHM for all 70 tiles is already on disk.
+
+```
+python run_stage1_1_download_neon_tiles.py --site SRER --year 2022 --tiles-to-download 517000_3531000 516000_3528000
+```
+
+**Both tiles then need hand labelling (stage 2) before stage 3 can be re-run**, which is the real cost of this fix.
 
 Note that a new tile is not redundant just because its shrub cover resembles an existing one. `519000_3527000` matches the train block on shrub (0.120 against 0.119) but carries **one third the tree cover** (3.6% against 11.9%) — the same shrub density in a very different canopy, a combination the model had never seen.
 
@@ -1059,7 +1110,13 @@ Four indices rather than one because they fail differently — ExG is strongest 
 
 > **All absolute index thresholds are reference-path only** (R3). NEON RGB and NAIP differ in radiometry, bit depth, and correction, so an index value does not carry the same meaning at both. `RF-A_A`–`RF-A_C` use percentile thresholds or learned boundaries.
 
-**1b. Segmentation.** SLIC at 1 m, ~100k segments/tile. Per-segment spectral, texture, shape, and context features.
+**1b. Segmentation. — RETIRED 2026-08-18.** SLIC at 1 m, ~100k segments/tile, per-segment spectral, texture, shape and context features. `run_stage1_7_generate_segments.py` has moved to `unused/`; see `unused/README.md`.
+
+> **Why**: nothing consumed its output. Training is per-pixel, not per-segment (`results/stage3_1_results.md` §1.2) — SLIC segments are a uniform 9 px against a median shrub polygon of 5 px, so at the ≥ 70% coverage rule shrub yielded **22 training segments against bare's 738**, a 34:1 imbalance that would have made shrub unpredictable. Per-pixel training gives shrub 918 samples instead.
+>
+> The script also wrote a `framework_features` block naming a `D` and an `E` that were **segment-level feature sets, not the `RF-A_*` framework letters** — a collision worth removing, since `RF-A_E` is separately retired for an unrelated reason (§4.1).
+>
+> The existing `segments/` outputs and the `stage1_7_generate_segments_RETIRED` config key are kept as provenance. Step 1d's original per-segment specification is superseded by the per-pixel decision.
 
 **1c. Shadow detection** (reinstated from v3, `instructions2.md` Phase 3):
 - Rec. 709 luma (`0.2126R + 0.7152G + 0.0722B`) thresholded at the **pooled 20th percentile** — percentile-based per R3, so it transfers — combined with a blue-shift rule (`B > R`). Computed at `TEXTURE_SCALE` (0.6 m) per R2, not at native 10 cm.
@@ -1950,7 +2007,7 @@ This yields a quantified answer — *DeepForest at NAIP resolution recovers X% o
 
 **Constraints to respect if implemented:**
 - **PyQGIS requires the QGIS Python environment** (conda-forge `qgis`), not the pipeline env. Keep it isolated to a project-generation helper so the pipeline gains no dependency.
-- **Save relative paths.** With the local/SCC dual root (§5.1, R8), an absolute-path project breaks on the other machine.
+- ~~**Save relative paths.**~~ **SUPERSEDED 2026-08-18 — save ABSOLUTE paths.** The original reasoning was that with the local/SCC dual root (§5.1, R8) an absolute-path project breaks on the other machine. In practice relative paths broke first and worse: renaming `00_qa/` to `stage1_data_and_features/qa/` changed the project file's directory **depth**, so its `../../../data/NEON/...` references silently resolved one level short and every RGB layer in `grid_verification_SRER_2022.qgz` went missing. The failure is invisible until the project is opened, and a grep for old directory names cannot detect it, because a relative path contains no directory name. All three generator scripts now set `project.writeEntry("Paths", "/Absolute", True)`. The portability cost is nil: these projects are regenerated per machine from the scripts, never copied between machines.
 - **Prefer `.qgs` (plain XML) over `.qgz` (zipped)** for a generated artifact, so it is diffable in version control.
 - Colour tables are **uint8/paletted only** — they cover the categorical outputs, not the float layers, which is exactly the split between mechanisms 1 and 2.
 

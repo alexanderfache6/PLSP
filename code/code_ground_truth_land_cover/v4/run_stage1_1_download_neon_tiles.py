@@ -373,7 +373,7 @@ def main():
     args = ap.parse_args()
 
     if not args.config and not args.list_available_tiles:
-        print("--config is required unless you are using --list-tiles")
+        print("--config is required unless you are using --list-available-tiles")
         return 1
 
     token = os.environ.get("NEON_DATA_API_TOKEN")
@@ -450,7 +450,7 @@ def main():
                 missing_tiles.append(tile)
         todo[key] = missing_tiles
         have = len(tiles) - len(missing_tiles)
-        print(f"{key:<4} {PRODUCTS[key]['dpid']}  {have}/{len(tiles)} already present, {len(missing_tiles)} to fetch")
+        print(f"{key:<4} {PRODUCTS[key]['dpid']} {have}/{len(tiles)} already present, {len(missing_tiles)} to fetch")
 
     if not any(todo.values()):
         print("\nnothing to do - every requested tile is already in place")
