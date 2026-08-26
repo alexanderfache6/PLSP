@@ -211,7 +211,7 @@ def main():
             data=table,
         )
         px = feats["n_pixels"]
-        print(f"[{tile}] segments={n_seg:>6} (requested {request})  compactness={compactness:.2f}  px/seg mean={px.mean():.1f} median={np.median(px):.0f}  features={len(cols) - 1}")
+        print(f"[{tile}] segments={n_seg:>6} (requested {request}) compactness={compactness:.2f}  px/seg mean={px.mean():.1f} median={np.median(px):.0f}  features={len(cols) - 1}")
         summary.append(
             {
                 "tile": tile,
@@ -241,7 +241,7 @@ def main():
         "tiles": summary,
     }
     (out_dir / f"segments_{site}_{year}_spec.json").write_text(json.dumps(spec, indent=2) + "\n")
-    print(f"\nD features: {len(d_cols)}   E features: {len(d_cols) + len(e_cols)}")
+    print(f"\nD features: {len(d_cols)} E features: {len(d_cols) + len(e_cols)}")
     print(f"wrote {out_dir / f'segments_{site}_{year}_spec.json'}")
 
 
