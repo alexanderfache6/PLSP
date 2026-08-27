@@ -25,4 +25,17 @@ CLUSTER_COLORS = [
 
 NODATA = 255
 
+# Shadow mask codes, written by run_stage1_6_detect_shadows.py.
+# ONLY SHADOW_IS_NODATA IS A LOSS. SHADOW_IS_TREE is shadow within
+# SHADOW_TREE_RADIUS of CHM >= H_TREE_MIN, which instructions5.md section 5
+# Step 1c assigns to the tree class - those pixels are classified, not
+# discarded. Treating SHADOW_IS_TREE as loss overstates the cost of shadow by
+# roughly ten times (2.0-3.1% per tile against a true loss of 0.05-1.0%), which
+# is a mistake that has already been made once and reached the results notes.
+NO_SHADOW = 0
+SHADOW_IS_TREE = 1
+SHADOW_IS_NODATA = 2
+
+SHADOW_CODE_LABELS = {NO_SHADOW: "not shadow", SHADOW_IS_TREE: "resolved to tree", SHADOW_IS_NODATA: "masked to nodata"}
+
 FRAMEWORK_ORDER = ["A", "B", "C", "D", "E"]
