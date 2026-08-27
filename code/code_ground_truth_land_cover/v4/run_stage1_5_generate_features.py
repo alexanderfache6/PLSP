@@ -27,7 +27,7 @@ from pathlib import Path
 
 import numpy as np
 import rasterio
-from helpers import resolve_config_path
+from helpers import read_rgb_at_scale, resolve_config_path
 from rasterio.enums import Resampling
 from rasterio.transform import from_bounds
 from rasterio.warp import reproject
@@ -49,20 +49,6 @@ def tile_paths(config, site_dir, tile):
 
 
 # ------------------------------------------------------------------ RGB at 0.6 m
-
-
-def read_rgb_at_scale(path, scale_m):
-    """Read RGB decimated to scale_m by area-weighted average."""
-    with rasterio.open(path) as ds:
-        width = int(round((ds.bounds.right - ds.bounds.left) / scale_m))
-        height = int(round((ds.bounds.top - ds.bounds.bottom) / scale_m))
-        arr = ds.read(
-            out_shape=(ds.count, height, width),
-            resampling=Resampling.average,
-            out_dtype="float32",
-        )
-        transform = from_bounds(*ds.bounds, width, height)
-        return arr, transform, ds.crs, ds.bounds
 
 
 def chromatic(rgb):
@@ -89,7 +75,12 @@ def rgb_indices(rgb):
     # Rec. 709 luma, shared with Step 1c shadow detection
     out["luma"] = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
     mx = rgb.max(axis=0)
-    out["saturation"] = np.where(mx > EPS, (mx - rgb.min(axis=0)) / (mx + EPS), 0.0)
+    # np.where(mx > EPS, ..., 0.0) would hand back 0.0 for a NaN pixel, because
+    # NaN > EPS is False - so unflown ground (NaN in RGB) would silently report
+    # a real saturation of zero while every other band correctly reports NaN.
+    # The NaN has to be reinstated explicitly.
+    saturation = np.where(mx > EPS, (mx - rgb.min(axis=0)) / (mx + EPS), 0.0)
+    out["saturation"] = np.where(np.isnan(mx), np.nan, saturation)
     return out
 
 
@@ -222,12 +213,27 @@ def build_tile(config, site_dir, tile):
         meta.append({"name": name, "group": group, "computed_at_m": scale})
 
     luma = rgb_indices(rgb)["luma"]
+
+    # TEXTURE IS COMPUTED ON A FILLED COPY, THEN RE-MASKED. Every texture
+    # function quantizes against a GLOBAL statistic - nanpercentile bounds, an
+    # int16 or uint8 cast, a windowed mean - and a single NaN anywhere in the
+    # input poisons the whole array, not just its own neighbourhood. Feeding
+    # unflown ground straight in turned glcm_contrast, glcm_homogeneity,
+    # glcm_correlation and std 100% NaN on 517000_3531000 and made the entire
+    # tile unusable, from 1.1% genuinely missing ground.
+    #
+    # Filling with the median keeps the quantization bounds where the real data
+    # puts them; the mask is reinstated afterwards so no unflown pixel escapes
+    # with a fabricated texture value.
+    unflown = np.isnan(luma)
+    luma_filled = np.where(unflown, np.nanmedian(luma), luma).astype("float32")
     texture = {}
-    texture.update(glcm_features(luma, window, s1["glcm_levels"], tuple(s1["glcm_offset"])))
-    texture["glcm_entropy"] = local_entropy(luma, window, s1["glcm_levels"])
-    texture.update(lbp_features(luma, window, s1["lbp_points"], s1["lbp_radius"]))
-    texture["std"] = local_std(luma, window)
+    texture.update(glcm_features(luma_filled, window, s1["glcm_levels"], tuple(s1["glcm_offset"])))
+    texture["glcm_entropy"] = local_entropy(luma_filled, window, s1["glcm_levels"])
+    texture.update(lbp_features(luma_filled, window, s1["lbp_points"], s1["lbp_radius"]))
+    texture["std"] = local_std(luma_filled, window)
     for name, arr in texture.items():
+        arr = np.where(unflown, np.nan, arr)
         bands[name] = to_analysis_grid(arr, rgb_transform, rgb_crs, grid)
         meta.append({"name": name, "group": "texture", "computed_at_m": scale})
 
