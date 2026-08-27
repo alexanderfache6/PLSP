@@ -1,8 +1,8 @@
 # Stage 3_1 — RF-A per-pixel classification results
 
-Produced by `run_stage3_1_random_forest_ground_truth_classification.py`, which implements **`instructions5.md` §5 Step 1d**. The file is named for its execution stage; the text refers to the spec step — see `instructions5.md` §0.1 for why the two numbering systems differ.
+Produced by `run_stage3_1_random_forest_ground_truth_classification.py`, which implements **`instructions5.md` §5 Step 1d**. The text refers to the spec step throughout — see `instructions5.md` §0.1 for why the spec's step numbers and the scripts' stage numbers differ.
 
-**Site**: SRER 2022 · **Seed**: 6 + 2022 = 2028 · **Runs**: 1 (baseline), 2 (polygon subsampling), `3_smoke` (smoke test), **3 (current, 10 tiles)** · **Variants**: RF-A_A … RF-A_D
+**Site**: SRER 2022 · **Seed**: 6 + 2022 = 2028 · **Runs**: 1 (baseline), 2 (polygon subsampling), `3_smoke` (smoke test), 3 (10 tiles), **4 (pending — see §11)** · **Variants**: RF-A_A … RF-A_D
 
 ## Naming
 
@@ -57,6 +57,7 @@ A completed run is **frozen**: `run_stage3_1_random_forest_ground_truth_classifi
 | **2** | 5 | Polygon subsampling | max 100 px/polygon | 2,159 / 2,824 / 844 / 1,190 |
 | **`3_smoke`** | **10** | run 3 smoke test — quintile-stratified tiles, advanced shrub review | max 100 px/polygon | 2,671 / 3,218 / **1,531** / 1,530 |
 | **3** | **10** | the finished run — gate passed | max 100 px/polygon | **3,601 / 4,717 / 2,087 / 2,158** |
+| **4** | **10** | **PENDING** — two part-flown tiles replaced, RGB unflown ground masked, shadow and clusters refit (§10) | max 100 px/polygon | *not yet run* |
 
 Labels are **identical between runs 1 and 2** (shrub 844 px in both), so run 2 isolates the subsampling change with nothing else moving.
 
@@ -642,3 +643,77 @@ One tile is also cropped: **`520000_3532000` (test) is 55.4% inside the PlanetSc
 9. **These figures never become Step 6 accuracy.** That requires the independent probability sample and area-weighted estimators in §6.
 10. **Step 3 output from run 3 is provisional until the shrub bias is addressed** (§9.6). The remedy is multi-scale texture and context features, not more labels — the bias moved only 1.5 points between the partial-label smoke run and the fully labelled run 3, which is what rules out sample size as the cause. Build the Step 3 machinery on run 3 regardless, since the block distributions are needed to size everything downstream, but tag the fractions and do not train RF-B on them as final.
 11. **Aggregation must run on a mosaic, not per tile.** No SRER tile is congruent with the Planet grid in both axes (offsets of 0, 1 or 2 m; `instructions5.md` §5 Step 3). Blocking each tile in isolation emits partial blocks on all four edges of all ten tiles, which then fail the valid-pixel rule and silently delete every tile perimeter from the fraction product.
+
+---
+
+# 11. Run 4 — what changes from run 3, recorded before it runs
+
+**Status: not yet executed.** This section is written *before* the run so the changes are on record independently of whatever the scores turn out to be. Fill in results below once it completes.
+
+```
+python run_stage3_1_random_forest_ground_truth_classification.py config/srer_2022.json --run 4 --frameworks A B C D
+```
+
+> **RUN 4 CHANGES SIX THINGS AT ONCE. It is not a clean comparison against run 3, and no single score movement can be attributed to a single cause.** Three of the six are corrections to defects that were present in run 3, so run 3's numbers are not a clean baseline either — they were computed over partly-unusable ground. Run 4 replaces run 3 as the reference; do not average or interpolate between them.
+
+## 11.1 The six changes
+
+**1. Two part-flown tiles replaced** (`instructions5.md` §2A, `stage4_1_results.md` §2.2).
+
+| out | flown | in | flown | role | quintile |
+|---|---|---|---|---|---|
+| `511000_3532000` | **4.09%** | `517000_3531000` | 99.92% | train | Q4 |
+| `520000_3532000` | **24.37%** | `516000_3528000` | 100.00% | test | Q2 |
+
+Every tile in run 4 is ~100% flown *and* wholly inside the PlanetScope footprint — the first run for which that is true. In run 3, `511000_3532000` contributed 38,684 of a possible 1,000,000 pixels while counting as one of six training tiles, so **its leave-one-tile-out fold was a 4 ha fold**. Run 4 has six genuine folds.
+
+**2. Unflown RGB ground is masked.** NEON RGB declares no nodata and writes unflown ground as all-zero, which every downstream test read as ordinary dark ground. `helpers.read_rgb_at_scale` now masks all-zero RGB to NaN. Affects **`517000_3531000` only, 1.137% of the tile**; all nine other tiles are 0.000%. Usable fraction there is now 98.105%.
+
+**3. Shadow masks re-cut on every tile.** The pooled luma threshold is site-wide, so any change to the tile set or to RGB masking shifts it. Now **111.518** (p20), blue-fraction p80 **0.2966**. Shadow extent rose substantially against run 3:
+
+| tile | shadow→tree, run 3 | run 4 |
+|---|---|---|
+| 511000_3527000 | 2.02% | 2.96% |
+| 519000_3527000 | 1.70% | 3.13% |
+| 515000_3530000 | 0.18% | 0.63% |
+
+**4. k-means refit, clusters renumbered.** Cluster identities from run 3 do not carry over. The refit also eliminated the artifact cluster: run 3's **cluster 4 was 100% unflown RGB** on `517000_3531000` — 10,173 px of unphotographed ground that k-means had made into its own stratum. Clusters below the 0.1% floor are now **6 (0.02%) and 7 (0.06%)**, previously 8 (0.068%).
+
+**5. Label set changed in both directions.** Net **fewer** labels, because the retired tiles carried more reviewed shrub candidates than the new tiles do yet:
+
+| | run 3 tile set | run 4 tile set |
+|---|---|---|
+| drawn polygons | 423 | **449** (+26) |
+| accepted shrub candidates | 350 | **242** (−108) |
+| shrub review progress | 678/1500 (45%) | 569/1500 (38%) |
+
+**Expect shrub training pixels to fall relative to run 3's 2,087.** `517000_3531000` has **0 of 150** candidates reviewed and `516000_3528000` has 50. This is the one change likely to push a score *down*, and it is the first thing to check if shrub F1 drops.
+
+**6. Gate logic corrected** (no effect on training data). The cluster-coverage check required every above-floor cluster in **both** roles, but k-means is fit site-wide and a cluster can be confined to one tile — which made the gate unsatisfiable. It now requires a cluster only in roles where it is actually present (`cluster_presence_min_pixels: 1000`).
+
+Also non-behavioural: `run_stage3_1_*.py` was refactored for readable names and a `TileData` NamedTuple, and a `config`-shadowing bug in `run_stage1_6_detect_shadows.py` was fixed (it had become unrunnable).
+
+## 11.2 Gate state entering run 4
+
+**PASSED.** Polygons per class per role, against a floor of 50:
+
+| class | test | train |
+|---|---|---|
+| bare | 60 | 53 |
+| grass | 51 | 71 |
+| shrub | 135 | 150 |
+| tree | 65 | 93 |
+
+Cluster coverage 14/14 required in both roles. Geometry and `class_code` problems: 0.
+
+## 11.3 What to compare against, and what not to
+
+- **Compare run 4 to run 3 for direction only, never for attribution.** Six changes moved together.
+- **Run 4 is the new reference.** Runs 1, 2 and `3_smoke` are superseded; run 3 is superseded as a baseline because it included two part-flown tiles and an unflown-ground cluster.
+- **The interesting number is fold spread, not macro-F1.** Run 3's folds ran 0.890 / 0.912 / 0.851 / 0.785 / 0.660 / 0.745 (sd 0.087) — and one of those folds was the 4 ha tile. Run 4's spread over six real folds is the first honest read on tile-to-tile stability.
+- **Shrub area bias is the number that propagates.** Run 3 `RF-A_C` sat at −14.7% (§9.4), and Stage 4_1 fractions inherit it whole. Watch whether replacing the tiles moves it; the working hypothesis (§10 item 10) is that it will not, because the cause is feature-space, not sample-size.
+- **`RF-A_D` shrub remains circular** and is not comparable like-for-like (§1.3).
+
+## 11.4 Results
+
+*To be filled once run 4 completes.* Record: per-class F1 for all four variants, fold spread, confusion for `RF-A_C`, feature importance top five, area bias per class, and whether `luma` still ranks first (§9.5, §10 item 6).

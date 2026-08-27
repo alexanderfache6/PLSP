@@ -14,7 +14,7 @@ To bring one back: move it up to `v4/`, restore its stage number in the executio
 
 **Why it was retired: nothing consumed its output.** No script reads `segment_features_*.npz`; `run_stage3_1_random_forest_ground_truth_classification.py` does not define a segments directory at all. It had become a dormant script producing an unread 447 MB.
 
-**The decision behind that**, recorded in `results/stage3_1_results.md` §1.2: `instructions5.md` §5 Step 1d originally specified RF over SLIC segments, and that turned out to be unworkable here. SLIC segments are a uniform 9 px while the median accepted shrub polygon is 5 px — 0.56 of one segment. At the ≥70% coverage rule, shrub yielded **22 training segments against bare's 738**, a 34:1 imbalance that would have made shrub effectively unpredictable. It was the v3 failure in mirror image (`instructions2.md` §4.5: a starved training set produced 93–97% tree cover). Training moved to per-pixel, which gives shrub 918 samples instead of 22.
+**The decision behind that**, recorded in `results/stage2_results.md` §1.2: `instructions5.md` §5 Step 1d originally specified RF over SLIC segments, and that turned out to be unworkable here. SLIC segments are a uniform 9 px while the median accepted shrub polygon is 5 px — 0.56 of one segment. At the ≥70% coverage rule, shrub yielded **22 training segments against bare's 738**, a 34:1 imbalance that would have made shrub effectively unpredictable. It was the v3 failure in mirror image (`instructions2.md` §4.5: a starved training set produced 93–97% tree cover). Training moved to per-pixel, which gives shrub 918 samples instead of 22.
 
 **A second reason, specific to this script's metadata.** It wrote a `framework_features` block naming a `D` and an `E`:
 

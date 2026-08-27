@@ -1,6 +1,6 @@
 # Stage 3_1 — metric definitions and how to read them
 
-Companion to `stage3_1_results.md`. Every quantity reported there is defined here, with what a good value looks like **in this project specifically** and the trap attached to each.
+Companion to `stage2_results.md`. Every quantity reported there is defined here, with what a good value looks like **in this project specifically** and the trap attached to each.
 
 > **All Step 1d metrics are DIAGNOSTIC.** They come from cross-validation over training polygons and describe how well the model fits labels the analyst chose. Map accuracy is a different quantity, produced only by the Olofsson area-weighted protocol on an independent probability sample (`instructions5.md` §6). §7 below sets out exactly how the two differ and why one cannot substitute for the other.
 

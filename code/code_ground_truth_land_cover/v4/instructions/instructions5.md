@@ -47,12 +47,16 @@ Two unnumbered modules sit alongside the `run_stage*` scripts. **They carry no s
 
 | Module | Holds | Rule |
 |---|---|---|
-| `constants.py` | `CLASS_LABELS`, `CLASS_NAMES`, `CLASS_CODES`, `CLASS_ORDER`, `CLASS_COLORS`, `UNLABELLED_COLOR`, `CLUSTER_COLORS`, `NODATA`, `FRAMEWORK_ORDER` | The **locked** §3 class codes and colours live here and nowhere else |
+| `constants.py` | `CLASS_LABELS`, `CLASS_NAMES`, `CLASS_CODES`, `CLASS_ORDER`, `CLASS_COLORS`, `UNLABELLED_COLOR`, `CLUSTER_COLORS`, `NODATA`, `FRAMEWORK_ORDER`, **`NO_SHADOW` / `SHADOW_IS_TREE` / `SHADOW_IS_NODATA`**, `SHADOW_CODE_LABELS` | The **locked** §3 class codes and colours live here and nowhere else |
 | `helpers.py` | `resolve_config_path` (Path-style), `expand_path` (os.path-style, for the PyQGIS scripts) | Path resolution against a config root |
 
 **Import them; never redeclare their contents locally.** Before these modules existed, every script carried its own copy of the class codes and colours, which is exactly how a "locked" palette silently forks — one script's shrub brown drifts from another's and the maps stop being comparable. The locked-ness in §3 is only enforceable because there is one definition.
 
 They deliberately hold **no site-specific values** — those are config (R8). `constants.py` is the class system, which is fixed across every site by design; anything that varies by site does not belong there.
+
+> **The shadow codes are named constants because the bare integers caused a real error.** `run_stage4_1_aggregate_to_planet_blocks.py` counted `shadow == 1` as pixels lost to shadow and reported it that way in `results/stage4_1_results.md`. But **`1` is `SHADOW_IS_TREE`** — shadow within `SHADOW_TREE_RADIUS` of CHM ≥ `H_TREE_MIN`, which §5 Step 1c **assigns to the tree class**. Those pixels are classified, not discarded. Only **`2`, `SHADOW_IS_NODATA`**, is a loss.
+>
+> The published figure was wrong by roughly ten times — 2.0–3.1% per tile against a true loss of 0.05–1.0% — and it survived review because `shadow == 1` reads as "is shadow" to anyone who has not memorised the code table. **Never write the integers; import the names.**
 
 > **Two path helpers, not one, and that is intentional.** `resolve_config_path` returns a `pathlib.Path` for the pipeline scripts; `expand_path` returns a string for the PyQGIS scripts, whose APIs take strings. Merging them would push a conversion into every QGIS call site.
 
@@ -296,7 +300,7 @@ Train tiles are a contiguous block at easting 511000; test tiles are a spatially
 
 **The problem**: prediction must eventually run on the full 10 km × 10 km footprint, roughly **100 tiles**. Training currently uses **3 contiguous tiles**, and testing **2 contiguous tiles** — a 5% sample drawn from two spots. The measured evidence above shows those two spots are not interchangeable, so there is no reason to expect five clustered tiles to span 100.
 
-The symptoms are already visible in Step 1d (`results/stage3_1_results.md`): predicted grass falls to **0.3% and 0.1% on the test tiles** despite grass holding 21% of test label pixels, and median `prediction_quality` is lowest there (0.50–0.52 against 0.59–0.77 on train). A model trained on one neighbourhood is being asked about another and is visibly less sure.
+The symptoms are already visible in Step 1d (`results/stage2_results.md`): predicted grass falls to **0.3% and 0.1% on the test tiles** despite grass holding 21% of test label pixels, and median `prediction_quality` is lowest there (0.50–0.52 against 0.59–0.77 on train). A model trained on one neighbourhood is being asked about another and is visibly less sure.
 
 **The reframe that makes this cheap**: **the full tile set has to be downloaded anyway.** Prediction needs the same feature stack as training — 10 cm RGB for texture, 1 m VI, 1 m CHM — for every tile it runs on. So acquiring all ~100 tiles is a prerequisite of Step 1 regardless of how training tiles are chosen. Once they are on disk, **selecting training tiles from the full set costs nothing in data**; the only scarce resource is labelling effort.
 
@@ -339,7 +343,7 @@ The five original tiles fell in **Q1 and Q5 only** — the two extremes:
 
 Train sat on the site **floor**, test on the **ceiling**, and Q2–Q4 — 42 of 70 tiles, including the site median of 0.181 — had no labelled representation at all. The model was trained on the least woody ground, validated against the most woody, then asked to predict 70 tiles that are mostly neither.
 
-**This explains symptoms already in the Step 1d results** (`results/stage3_1_results.md`): predicted grass collapsing to 0.3% and 0.1% on the test block despite grass holding 21% of test label pixels, and median `prediction_quality` lowest there (0.50–0.52 against 0.59–0.77 on train). Those were not model defects; they were the sampling design showing through.
+**This explains symptoms already in the Step 1d results** (`results/stage2_results.md`): predicted grass collapsing to 0.3% and 0.1% on the test block despite grass holding 21% of test label pixels, and median `prediction_quality` lowest there (0.50–0.52 against 0.59–0.77 on train). Those were not model defects; they were the sampling design showing through.
 
 #### The fix, and the selection rule to reuse at every site
 
@@ -455,7 +459,7 @@ results/
 | **1** | **grass** | Yes | Herbaceous. CHM < `H_GRASS_MAX` and SAVI >= `SAVI_BARE_MAX` | Perennial and annual graminoids; herbaceous forbs |
 | **2** | **shrub** | Yes | Woody. `H_GRASS_MAX` <= CHM < `H_TREE_MIN` | Low woody vegetation; includes cacti and succulents |
 | **3** | **tree** | Yes | Woody. CHM >= `H_TREE_MIN` | Tall woody vegetation |
-| **4** | **shadow** | **No** | Detected per §5 Step 1c | Intermediate only. Resolved to tree (3) if within `SHADOW_TREE_RADIUS` of CHM >= `H_TREE_MIN`, else masked to nodata. **Never appears in a final product** |
+| **4** | **shadow** | **No** | Detected per §5 Step 1c | Intermediate only. **ALWAYS masked to nodata — never assigned to a class** (resolved 2026-08-18, §5 Step 1c). The mask's `SHADOW_IS_TREE` / `SHADOW_IS_NODATA` split is diagnostic bookkeeping; both are excluded downstream. **Never appears in a final product** |
 | **255** | **nodata** | n/a | — | Fill / masked / outside footprint. uint8 rasters |
 
 #### Class labels and colours — LOCKED
@@ -666,7 +670,7 @@ Bare letters (`A`, `B`, …) remain the **on-disk key** used in directory and fi
 
 `RF-A_A` through `RF-A_D` vary **input layers only**. The algorithm is held fixed so that any accuracy difference is attributable to the inputs, which is the actual research question.
 
-**Fixed algorithm**: segmentation (SLIC at 1 m) + feature extraction + Random Forest classifier. *(As built, Step 1d trains per pixel rather than per segment — see `results/stage3_1_results.md` §1.2 for the measurement that forced the change.)*
+**Fixed algorithm**: segmentation (SLIC at 1 m) + feature extraction + Random Forest classifier. *(As built, Step 1d trains per pixel rather than per segment — see `results/stage2_results.md` §1.2 for the measurement that forced the change.)*
 
 | Variant | Inputs | Transferable to WKG / non-NEON sites? |
 | --- | --- | --- |
@@ -948,7 +952,7 @@ After labeling, cross-tabulate `cluster_id` against the assigned `class_code`. A
 
 > ### Results to date
 >
-> Step 1d has been run at SRER 2022 for `RF-A_A` through `RF-A_D`, across two runs (baseline, then polygon subsampling). Full results, per-class scores, confusion matrices, the measured circularity in `RF-A_D`, and the data-input caveats that constrain all of it: **[`results/stage3_1_results.md`](../results/stage3_1_results.md)**. Metric definitions and how to read them: **[`results/stage3_1_definitions.md`](../results/stage3_1_definitions.md)**.
+> Step 1d has been run at SRER 2022 for `RF-A_A` through `RF-A_D`, across two runs (baseline, then polygon subsampling). Full results, per-class scores, confusion matrices, the measured circularity in `RF-A_D`, and the data-input caveats that constrain all of it: **[`results/stage2_results.md`](../results/stage2_results.md)**. Metric definitions and how to read them: **[`results/stage3_1_definitions.md`](../results/stage3_1_definitions.md)**.
 >
 > Headline: texture is the decisive input (`RF-A_C` shrub F1 0.658 against 0.455 without it), and `RF-A_C` is the best transferable variant.
 
@@ -1112,7 +1116,7 @@ Four indices rather than one because they fail differently — ExG is strongest 
 
 **1b. Segmentation. — RETIRED 2026-08-18.** SLIC at 1 m, ~100k segments/tile, per-segment spectral, texture, shape and context features. `run_stage1_7_generate_segments.py` has moved to `unused/`; see `unused/README.md`.
 
-> **Why**: nothing consumed its output. Training is per-pixel, not per-segment (`results/stage3_1_results.md` §1.2) — SLIC segments are a uniform 9 px against a median shrub polygon of 5 px, so at the ≥ 70% coverage rule shrub yielded **22 training segments against bare's 738**, a 34:1 imbalance that would have made shrub unpredictable. Per-pixel training gives shrub 918 samples instead.
+> **Why**: nothing consumed its output. Training is per-pixel, not per-segment (`results/stage2_results.md` §1.2) — SLIC segments are a uniform 9 px against a median shrub polygon of 5 px, so at the ≥ 70% coverage rule shrub yielded **22 training segments against bare's 738**, a 34:1 imbalance that would have made shrub unpredictable. Per-pixel training gives shrub 918 samples instead.
 >
 > The script also wrote a `framework_features` block naming a `D` and an `E` that were **segment-level feature sets, not the `RF-A_*` framework letters** — a collision worth removing, since `RF-A_E` is separately retired for an unrelated reason (§4.1).
 >
@@ -1121,7 +1125,21 @@ Four indices rather than one because they fail differently — ExG is strongest 
 **1c. Shadow detection** (reinstated from v3, `instructions2.md` Phase 3):
 - Rec. 709 luma (`0.2126R + 0.7152G + 0.0722B`) thresholded at the **pooled 20th percentile** — percentile-based per R3, so it transfers — combined with a blue-shift rule (`B > R`). Computed at `TEXTURE_SCALE` (0.6 m) per R2, not at native 10 cm.
 - Aggregate to 1 m via > 70% majority.
-- **Shadow is its own class.** Resolution rule: shadow within `SHADOW_TREE_RADIUS` (5 m) of CHM >= `H_TREE_MIN` is **assigned to tree**; all remaining shadow is **ignored** (masked to nodata, excluded from training, from Step 3 aggregation denominators, and from accuracy assessment).
+- **Shadow is its own class**, and **ALL of it is ignored downstream.**
+
+> **RESOLVED 2026-08-18 — SHADOW IS NEVER ASSIGNED TO A CLASS. Every shadow pixel is excluded, both codes.**
+>
+> The earlier rule read: *shadow within `SHADOW_TREE_RADIUS` (5 m) of CHM ≥ `H_TREE_MIN` is **assigned to tree**; all remaining shadow is ignored.* **That rule is retired.**
+>
+> **The decision**: the goal is an accurate land-cover map over the *majority* of pixels, not a label for every pixel. A shadowed pixel was not observed well enough to classify, and inventing a class for it trades a known gap for an unknown error. An honest hole is better than a confident guess.
+>
+> **The code already did this**, which is how the divergence was found. `run_stage3_1_random_forest_ground_truth_classification.py` reads the mask with `.astype(bool)`, making **both** codes `True`, so shadow-resolved-to-tree was being excluded exactly like shadow-to-nodata — the spec said assign, the code discarded. The code was right; the spec is now corrected to match rather than the other way round.
+>
+> **This is not the smaller category.** Shadow-resolved-to-tree runs **0.60–3.12%** of a tile against **0.05–1.02%** for shadow-to-nodata (`results/stage4_1_results.md` §2), so the retired rule would have been assigning up to 3% of every tile to tree on a geometric argument rather than a spectral one. Tree already carries a **+4.54%** area bias.
+>
+> **`SHADOW_IS_TREE` is retained as a diagnostic, not a decision.** `run_stage1_6_detect_shadows.py` still computes and reports the split, because knowing how much shadow is canopy-adjacent is useful for interpreting where the map has holes. It no longer drives any classification.
+>
+> **The consequence, stated rather than discovered**: shadow clusters against woody canopy, so excluding it removes pixels preferentially near trees and shrubs. At Step 3 a block is kept only at ≥ 8 of 9 valid pixels, so a block with two shadowed pixels is dropped entirely. **Tree- and shrub-adjacent blocks are therefore lost at a higher rate than open ground** — which is a coverage bias, not a labelling bias, and is the accepted price of not guessing. Report block retention by predicted class at Step 3 so the size of that gap stays visible.
 - At transferable variants (`RF-A_A`–`RF-A_C`) without CHM, the tree-proximity test uses the framework's own predicted tree mask.
 
 **1d. Classification.** RF over segments, trained on the §4.2 hand labels, leave-one-tile-out CV within the train block, evaluated on the held-out test tiles.
@@ -1216,7 +1234,7 @@ Shadow-masked and nodata 1 m pixels are excluded from the denominator.
 >
 > **Why a count.** At N = 3 a percentage is misleading, because there are only three cuts available: 7, 8 or 9 of 9. 75% of 9 is 6.75, so the old rule quantised to **≥ 7 of 9** — it would admit a block with **two of nine pixels missing, 22% of its area unobserved**, while appearing to enforce a 75% standard. Stating the count removes the gap between what the rule says and what it does.
 >
-> **Why 8 and not 7.** These blocks are the ground-truth fractions that RF-B trains on and that Step 6 areas are estimated from. A 7-of-9 block's fractions are quantised in ninths of an *incomplete* denominator, and the missing pixels are not missing at random: shadow is 79% of masked pixels on the train tiles and clusters against woody canopy (`results/stage3_1_results.md` §1.7), so admitting sparse blocks preferentially biases shrub and tree — the two classes already weakest, and shrub is already under-predicted by 14.7%. Tightening to 8 costs blocks; admitting 7 costs correctness in exactly the place the product is most fragile.
+> **Why 8 and not 7.** These blocks are the ground-truth fractions that RF-B trains on and that Step 6 areas are estimated from. A 7-of-9 block's fractions are quantised in ninths of an *incomplete* denominator, and the missing pixels are not missing at random: shadow is 79% of masked pixels on the train tiles and clusters against woody canopy (`results/stage2_results.md` §1.7), so admitting sparse blocks preferentially biases shrub and tree — the two classes already weakest, and shrub is already under-predicted by 14.7%. Tightening to 8 costs blocks; admitting 7 costs correctness in exactly the place the product is most fragile.
 >
 > **Report the cost, do not hide it.** The 0–9 valid-pixel histogram (below) is required output precisely so the number of blocks lost at 8 versus 7 is visible and revisable. If retention at 8 proves severe enough to threaten sample size for shrub or tree, that is a finding to record and decide on — not a reason to loosen the threshold silently.
 
@@ -1228,7 +1246,7 @@ Shadow-masked and nodata 1 m pixels are excluded from the denominator.
 
 This exposes whether blocks are being lost uniformly or concentrated along tile edges, shadow, and nodata — which a single retention percentage would hide entirely.
 
-> **KNOWN BIAS ENTERING THIS STEP — shrub is under-predicted by ~15%, and Step 3 inherits it whole.** At run 3 the best transferable variant `RF-A_C` shows a **shrub area bias of −14.7%**, with shrub→bare confusion at 0.185 (`results/stage3_1_results.md` §9.4). This is a **systematic** error, not a random one, so it does not cancel across the 9 pixels of a Planet block the way per-pixel noise does — every block's shrub fraction is low by roughly the same proportion, and the bias survives into the fractions RF-B trains on and into the Step 6 area estimates.
+> **KNOWN BIAS ENTERING THIS STEP — shrub is under-predicted by ~15%, and Step 3 inherits it whole.** At run 3 the best transferable variant `RF-A_C` shows a **shrub area bias of −14.7%**, with shrub→bare confusion at 0.185 (`results/stage2_results.md` §9.4). This is a **systematic** error, not a random one, so it does not cancel across the 9 pixels of a Planet block the way per-pixel noise does — every block's shrub fraction is low by roughly the same proportion, and the bias survives into the fractions RF-B trains on and into the Step 6 area estimates.
 >
 > Completing the labelling did **not** fix it — the bias barely moved between the partial-label smoke run (−16.2%) and the finished run 3 (−14.7%) — which is evidence that it is a **feature-space** problem, not a sample-size one. The remedy is multi-scale texture and context features, not more polygons.
 >
