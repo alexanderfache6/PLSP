@@ -152,6 +152,37 @@ def cluster_pixel_share(lab_dir, site, year, tiles, k):
     return {c: (totals[c] / valid if valid else 0.0) for c in range(1, k + 1)}
 
 
+def clusters_present_per_role(lab_dir, site, year, tiles, k, min_pixels):
+    """Which clusters actually occur in each role's tiles.
+
+    A CLUSTER CANNOT BE REQUIRED WHERE IT DOES NOT EXIST. k-means is fit across
+    the whole site, so a cluster confined to one tile is absent from the other
+    role entirely - measured at SRER, cluster 4 is 10,173 px on 517000_3531000
+    (train) and zero on all nine other tiles. Requiring it in both roles made
+    the gate unsatisfiable for test: no amount of labelling can find a cluster
+    that is not in any test tile.
+
+    `min_pixels` guards the other direction. A handful of pixels bleeding across
+    a tile boundary is presence in name only, and demanding a labelled polygon
+    on a 20-pixel scrap is as unsatisfiable in practice as a truly absent one.
+
+    Inputs:  lab_dir - Path to stage2_labeling; site, year; tiles - dict of
+             {tile: role}; k - number of clusters; min_pixels - presence floor
+    Outputs: dict of {role: set of clusters present}
+    """
+    present = defaultdict(set)
+    for tile, role in tiles.items():
+        path = lab_dir / f"cluster_map_{site}_{tile}_{year}.tif"
+        if not path.exists():
+            continue
+        with rasterio.open(path) as ds:
+            counts = np.bincount(ds.read(1).ravel(), minlength=k + 1)[: k + 1]
+        for cluster in range(1, k + 1):
+            if counts[cluster] >= min_pixels:
+                present[role].add(cluster)
+    return present
+
+
 def class_minimum_areas(config):
     """Per-class minimum polygon area in m2, keyed by integer class code.
 
@@ -510,15 +541,26 @@ def main():
     ignored = sorted(c for c in shares if shares[c] < floor)
     required = sorted(set(range(1, k + 1)) - set(ignored))
 
+    presence_floor = config["stage2_1_labeling_zones"].get("cluster_presence_min_pixels", 1000)
+    present = clusters_present_per_role(lab_dir, site, year, config["tiles"], k, presence_floor)
+
     print(f"\ncheck 2 - cluster coverage by labeled polygons (floor {floor:.3%} of site pixels)")
     print("cluster sizes: " + ", ".join(f"{c}:{shares[c]:.2%}" for c in sorted(shares)))
     if ignored:
         print("ignored below floor: " + ", ".join(f"{c} ({shares[c]:.4%})" for c in ignored) + " - too small to label, excluded from the gate")
     for role in roles:
-        missing = sorted(set(required) - cluster_hits[role])
+        # required IN THIS ROLE: big enough site-wide, and actually present in
+        # this role's tiles. A cluster confined to the other role's tiles cannot
+        # be labelled here at any effort, so requiring it would never pass.
+        role_required = sorted(set(required) & present[role])
+        absent = sorted(set(required) - present[role])
+        missing = sorted(set(role_required) - cluster_hits[role])
         state = "all covered" if not missing else f"missing {missing}"
-        print(f"{role:<7} {len(cluster_hits[role] & set(required))}/{len(required)} required clusters   {state}")
+        note = f"   (not in any {role} tile: {absent})" if absent else ""
+        print(f"{role:<7} {len(cluster_hits[role] & set(role_required))}/{len(role_required)} required clusters   {state}{note}")
         gate_ok &= not missing
+
+        # TODO update variable names
 
     print("\ncheck 3 - polygon area against the class minimum")
     if any(areas.values()) or sum(points.values()):
@@ -596,7 +638,9 @@ def main():
         if need:
             print("polygons: " + ", ".join(f"{kk} +{vv}" for kk, vv in need.items()))
         for role in roles:
-            missing = sorted(set(required) - cluster_hits[role])
+            # same per-role restriction as check 2 - never ask for a cluster
+            # that is not in this role's tiles
+            missing = sorted((set(required) & present[role]) - cluster_hits[role])
             if missing:
                 print(f"{role}: clusters with no labeled polygon: {missing}")
         if problems:
