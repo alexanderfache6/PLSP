@@ -4,8 +4,8 @@ Segments each tile at 1 m and summarizes the Step 1a feature stack per segment.
 
 Two feature sets are produced, matching the D / E split in section 4.1:
 
-  D  "the layers"       - the mean of each stack band, one number per band
-  E  "full feature set" - D plus within-segment distribution statistics, shape,
+  D "the layers" - the mean of each stack band, one number per band
+  E "full feature set" - D plus within-segment distribution statistics, shape,
                           and context
 
 E is the accuracy ceiling. If E does not beat D by a worthwhile margin, D is the
@@ -211,7 +211,7 @@ def main():
             data=table,
         )
         px = feats["n_pixels"]
-        print(f"[{tile}] segments={n_seg:>6} (requested {request}) compactness={compactness:.2f}  px/seg mean={px.mean():.1f} median={np.median(px):.0f}  features={len(cols) - 1}")
+        print(f"[{tile}] segments={n_seg:>6} (requested {request}) compactness={compactness:.2f} px/seg mean={px.mean():.1f} median={np.median(px):.0f} features={len(cols) - 1}")
         summary.append(
             {
                 "tile": tile,
