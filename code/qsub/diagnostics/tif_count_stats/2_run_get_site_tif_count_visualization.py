@@ -16,8 +16,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.patches import Patch
 
-METADATA_CSV = Path("/projectnb/modislc/users/fache/src/PLSP/code/selected_sites_info/info/01_selected_sites_raw.csv")
-
+METADATA_CSV = Path("/projectnb/modislc/users/fache/src/PLSP/code/selected_sites_info/data/01_selected_sites_raw_handgenerated_2.csv")
 INPUT_DIR = Path.cwd()
 OUTPUT_DIR = Path.cwd()
 
@@ -52,15 +51,17 @@ def discover_sites(metadata_csv: Path, input_dir: Path) -> list[tuple[str, str]]
 
     discovered: list[tuple[str, str]] = []
     for _, row in meta.iterrows():
-        site_id = str(row["site_id"])
-        site_name = row.get("site_name")
-        site_name_2 = row.get("site_name_2")
+        site_id = str(row["plsp_raw_id"])
+        # site_name = row.get("site_name")
+        # site_name_2 = row.get("site_name_2")
 
         candidates = []
-        if isinstance(site_name, str) and site_name.strip():
-            candidates.append(site_name.strip())
-        if isinstance(site_name_2, str) and site_name_2.strip():
-            candidates.append(site_name_2.strip())
+        # if isinstance(site_name, str) and site_name.strip():
+        #     candidates.append(site_name.strip())
+        # if isinstance(site_name_2, str) and site_name_2.strip():
+        #     candidates.append(site_name_2.strip())
+        
+        candidates.append(site_id.strip())
 
         matched_stem: str | None = None
         for stem in candidates:
@@ -74,6 +75,8 @@ def discover_sites(metadata_csv: Path, input_dir: Path) -> list[tuple[str, str]]
             continue
 
         discovered.append((matched_stem, site_id))
+    
+    print(f"{discovered=}")
 
     return discovered
 
@@ -526,6 +529,8 @@ def main() -> None:
         print(discovered)
 
         cleanup_per_site_files(discovered, INPUT_DIR)
+    else:
+        print('monthly and yearly files were already created, delete if a new run needs to happen')
     
     # create visualization
     df_monthly = pd.read_csv(monthly_path)
