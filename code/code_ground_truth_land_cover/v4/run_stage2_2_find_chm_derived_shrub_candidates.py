@@ -30,7 +30,7 @@ shrub sampling is the exact failure this whole mechanism exists to prevent.
 Hand review works from the subset; it is sized to clear the 50-per-class-per-role
 gate with margin.
 
-Usage:  python run_stage2_2_find_chm_derived_shrub_candidates.py config/srer_2022.json
+Usage: python run_stage2_2_find_chm_derived_shrub_candidates.py config/srer_2022.json
 """
 
 import argparse
@@ -40,6 +40,7 @@ from pathlib import Path
 import geopandas as gpd
 import numpy as np
 import rasterio
+from constants import SEVENTY
 from helpers import resolve_config_path
 from rasterio.features import shapes
 from scipy import ndimage
@@ -53,7 +54,7 @@ CONNECTIVITY = 8
 def chm_path(config, site_dir, tile):
     """Path to a tile's canopy height model, from the config product block.
 
-    Inputs:  config - parsed site config; site_dir - Path to the site data dir;
+    Inputs: config - parsed site config; site_dir - Path to the site data dir;
              tile - tile key string
     Outputs: Path to the CHM GeoTIFF
     """
@@ -68,7 +69,7 @@ def shrub_band_mask(chm, grass_max, tree_min, chm_max_valid):
     dropping NaN and values above the plausible-height limit, which the config
     documents as man-made structures.
 
-    Inputs:  chm - float array of canopy height in m; grass_max, tree_min -
+    Inputs: chm - float array of canopy height in m; grass_max, tree_min -
              band bounds in m; chm_max_valid - upper plausibility limit in m
     Outputs: boolean array, True inside the shrub band
     """
@@ -84,7 +85,7 @@ def component_labels(mask, erode_px):
     cleanly, with none of the merged-canopy ambiguity that complicates tree
     delineation. Optional erosion separates crowns that touch at a corner.
 
-    Inputs:  mask - boolean array; erode_px - erosion radius in pixels, 0 to skip
+    Inputs: mask - boolean array; erode_px - erosion radius in pixels, 0 to skip
     Outputs: (labels int32 array, n_components int)
     """
     if erode_px > 0:
@@ -101,7 +102,7 @@ def component_stats(labels, n, chm):
     outputs so the shrub/tree cut can be moved analytically rather than by
     re-running the pipeline.
 
-    Inputs:  labels - int32 label array; n - number of components; chm - float
+    Inputs: labels - int32 label array; n - number of components; chm - float
              canopy height array
     Outputs: dict of {label: {chm_min, chm_mean, chm_max, chm_p90, n_pixels}}
     """
@@ -134,7 +135,7 @@ def component_geometries(labels, transform):
     lobes joined at a point are two lobes. Repairing here rather than
     downstream keeps every consumer from having to know about it.
 
-    Inputs:  labels - int32 label array; transform - the raster affine
+    Inputs: labels - int32 label array; transform - the raster affine
     Outputs: dict of {label: shapely geometry}, all valid
     """
     out = {}
@@ -155,7 +156,7 @@ def build_candidates(geoms, stats, min_area, max_area, point_below_min, tile):
     remove - which is precisely the part of the distribution that matters.
     Components above max_area are dropped as almost certainly not single shrubs.
 
-    Inputs:  geoms - {label: geometry}; stats - {label: stats dict}; min_area,
+    Inputs: geoms - {label: geometry}; stats - {label: stats dict}; min_area,
              max_area - m2 bounds; point_below_min - bool, keep sub-minimum
              components as points; tile - tile key string
     Outputs: (list of record dicts, dict of counts by disposition)
@@ -206,7 +207,7 @@ def mark_review_sample(records, n_sample, n_strata, rng):
     Polygons are sampled; sub-minimum points are excluded from review, since
     they are the population most likely to be CHM noise.
 
-    Inputs:  records - list of record dicts, modified in place; n_sample -
+    Inputs: records - list of record dicts, modified in place; n_sample -
              target subset size; n_strata - number of equal-count area strata;
              rng - a seeded numpy Generator
     Outputs: int, how many records were flagged
@@ -240,7 +241,7 @@ def write_candidates(records, crs, out_path, review_path):
     The full set is provenance; the review file is what gets opened for hand
     validation.
 
-    Inputs:  records - list of record dicts; crs - the tile CRS; out_path -
+    Inputs: records - list of record dicts; crs - the tile CRS; out_path -
              Path for the full set; review_path - Path for the review subset
     Outputs: dict of {layer_name: n_features} actually written
     """
@@ -279,7 +280,7 @@ def review_decision_count(path):
     always rewritten. The review subset does carry input once work has started,
     and rewriting it would discard every accept and reject silently.
 
-    Inputs:  path - Path to the shrub_review GeoPackage
+    Inputs: path - Path to the shrub_review GeoPackage
     Outputs: int, number of features with reviewed or rejected set
     """
     if not path.exists():
@@ -326,11 +327,11 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"CHM shrub candidates - {site} {year}")
-    print("=" * 62)
-    print(f"shrub band  {grass_max} <= CHM < {tree_min} m")
+    print("=" * SEVENTY)
+    print(f"shrub band {grass_max} <= CHM < {tree_min} m")
     print(f"area bounds {min_area} to {max_area} m2, sub-minimum kept as points: {point_below_min}")
-    print(f"erosion     {erode_px} px")
-    print(f"review      {n_sample} per tile, stratified into {n_strata} area bands, seed {seed}")
+    print(f"erosion {erode_px} px")
+    print(f"review {n_sample} per tile, stratified into {n_strata} area bands, seed {seed}")
 
     totals = {"polygon": 0, "point": 0, "too_large": 0, "dropped_small": 0, "review": 0}
     summary = []
@@ -365,12 +366,12 @@ def main():
         for key in totals:
             totals[key] += counts[key]
         summary.append({"tile": tile, "role": role, "components": n, **counts, "layers": written})
-        print(f"[{tile}] {role:<5} {n:>6} components -> {counts['polygon']:>5} polygons, {counts['point']:>5} points, {counts['too_large']:>4} too large   review subset {counts['review']:>4}")
+        print(f"[{tile}] {role:<5} {n:>6} components -> {counts['polygon']:>5} polygons, {counts['point']:>5} points, {counts['too_large']:>4} too large review subset {counts['review']:>4}")
 
-    print("\n" + "=" * 62)
-    print(f"total  {totals['polygon']} polygon candidates, {totals['point']} point candidates")
-    print(f"       {totals['too_large']} above {max_area} m2 (unlikely to be single shrubs), {totals['dropped_small']} sub-minimum dropped")
-    print(f"       {totals['review']} flagged for hand review across all tiles")
+    print("\n" + "=" * SEVENTY)
+    print(f"total {totals['polygon']} polygon candidates, {totals['point']} point candidates")
+    print(f" {totals['too_large']} above {max_area} m2 (unlikely to be single shrubs), {totals['dropped_small']} sub-minimum dropped")
+    print(f" {totals['review']} flagged for hand review across all tiles")
     print("\nOpen the shrub_review_* files, not the full shrub_candidates_* set - the full")
     print("set is provenance. The review subset is stratified by area so small, medium and")
     print("large crowns are all offered; reviewing only the easy large ones would rebuild")

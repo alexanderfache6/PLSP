@@ -36,15 +36,16 @@ report quantifies rather than hides.
 THREE FRACTION ESTIMATES, all produced, because they answer different questions
 and their disagreement is itself diagnostic (instructions5.md section 5 Step 3):
 
-    hard count            count of plurality labels / n_valid. The reference
-                          AREA fraction - what "percent cover" conventionally
-                          means, and what Step 6 validates against
-    soft mean             mean of the per-pixel probability vectors. The better
-                          target for RF-B, because sub-pixel mixture is exactly
-                          what the phenology model is asked to predict and
-                          hardening throws that signal away
-    confidence weighted   hard labels weighted by per-pixel prediction_quality.
-                          NOT an area fraction - see the caveat below
+    hard count - count of plurality labels / n_valid. The reference AREA
+    fraction, what "percent cover" conventionally means, and what Step 6
+    validates against.
+
+    soft mean - mean of the per-pixel probability vectors. The better target for
+    RF-B, because sub-pixel mixture is exactly what the phenology model is asked
+    to predict and hardening throws that signal away.
+
+    confidence weighted - hard labels weighted by per-pixel prediction_quality.
+    NOT an area fraction, see the caveat below.
 
 CONFIDENCE WEIGHTING COMES FROM THE 1 M CLASSIFIER'S OWN PROBABILITIES.
 w_i = prediction_quality = 1 - H(p_i)/log(4), written by stage 3. A block that is
@@ -71,26 +72,27 @@ number rather than an assumption.
 THE SOURCE CLASSIFICATION'S AREA BIAS IS CARRIED INTO THE REPORT. Computed from
 the stage 3 confusion matrix, it is the one error that does NOT cancel when
 pixels are aggregated: random per-pixel error averages out over 9 samples, a
-systematic bias does not. At run 3 / RF-A_C shrub is under-predicted by 14.7%,
-so every block's shrub fraction is low by roughly that proportion. Outputs are
-provisional until that is addressed.
+systematic bias does not. At run 4 / RF-A_C shrub is under-predicted by 4.7%,
+so every block's shrub fraction is low by roughly that proportion.
 
-Outputs -> `stage4_aggregation/`, one set per framework, site-wide on the full
-Planet grid so the arrays align 1:1 with the LSP netCDF:
+Outputs -> `stage4_aggregation/run{N}/`, one set per framework, site-wide on the
+full Planet grid so the arrays align 1:1 with the LSP netCDF. RUN-SCOPED because
+a fraction product is only meaningful against the classification run it came
+from:
 
-    fraction_hard_count_{fw}_{SITE}_{YEAR}.tif          float32, 4 bands
-    fraction_soft_mean_{fw}_{SITE}_{YEAR}.tif           float32, 4 bands
-    fraction_confidence_weighted_{fw}_{SITE}_{YEAR}.tif float32, 4 bands
-    block_prediction_quality_{fw}_{SITE}_{YEAR}.tif     float32
-    valid_pixel_count_{fw}_{SITE}_{YEAR}.tif            uint8, 0..9, RAW count
-                                                        before the retention rule
+    fraction_hard_count_{fw}_{SITE}_{YEAR}.tif - float32, 4 bands
+    fraction_soft_mean_{fw}_{SITE}_{YEAR}.tif - float32, 4 bands
+    fraction_confidence_weighted_{fw}_{SITE}_{YEAR}.tif - float32, 4 bands
+    block_prediction_quality_{fw}_{SITE}_{YEAR}.tif - float32
+    valid_pixel_count_{fw}_{SITE}_{YEAR}.tif - uint8, 0..9, the RAW count before
+    the retention rule
     stage4_1_report_{SITE}_{YEAR}.json
 
 `valid_pixel_count` deliberately records the count BEFORE retention, so the
 histogram stays inspectable after the fact; the fraction rasters are NaN wherever
 the block failed the rule.
 
-Usage: python run_stage4_1_aggregate_to_planet_blocks.py config/srer_2022.json --run 3 --frameworks C
+Usage: python run_stage4_1_aggregate_to_planet_blocks.py config/srer_2022.json --run 4 --frameworks C D
 """
 
 import argparse
@@ -100,7 +102,7 @@ from pathlib import Path
 import numpy as np
 import rasterio
 import xarray as xr
-from constants import CLASS_CODES, CLASS_NAMES, NODATA
+from constants import CLASS_CODES, CLASS_NAMES, NODATA, SHADOW_IS_NODATA, SHADOW_IS_TREE
 from helpers import resolve_config_path
 from rasterio.transform import from_origin
 
@@ -165,7 +167,7 @@ def block_index(transform, shape, grid):
     its block unambiguously. Pixels falling outside the Planet grid are masked
     here, which applies the footprint crop as a side effect.
 
-    Inputs:  transform - the tile's affine; shape - (rows, cols); grid - the dict
+    Inputs: transform - the tile's affine; shape - (rows, cols); grid - the dict
              from load_grid
     Outputs: (flat_index int64 array, inside bool array), both tile-shaped
     """
@@ -196,11 +198,11 @@ def coverage_masks(paths, shape):
     511000_3532000, CHM is nodata over 95.91% of the tile against 74.96% for RGB
     and 66.79% for SAVI - so the CHM nodata mask is the flight-coverage test.
 
-    Inputs:  paths - dict that may hold chm and shadow file paths; shape - the
+    Inputs: paths - dict that may hold chm and shadow file paths; shape - the
              tile's (rows, cols) at 1 m
     Outputs: dict of boolean masks, any of which may be None if the file is absent
     """
-    masks = {"unflown": None, "shadow": None}
+    masks = {"unflown": None, "shadow": None, "shadow_to_tree": None}
     if paths.get("chm") and paths["chm"].exists():
         with rasterio.open(paths["chm"]) as ds:
             chm = ds.read(1)
@@ -211,14 +213,22 @@ def coverage_masks(paths, shape):
         with rasterio.open(paths["shadow"]) as ds:
             shadow = ds.read(1)
         if shadow.shape == shape:
-            masks["shadow"] = shadow == 1  # NOTE there is shadow data but pixels marked as nodata are bad quality
+            # Codes from run_stage1_6_detect_shadows.py: 0 not shadow, 1 resolved
+            # to tree, 2 masked to nodata. ONLY CODE 2 IS A LOSS. Code 1 is
+            # shadow within SHADOW_TREE_RADIUS of CHM >= H_TREE_MIN, which
+            # section 5 Step 1c assigns to the tree class - those pixels are
+            # classified, not discarded. Counting code 1 as loss overstates the
+            # cost of shadow by roughly ten times, because resolved-to-tree runs
+            # 0.6-3.1% per tile while true loss runs 0.05-1.3%.
+            masks["shadow_to_tree"] = shadow == SHADOW_IS_TREE
+            masks["shadow"] = shadow == SHADOW_IS_NODATA
     return masks
 
 
 def accumulate_site_tiles(paths, grid, totals):
     """Add one tile's valid pixels into the site-wide block accumulators.
 
-    Inputs:  paths - dict with classification, probability, quality file paths;
+    Inputs: paths - dict with classification, probability, quality file paths;
              grid; totals - the accumulator dict, modified in place
     Outputs: dict of per-tile counts, and the unique block ids the tile touched
     """
@@ -251,6 +261,7 @@ def accumulate_site_tiles(paths, grid, totals):
     masks = coverage_masks(paths, shape)
     unflown = masks["unflown"]
     shadow = masks["shadow"]
+    shadow_to_tree = masks["shadow_to_tree"]
     flown_total = int((~unflown).sum()) if unflown is not None else int(classification.size)
     lost_shadow = int((shadow & ~unflown).sum()) if shadow is not None and unflown is not None else (int(shadow.sum()) if shadow is not None else None)
     accounted = np.zeros(shape, dtype=bool)
@@ -258,12 +269,15 @@ def accumulate_site_tiles(paths, grid, totals):
         accounted |= unflown
     if shadow is not None:
         accounted |= shadow
+    if shadow_to_tree is not None:
+        accounted |= shadow_to_tree
     stats = {
         "pixels_total": int(classification.size),
         "pixels_unflown": int(unflown.sum()) if unflown is not None else None,
         "pixels_flown": flown_total,
         "flight_coverage": float(flown_total / classification.size),
         "pixels_lost_to_shadow": lost_shadow,
+        "pixels_shadow_resolved_to_tree": int((shadow_to_tree & ~unflown).sum()) if shadow_to_tree is not None and unflown is not None else (int(shadow_to_tree.sum()) if shadow_to_tree is not None else None),
         "pixels_lost_other": int(((~labelled) & ~accounted).sum()),
         "pixels_masked_total": int((~labelled).sum()),
         "pixels_outside_footprint": int((labelled & ~inside).sum()),
@@ -339,12 +353,18 @@ def main():
     site, year = config["site"], config["year"]
     settings = config["stage4_1_aggregation"]
     min_valid = int(settings["min_valid_pixels_per_block"])
+    min_pure = int(settings["min_pure_pixels_per_block"])
 
     results = Path(str(config["results_root"])).expanduser()
     qa_dir = results / "stage1_data_and_features" / "qa"
     shadow_dir = results / "stage1_data_and_features" / "shadow"
     run_dir = results / "stage3_classification" / f"run{args.run}"
-    out_dir = results / "stage4_aggregation"
+    # RUN-SCOPED, matching stage 3. Fractions are only interpretable against the
+    # classification that produced them: run 3 carried a -14.7% shrub area bias
+    # and run 4 carries -4.7%, so a single unscoped directory means whichever ran
+    # last silently replaces the other and the two can never be compared. An
+    # earlier version wrote here unscoped and did exactly that.
+    out_dir = results / "stage4_aggregation" / f"run{args.run}"
     data_dir = Path(str(config["data_root"])).expanduser() / config["site_name"]
     chm_product = config["products"]["chm"]
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -373,6 +393,23 @@ def main():
         "planet_qa_note": "No PlanetScope QA masking at this stage. Blocks lose pixels only to ground-truth nodata, which already carries the shadow mask and tile edge margin. PLSP QA (NumCycles, QA) masks the phenology side and is applied at RF-B training.",
         "frameworks": {},
     }
+
+    # THE REPORT ACCUMULATES ACROSS FRAMEWORKS, matching stage 3_1. The rasters
+    # are named per framework and so survive on their own, but the report is one
+    # file per run: without this, aggregating D after C would leave a report
+    # describing only D while C's rasters sat beside it undocumented. Frameworks
+    # are aggregated one at a time in practice, so this is the normal path, not
+    # an edge case.
+    report_path = out_dir / f"stage4_1_report_{site}_{year}.json"
+    if report_path.exists():
+        try:
+            previous_report = json.loads(report_path.read_text())
+            report["frameworks"] = previous_report.get("frameworks", {})
+            carried_forward = [name for name in sorted(report["frameworks"]) if name not in args.frameworks]
+            if carried_forward:
+                print(f"carrying forward earlier results for framework(s): {', '.join(carried_forward)}")
+        except Exception as exc:
+            print(f"warning: could not read the existing report, starting fresh: {exc}")
 
     for framework in args.frameworks:
         framework_dir = run_dir / framework
@@ -405,7 +442,8 @@ def main():
             tile_stats[tile] = stats
             tile_blocks[tile] = blocks
             shadow_pct = stats["pixels_lost_to_shadow"] / stats["pixels_flown"] if stats["pixels_lost_to_shadow"] is not None and stats["pixels_flown"] else 0.0
-            print(f"[{tile}] flown {stats['flight_coverage']:7.2%} | used {stats['pixels_used']:>7} ({stats['used_share_of_flown']:.2%} of flown) | shadow {shadow_pct:5.2%} of flown | other {stats['pixels_lost_other']:>6} | outside footprint {stats['pixels_outside_footprint']:>6}")
+            tree_pct = stats["pixels_shadow_resolved_to_tree"] / stats["pixels_flown"] if stats["pixels_shadow_resolved_to_tree"] is not None and stats["pixels_flown"] else 0.0
+            print(f"[{tile}] flown {stats['flight_coverage']:7.2%} | used {stats['pixels_used']:>7} ({stats['used_share_of_flown']:.2%} of flown) | shadow lost {shadow_pct:5.2%} | shadow->tree {tree_pct:5.2%} | other {stats['pixels_lost_other']:>6} | outside footprint {stats['pixels_outside_footprint']:>6}")
 
         valid_count = totals["valid_count"]
         touched = valid_count > 0
@@ -422,6 +460,20 @@ def main():
         for stack in (hard, soft, weighted):
             stack[:, drop] = np.nan
         block_quality[drop] = np.nan
+
+        # PURE END MEMBERS, as a COUNT of same-class pixels, not a percentage.
+        # instructions5.md section 5 Step 4 says ">= 90% single-class cover",
+        # but at N = 3 the only achievable hard-count fractions are multiples of
+        # 1/9, and 8/9 = 0.889 < 0.90 - so a 90% rule admits ONLY perfectly
+        # uniform 9-of-9 blocks and silently discards every 8-of-9 one. Measured
+        # on run 4, that cost 70,467 shrub blocks under RF-A_C and 50,676 under
+        # RF-A_D, roughly doubling the pool when corrected. Same trap the
+        # retention rule already fell into, same fix: state the count.
+        pure_counts = np.stack([totals["hard"][i] for i in range(4)])
+        dominant_class = pure_counts.argmax(axis=0)
+        dominant_count = pure_counts.max(axis=0)
+        is_pure = keep & (dominant_count >= min_pure)
+        pure_endmember = np.where(is_pure, dominant_class, NODATA).astype("uint8")
 
         shape = (4, grid["ny"], grid["nx"])
         single = (grid["ny"], grid["nx"])
@@ -454,6 +506,14 @@ def main():
             "float32",
             np.nan,
             ["block_prediction_quality"],
+        )
+        write_raster(
+            out_dir / f"pure_endmember_{stem}.tif",
+            pure_endmember.reshape(1, *single),
+            grid,
+            "uint8",
+            NODATA,
+            ["pure_endmember_class"],
         )
         write_raster(
             out_dir / f"valid_pixel_count_{stem}.tif",
@@ -491,6 +551,10 @@ def main():
             "valid_pixel_histogram_pct": {k: (v / touched_total if touched_total else None) for k, v in histogram.items()},
             "retained_at_cut": retained,
             "mean_hard_fraction": mean_fraction,
+            "min_pure_pixels_per_block": min_pure,
+            "pure_endmember_blocks": {name: int((pure_endmember == code).sum()) for code, name in enumerate(CLASS_NAMES)},
+            "pure_endmember_blocks_at_full_block": {name: int(((pure_counts[code] == per_block) & keep).sum()) for code, name in enumerate(CLASS_NAMES)},
+            "pure_endmember_note": f"A block is pure when >= {min_pure} of {per_block} valid pixels share one class. Stated as a COUNT: at N=3 the achievable fractions are multiples of 1/9, so the spec's '>= 90%' would admit only {per_block}-of-{per_block} blocks because {per_block - 1}/{per_block} = {(per_block - 1) / per_block:.3f} < 0.90. The full-block counts are reported alongside so the difference the correction makes is visible.",
             "source_area_bias": bias,
             "source_area_bias_note": "Per-class area bias of the run 3 classification, from its confusion matrix (rows true, columns predicted). Systematic, so it does NOT cancel across the 9 pixels of a block - every block's fraction inherits it. These outputs are provisional until it is addressed.",
         }
@@ -500,18 +564,23 @@ def main():
         print("valid pixels per block:")
         for k in range(per_block + 1):
             n = histogram[str(k)]
-            print(f"{k:>2} of {per_block}   {n:>9}   {n / touched_total:6.2%}" if touched_total else f"{k:>2} of {per_block}   {n:>9}")
+            print(f"{k:>2} of {per_block} {n:>9} {n / touched_total:6.2%}" if touched_total else f"{k:>2} of {per_block} {n:>9}")
         print("")
         print(f"retained at cut 9: {retained['9']}, at 8: {retained['8']}, at 7: {retained['7']}")
         print("mean hard fraction over retained blocks:")
         for name in CLASS_NAMES:
             print(f"{name:<6} {mean_fraction.get(name, float('nan')):.4f}")
+        print(f"pure end-member blocks, >= {min_pure} of {per_block} pixels one class:")
+        print(f"{'class':<7}{'pure':>10}{'full block':>12}{'gained by the count rule':>26}")
+        for code, name in enumerate(CLASS_NAMES):
+            pure_n = int((pure_endmember == code).sum())
+            full_n = int(((pure_counts[code] == per_block) & keep).sum())
+            print(f"{name:<7}{pure_n:>10,}{full_n:>12,}{pure_n - full_n:>+26,}")
         print("source area bias carried in:")
         for name in CLASS_NAMES:
             print(f"{name:<6} {bias[name]:+.2%}")
         print("")
 
-    report_path = out_dir / f"stage4_1_report_{site}_{year}.json"
     report_path.write_text(json.dumps(report, indent=2))
     print(f"wrote {out_dir}")
     print(f"wrote {report_path}")

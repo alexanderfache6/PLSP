@@ -19,9 +19,9 @@ Euclidean K-means on whitened components IS Mahalanobis on the retained subspace
 Random Forest at Step 1d is unaffected by collinearity and keeps all 20 bands.
 
 Outputs per tile:
-    stage2_labeling/cluster_map_{SITE}_{tile}_{YEAR}.tif      uint8, 1..k, 0 = nodata
-    stage2_labeling/labeling_zones_{SITE}_{tile}_{YEAR}.gpkg  candidate sites
-    stage2_labeling/training_polygons_{SITE}_{tile}_{YEAR}.gpkg  empty template to draw into
+    stage2_labeling/cluster_map_{SITE}_{tile}_{YEAR}.tif uint8, 1..k, 0 = nodata
+    stage2_labeling/labeling_zones_{SITE}_{tile}_{YEAR}.gpkg candidate sites
+    stage2_labeling/training_polygons_{SITE}_{tile}_{YEAR}.gpkg empty template to draw into
 """
 
 import argparse
@@ -125,7 +125,7 @@ def filled_zone_count(path):
     polygons are the deliverable, but a filled zone records a judgement made at
     a location and is not reproducible.
 
-    Inputs:  path - Path to a labeling_zones GeoPackage
+    Inputs: path - Path to a labeling_zones GeoPackage
     Outputs: int, number of sites with class_code set
     """
     if not path.exists():
@@ -143,7 +143,7 @@ def drawn_polygon_count(path):
     Used to refuse overwriting hand-drawn work with the empty template. A
     missing or unreadable file counts as zero, so a first run is unaffected.
 
-    Inputs:  path - Path to the training_polygons GeoPackage
+    Inputs: path - Path to the training_polygons GeoPackage
     Outputs: int, number of features present
     """
     if not path.exists():
@@ -271,7 +271,7 @@ def main():
             template.to_file(poly_path, driver="GPKG", geometry_type="Polygon")
 
         covered = gdf.cluster_id.nunique()
-        print(f"[{tile}] {len(gdf):>4} candidate sites over {covered}/{s['k']} clusters   ({config['tiles'][tile]})")
+        print(f"[{tile}] {len(gdf):>4} candidate sites over {covered}/{s['k']} clusters ({config['tiles'][tile]})")
         all_zones.append(gdf)
 
     # per-cluster feature means, so the analyst can see what each cluster is

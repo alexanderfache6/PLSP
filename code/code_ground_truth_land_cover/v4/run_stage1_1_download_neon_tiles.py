@@ -23,14 +23,14 @@ TWO DETAILS THIS SCRIPT EXISTS TO HANDLE.
 
 THREE STAGES, run in order by a single invocation:
 
-    1  LIST     every tile actually flown at the site, from the NEON API. The
+    1 LIST every tile actually flown at the site, from the NEON API. The
                 AOP footprint follows flight lines rather than a rectangle, so a
                 tile id inside the bounding box may never have been flown.
-    2  FILTER   intersect those tiles against a site boundary (--aoi), report
+    2 FILTER intersect those tiles against a site boundary (--aoi), report
                 the count and the ids, and drop tiles whose overlap with the
                 boundary is below --min-coverage. Edge tiles clipped by the
                 boundary carry partial data and are usually not wanted.
-    3  DOWNLOAD fetch the surviving tiles and place them in the config layout.
+    3 DOWNLOAD fetch the surviving tiles and place them in the config layout.
 
 Usage:
 
@@ -50,6 +50,7 @@ import shutil
 import sys
 from pathlib import Path
 
+from constants import SEVENTY
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -393,7 +394,7 @@ def main():
     site_config = json.loads(args.config.read_text())
     site_dir = Path(str(site_config["data_root"])).expanduser() / site_config["site_name"]
     print(f"NEON AOP tiles - {args.site} {args.year}")
-    print("=" * 70)
+    print("=" * SEVENTY)
 
     tiles = args.tiles_to_download
     if not tiles and args.tiles_from:
@@ -419,7 +420,7 @@ def main():
         for tile_id, coverage in sorted(kept):
             marker = "" if coverage >= 0.999 else f"{coverage:.0%} inside"
             already = " [have]" if all(p.exists() for key in args.products for p in expected_paths(site_config, site_dir, tile_id, key)) else ""
-            print(f"  {tile_id}{marker}{already}")
+            print(f" {tile_id}{marker}{already}")
         if dropped:
             print(f"dropped: {', '.join(f'{t} ({c:.0%})' for t, c in sorted(dropped))}")
         aoi_report = {
@@ -436,10 +437,10 @@ def main():
         print("no tiles given - pass --tiles, --tiles-from, or --aoi")
         return 1
 
-    print("\n" + "=" * 70)
-    print(f"stage 3 - download    {args.site} {args.year}")
-    print(f"tiles     {len(tiles)}")
-    print(f"target    {site_dir}")
+    print("\n" + "=" * SEVENTY)
+    print(f"stage 3 - download {args.site} {args.year}")
+    print(f"tiles {len(tiles)}")
+    print(f"target {site_dir}")
 
     # only fetch what is actually missing - re-running should be cheap and safe
     todo = {}
@@ -461,7 +462,7 @@ def main():
             if not missing_tiles:
                 continue
             dpid = PRODUCTS[key]["dpid"]
-            print(f"\n--- {key}  {dpid}  ({PRODUCTS[key]['label']}) ---")
+            print(f"\n--- {key} {dpid} ({PRODUCTS[key]['label']}) ---")
 
             listing, month = product_files(dpid, args.site, args.year, token)
             if not listing:
@@ -517,7 +518,7 @@ def main():
         if removed:
             print(f"\npruned {removed} unused index file(s) ({', '.join(site_config['products']['vi'].get('drop_indices', []))}), freed {freed / 1e6:.0f} MB")
 
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEVENTY)
     print("verifying against the expected layout")
     incomplete = 0
     for key in args.products:

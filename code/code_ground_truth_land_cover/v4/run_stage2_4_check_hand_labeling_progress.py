@@ -6,14 +6,14 @@ Step 1d. Safe to run as often as you like; it only reads.
 
 Checks, all from instructions5.md section 4.2:
 
-  1  >= MIN_PER_CLASS polygons per class per tile role   <- the binding gate
-  2  every cluster ABOVE THE SIZE FLOOR has received at least one labeled
+  1 >= MIN_PER_CLASS polygons per class per tile role <- the binding gate
+  2 every cluster ABOVE THE SIZE FLOOR has received at least one labeled
      polygon. K-means at k=16 can produce degenerate clusters - measured at
      SRER, cluster 2 is ONE PIXEL across the whole 10-tile site - and requiring
      coverage of those makes the gate unpassable no matter how much is drawn.
      Cluster sizes are recomputed from the cluster maps on every run and the
      ones below the floor are named, so an exclusion is never silent.
-  3  polygon area >= the class-specific min_polygon_area_m2, and the size
+  3 polygon area >= the class-specific min_polygon_area_m2, and the size
      distribution per class. The minimum is per class because a single floor
      does not bind equally: bare and grass patches are large, while shrub
      crowns at SRER are 1-3 m2, so a uniform floor filters shrub by size and
@@ -24,10 +24,10 @@ Checks, all from instructions5.md section 4.2:
      class totals, from cluster coverage, and from the area distribution, and
      it does not block the gate. It is still listed, because a class drifting
      under its floor is worth seeing. Nothing is deleted from the GeoPackage.
-  4  geometry validity, and polygons that fall outside their tile
-  5  class_code values are inside the locked section 3 set (0-3)
-  6  candidate-site fill rate, per cluster and per role
-  7  shrub candidate review progress per tile, with the accept rate - reported,
+  4 geometry validity, and polygons that fall outside their tile
+  5 class_code values are inside the locked section 3 set (0-3)
+  6 candidate-site fill rate, per cluster and per role
+  7 shrub candidate review progress per tile, with the accept rate - reported,
      not gated. The accept rate is evidence about the CHM height rule: a low
      rate means H_GRASS_MAX or H_TREE_MIN needs revisiting, not that the
      candidates were a bad idea.
@@ -40,28 +40,27 @@ which part of feature space actually received labels.
 THE TRAINING LABEL SET IS A UNION of two sources, and every count here reflects
 both:
 
-  hand-drawn      training_polygons_*.gpkg
-  accepted        shrub_review_*.gpkg, by one of two workflows
+  hand-drawn training_polygons_*.gpkg
+  accepted shrub_review_*.gpkg, by one of two workflows
 
-Two review workflows are supported, because reject-only marking is far faster
-and is what the analyst actually does:
+EVERY CANDIDATE MUST BE MARKED INDIVIDUALLY. reviewed = 1 with rejected != 1 is
+an accepted label; rejected = 1 is not; no mark at all is not. UNMARKED DEFAULTS
+TO REJECT, and there is deliberately no way to override that in config.
 
-  sweep        list the tile in stage2_2_shrub_candidates.reviewed_tiles once it has been swept
-               end to end. Everything not rejected in that tile is accepted -
-               one decision per tile instead of one per candidate.
-  per-feature  set reviewed = 1 on each candidate individually. Applies to
-               tiles not listed as swept, so a partially reviewed tile still
-               counts what was explicitly confirmed.
-
-A tile that is neither swept nor per-feature marked contributes nothing, which
-is correct: an untouched candidate is a proposal, not a label.
+An earlier version supported a "swept tile" shortcut - list a tile once and
+every unrejected candidate in it becomes a label - on the theory that reject-only
+marking is faster. It was removed. At SRER it would have promoted 650 unmarked
+proposals to labels in a single config edit, tripling accepted shrub from 296 to
+946, and nothing in the output would have made the reclassification visible. A
+CHM candidate is a machine proposal until a human says otherwise, and silence is
+not a human saying otherwise.
 
 An accepted CHM candidate is an ordinary hand-validated label - the analyst
 confirmed it against RGB, which is the same act as drawing one. Counting only
 the drawn file would make reviewing 750 candidates show zero progress, which
 would defeat the accelerator entirely. Step 1d must read the same union.
 
-Usage:  python run_stage2_4_check_hand_labeling_progress.py config/srer_2022.json [--json]
+Usage: python run_stage2_4_check_hand_labeling_progress.py config/srer_2022.json [--json]
 """
 
 import argparse
@@ -74,7 +73,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import rasterio
-from constants import CLASS_LABELS
+from constants import CLASS_LABELS, SEVENTY
 from rasterio.features import rasterize
 from shapely.validation import make_valid
 
@@ -95,7 +94,7 @@ def drop_out_of_tile(lab_dir, site, year, tiles):
     --fill: to_file recreates the layer, and a failure partway through would
     truncate the deliverable.
 
-    Inputs:  lab_dir - Path to stage2_labeling; site, year; tiles - iterable of ids
+    Inputs: lab_dir - Path to stage2_labeling; site, year; tiles - iterable of ids
     Outputs: int, number of polygons removed
     """
     removed = 0
@@ -136,7 +135,7 @@ def cluster_pixel_share(lab_dir, site, year, tiles, k):
     Recomputed each run rather than cached: the k-means fit is redone whenever
     tiles are added, so a share recorded earlier can silently stop being true.
 
-    Inputs:  lab_dir - Path to stage2_labeling; site, year; tiles - iterable of tile
+    Inputs: lab_dir - Path to stage2_labeling; site, year; tiles - iterable of tile
              ids; k - number of clusters
     Outputs: dict of {cluster: fraction of valid site pixels}
     """
@@ -166,7 +165,7 @@ def clusters_present_per_role(lab_dir, site, year, tiles, k, min_pixels):
     a tile boundary is presence in name only, and demanding a labelled polygon
     on a 20-pixel scrap is as unsatisfiable in practice as a truly absent one.
 
-    Inputs:  lab_dir - Path to stage2_labeling; site, year; tiles - dict of
+    Inputs: lab_dir - Path to stage2_labeling; site, year; tiles - dict of
              {tile: role}; k - number of clusters; min_pixels - presence floor
     Outputs: dict of {role: set of clusters present}
     """
@@ -190,7 +189,7 @@ def class_minimum_areas(config):
     scalar from an older config, which is applied to every class so existing
     configs keep working.
 
-    Inputs:  config - the parsed site config dict
+    Inputs: config - the parsed site config dict
     Outputs: dict of {class_code: float minimum area in m2}
     """
     raw = config["stage2_1_labeling_zones"]["min_polygon_area_m2"]
@@ -203,15 +202,17 @@ def resolve(root, *parts):
     return Path(str(root)).expanduser().joinpath(*parts)
 
 
-def shrub_review_state(lab_dir, site, tile, year, swept):
+def shrub_review_state(lab_dir, site, tile, year):
     """Review tallies for one tile's shrub candidate subset.
 
     Reported so the analyst can see progress and, more usefully, the accept
     rate - which is direct evidence about whether the CHM height band is
     picking out real shrubs (instructions5.md 4.2).
 
-    Inputs:  lab_dir - Path to the stage2_labeling directory; site, tile, year;
-             swept - bool, whether the tile was swept end to end
+    A candidate counts as REVIEWED only when it carries an explicit mark,
+    accept or reject. An unmarked candidate is pending, never accepted.
+
+    Inputs: lab_dir - Path to the stage2_labeling directory; site, tile, year
     Outputs: dict of tallies, or None when the tile has no review file
     """
     path = lab_dir / f"shrub_review_{site}_{tile}_{year}.gpkg"
@@ -227,9 +228,8 @@ def shrub_review_state(lab_dir, site, tile, year, swept):
     gdf = pd.concat(frames, ignore_index=True)
     reviewed = gdf["reviewed"].fillna(0).astype(int) == 1 if "reviewed" in gdf.columns else pd.Series(False, index=gdf.index)
     rejected = gdf["rejected"].fillna(0).astype(int) == 1 if "rejected" in gdf.columns else pd.Series(False, index=gdf.index)
-    # a swept tile counts every unrejected candidate as looked at and kept
-    seen = pd.Series(True, index=gdf.index) if swept else (reviewed | rejected)
-    accepted = seen & ~rejected
+    seen = reviewed | rejected
+    accepted = reviewed & ~rejected
     n_seen, n_accepted = int(seen.sum()), int(accepted.sum())
     return {
         "candidates": len(gdf),
@@ -241,23 +241,26 @@ def shrub_review_state(lab_dir, site, tile, year, swept):
     }
 
 
-def read_accepted_candidates(lab_dir, site, tile, year, swept):
+def read_accepted_candidates(lab_dir, site, tile, year):
     """Accepted CHM shrub candidates for a tile, as ordinary training labels.
 
-    Two workflows, both meaning "a human confirmed this against RGB":
+    A CANDIDATE COUNTS ONLY WHEN IT IS EXPLICITLY MARKED. reviewed = 1 with
+    rejected != 1 is an accepted label. Everything else - rejected, or carrying
+    no mark at all - is not a label and is ignored.
 
-      swept tile    the analyst reviewed the tile end to end and marked only
-                    the rejects, so everything with rejected != 1 is accepted
-      unswept tile  only candidates explicitly carrying reviewed = 1 count
+    UNMARKED DEFAULTS TO REJECT, NEVER TO ACCEPT. An earlier version supported a
+    "swept tile" workflow where listing a tile in reviewed_tiles made every
+    unrejected candidate an accepted label, on the theory that reject-only
+    marking is faster. That is removed: at SRER it would have promoted 650
+    unmarked proposals to labels in one config edit, tripling accepted shrub
+    from 296 to 946, with nothing in the output making the reclassification
+    visible. A CHM candidate is a machine proposal until a human says otherwise,
+    and silence is not a human saying otherwise (instructions5.md 4.2).
 
-    Reject-only marking on a swept tile is the faster workflow and the one in
-    use; the per-feature path remains for partially reviewed tiles. A candidate
-    that is neither is a proposal and must never enter training
-    (instructions5.md 4.2). Polygon and point layers are both read; a missing
-    file is not an error, since the candidate step is optional and NEON-only.
+    Polygon and point layers are both read; a missing file is not an error,
+    since the candidate step is optional and NEON-only.
 
-    Inputs:  lab_dir - Path to the stage2_labeling directory; site, tile, year;
-             swept - bool, whether this tile has been swept end to end
+    Inputs: lab_dir - Path to the stage2_labeling directory; site, tile, year
     Outputs: GeoDataFrame of accepted candidates, or None if there are none
     """
     path = lab_dir / f"shrub_review_{site}_{tile}_{year}.gpkg"
@@ -269,9 +272,7 @@ def read_accepted_candidates(lab_dir, site, tile, year, swept):
         if gdf is None or not len(gdf):
             continue
         rejected = gdf["rejected"].fillna(0).astype(int) == 1 if "rejected" in gdf.columns else pd.Series(False, index=gdf.index)
-        if swept:
-            keep = gdf[~rejected]
-        elif "reviewed" in gdf.columns:
+        if "reviewed" in gdf.columns:
             keep = gdf[(gdf["reviewed"].fillna(0).astype(int) == 1) & ~rejected]
         else:
             continue
@@ -285,7 +286,7 @@ def read_accepted_candidates(lab_dir, site, tile, year, swept):
 def read_layer_named(path, layer):
     """Read one named layer from a GeoPackage, tolerating absence.
 
-    Inputs:  path - Path to the GeoPackage; layer - layer name string
+    Inputs: path - Path to the GeoPackage; layer - layer name string
     Outputs: GeoDataFrame, or None if the layer is missing or unreadable
     """
     try:
@@ -372,7 +373,6 @@ def main():
     site, year = config["site"], config["year"]
     k = config["stage2_1_labeling_zones"]["k"]
     min_area = class_minimum_areas(config)
-    swept_tiles = set(config.get("stage2_2_shrub_candidates", {}).get("reviewed_tiles", []))
     lab_dir = resolve(config["results_root"], "stage2_labeling")
 
     if args.drop_out_of_tile:
@@ -421,7 +421,7 @@ def main():
                     problems.append(f"{tile}: zone has class_code {code}, outside 0-3")
 
         polys = read_layer(lab_dir / f"training_polygons_{site}_{tile}_{year}.gpkg")
-        accepted = read_accepted_candidates(lab_dir, site, tile, year, tile in swept_tiles)
+        accepted = read_accepted_candidates(lab_dir, site, tile, year)
         if accepted is not None and len(accepted):
             row["accepted_candidates"] = len(accepted)
             accepted = accepted[["class_code", "geometry"]].copy()
@@ -497,7 +497,7 @@ def main():
 
     # ------------------------------------------------------------------ report
     roles = sorted({r for r in config["tiles"].values()})
-    print(f"Stage 2 labeling progress - {site} {year}\n" + "=" * 62)
+    print(f"Stage 2 labeling progress - {site} {year}\n" + "=" * SEVENTY)
 
     print("\nper tile")
     header = f"{'tile':<18}{'role':<7}" + "".join(f"{CLASS_LABELS[c]:>7}" for c in CLASS_LABELS) + f"{'total':>7}{'chm':>6}{'clusters':>10}{'sites filled':>14}"
@@ -517,8 +517,7 @@ def main():
         total = sum(sum(tile_counts[t][c] for c in CLASS_LABELS) for t in tiles)
         chm = sum(r["accepted_candidates"] for r in per_tile if r["role"] == role)
         print(f"{role + ' total':<18}{'':<7}{cells}{total:>7}{chm:>6}{len(cluster_hits[role]):>7}/{k:<2}")
-    if not swept_tiles:
-        print("note: no tiles listed in stage2_2_shrub_candidates.reviewed_tiles - shrub candidates count only where reviewed = 1 is set per feature")
+    print("note: a shrub candidate counts only where reviewed = 1 and rejected != 1 is set on that feature. Unmarked candidates are pending, never accepted.")
     # polygons is the union of hand-drawn and accepted CHM candidates; the
     # second column shows how much came from the accelerator
     # zones and polygons are one-to-many by design: a zone may yield several
@@ -556,8 +555,8 @@ def main():
         absent = sorted(set(required) - present[role])
         missing = sorted(set(role_required) - cluster_hits[role])
         state = "all covered" if not missing else f"missing {missing}"
-        note = f"   (not in any {role} tile: {absent})" if absent else ""
-        print(f"{role:<7} {len(cluster_hits[role] & set(role_required))}/{len(role_required)} required clusters   {state}{note}")
+        note = f" (not in any {role} tile: {absent})" if absent else ""
+        print(f"{role:<7} {len(cluster_hits[role] & set(role_required))}/{len(role_required)} required clusters {state}{note}")
         gate_ok &= not missing
 
         # TODO update variable names
@@ -601,7 +600,7 @@ def main():
         print(f"... and {len(problems) - 15} more")
     gate_ok &= not problems
 
-    review_rows = [(tile, role, shrub_review_state(lab_dir, site, tile, year, tile in swept_tiles)) for tile, role in config["tiles"].items()]
+    review_rows = [(tile, role, shrub_review_state(lab_dir, site, tile, year)) for tile, role in config["tiles"].items()]
     if any(state for _, _, state in review_rows):
         print("\ncheck 7 - shrub candidate review (reported, not gated)")
         print(f"{'tile':<18}{'role':<7}{'cands':>7}{'reviewed':>10}{'rejected':>10}{'accepted':>10}{'pending':>9}{'accept':>8}")
@@ -629,7 +628,7 @@ def main():
         pct = 100.0 * filled / total if total else 0.0
         print(f"{role:<7} {filled:>4} / {total:<4} sites filled ({pct:.1f}%)")
 
-    print("\n" + "=" * 62)
+    print("\n" + "=" * SEVENTY)
     if gate_ok:
         print("GATE PASSED - Stage 2 complete, Step 1d can proceed.")
     else:

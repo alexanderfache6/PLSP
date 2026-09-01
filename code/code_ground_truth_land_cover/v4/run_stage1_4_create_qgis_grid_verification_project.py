@@ -45,15 +45,15 @@ there is no unsaved-edit hazard unlike the labeling project.
 LAYER TREE, top of the panel to bottom. QgsLayerTreeGroup appends, so the fine
 grids sit above the coarse ones and RGB is the basemap underneath everything:
 
-    analysis cells 1 m          hairline, hollow
-    planet cells 3 m            bold, hollow - the grid being verified
-    verification windows        dashed, marks where the cell grids are drawn
-    tile footprints cropped     what actually enters Steps 3-6
-    tile footprints             the full 1 km NEON tiles
-    planet footprint            the LSP extent - the SRER focus area
-    PLANET EVIamp               the real LSP data on the measured grid, OFF by
-                                default - toggle it against the RGB
-    RGB                         10 cm imagery, all tiles
+    analysis cells 1 m - hairline, hollow
+    planet cells 3 m - bold, hollow, the grid being verified
+    verification windows - dashed, marks where the cell grids are drawn
+    tile footprints cropped - what actually enters Steps 3-6
+    tile footprints - the full 1 km NEON tiles
+    planet footprint - the LSP extent, the SRER focus area
+    PLANET EVIamp - the real LSP data on the measured grid, OFF by default,
+    toggle it against the RGB
+    RGB - 10 cm imagery, all tiles
 
 Every grid layer is hollow. A filled cell would hide the imagery, and the
 imagery is the thing being checked against.

@@ -39,3 +39,6 @@ SHADOW_IS_NODATA = 2
 SHADOW_CODE_LABELS = {NO_SHADOW: "not shadow", SHADOW_IS_TREE: "resolved to tree", SHADOW_IS_NODATA: "masked to nodata"}
 
 FRAMEWORK_ORDER = ["A", "B", "C", "D", "E"]
+
+# used for spacing
+SEVENTY = 70

@@ -2,7 +2,7 @@
 
 Run inside QGIS: Plugins -> Python Console -> Show Editor -> Open Script -> Run,
 or paste the file in. It builds the layer tree, applies the LOCKED section 3
-class colours, turns class_code into a dropdown, and saves a .qgz next to the
+class colors, turns class_code into a dropdown, and saves a .qgz next to the
 labeling outputs so the project can simply be reopened afterwards.
 
 Written as a QGIS script rather than a hand-authored .qgs because the project
@@ -15,13 +15,13 @@ Layer tree, one group per tile, top of the panel to bottom. QgsLayerTreeGroup
 appends, so layers are added in exactly this order and RGB lands underneath
 everything rather than covering it:
 
-    training_polygons   draw labelled polygons here (editable)
-    labeling_zones      candidate sites - fill class_code here (editable)
-    cluster_map         k=16 zones, provenance only - never a label
-    shrub review        CHM-derived shrub candidates to accept or reject
-    CHM                 canopy height, for the shrub/tree call
-    SAVI                greenness, for the bare/grass call
-    RGB                 10 cm imagery - the basemap you actually label from
+    training_polygons draw labelled polygons here (editable)
+    labeling_zones candidate sites - fill class_code here (editable)
+    cluster_map k=16 zones, provenance only - never a label
+    shrub review CHM-derived shrub candidates to accept or reject
+    CHM canopy height, for the shrub/tree call
+    SAVI greenness, for the bare/grass call
+    RGB 10 cm imagery - the basemap you actually label from
 """
 
 import json
@@ -100,7 +100,7 @@ def style_review_state(layer, geom):
     zero-click accept is indistinguishable from a candidate never looked at,
     which is unworkable at 150 per tile.
 
-    Inputs:  layer - a QgsVectorLayer of shrub candidates; geom - "polygon" or
+    Inputs: layer - a QgsVectorLayer of shrub candidates; geom - "polygon" or
              "point"
     Outputs: None, the layer is styled in place
     """
@@ -182,12 +182,12 @@ def set_derived_defaults(layer, tile, cluster_layer):
 def build_tile_group(project, root, config, tile, role, data, lab_dir, site, year):
     """Add one tile's six layers, in panel order, and return the editable ones."""
     prod = config["products"]
-    group = root.addGroup(f"{role.upper()}  {tile}")
+    group = root.addGroup(f"{role.upper()} {tile}")
 
     poly_path = os.path.join(lab_dir, f"training_polygons_{site}_{tile}_{year}.gpkg")
     poly = QgsVectorLayer(
         f"{poly_path}|layername=training_polygons_{site}_{tile}_{year}",
-        f"POLYGONS  {tile}  <- draw here",
+        f"POLYGONS {tile} <- draw here",
         "ogr",
     )
     if poly.isValid():
@@ -196,7 +196,7 @@ def build_tile_group(project, root, config, tile, role, data, lab_dir, site, yea
     zone_path = os.path.join(lab_dir, f"labeling_zones_{site}_{tile}_{year}.gpkg")
     zones = QgsVectorLayer(
         f"{zone_path}|layername=labeling_zones_{site}_{tile}_{year}",
-        f"zones  {tile}  ({role})",
+        f"zones {tile} ({role})",
         "ogr",
     )
     if zones.isValid():
@@ -208,7 +208,7 @@ def build_tile_group(project, root, config, tile, role, data, lab_dir, site, yea
     review_path = os.path.join(lab_dir, f"shrub_review_{site}_{tile}_{year}.gpkg")
     shrub_poly = QgsVectorLayer(
         f"{review_path}|layername=shrub_review_{site}_{tile}_{year}_polygon",
-        f"shrub review  {tile}  <- accept/reject",
+        f"shrub review {tile} <- accept/reject",
         "ogr",
     )
     if shrub_poly.isValid():
@@ -216,7 +216,7 @@ def build_tile_group(project, root, config, tile, role, data, lab_dir, site, yea
 
     clu = QgsRasterLayer(
         os.path.join(lab_dir, f"cluster_map_{site}_{tile}_{year}.tif"),
-        f"clusters k16  {tile}",
+        f"clusters k16 {tile}",
     )
     if clu.isValid():
         classes = [QgsPalettedRasterRenderer.Class(i + 1, QColor(CLUSTER_COLORS[i]), f"cluster {i + 1}") for i in range(config["stage2_1_labeling_zones"]["k"])]
@@ -225,7 +225,7 @@ def build_tile_group(project, root, config, tile, role, data, lab_dir, site, yea
 
     chm = QgsRasterLayer(
         os.path.join(data, prod["chm"]["folder"], prod["chm"]["pattern"].format(tile=tile)),
-        f"CHM  {tile}",
+        f"CHM {tile}",
     )
     if chm.isValid():
         # 0 to H_TREE_MIN to 5 m: the range the shrub/tree cut lives in
@@ -238,7 +238,7 @@ def build_tile_group(project, root, config, tile, role, data, lab_dir, site, yea
             prod["vi"]["folder"],
             prod["vi"]["pattern"].format(tile=tile, index="SAVI"),
         ),
-        f"SAVI  {tile}",
+        f"SAVI {tile}",
     )
     if savi.isValid():
         pseudocolor(savi, 0.0, 0.6, ["#8c510a", "#f6e8c3", "#01665e"])
@@ -251,7 +251,7 @@ def build_tile_group(project, root, config, tile, role, data, lab_dir, site, yea
 
     rgb = QgsRasterLayer(
         os.path.join(data, prod["rgb"]["folder"], prod["rgb"]["pattern"].format(tile=tile)),
-        f"RGB 10cm  {tile}",
+        f"RGB 10cm {tile}",
     )
     if rgb.isValid():
         rgb.setRenderer(QgsMultiBandColorRenderer(rgb.dataProvider(), 1, 2, 3))

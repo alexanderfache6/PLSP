@@ -4,19 +4,19 @@ Runs the section 11 checklist against a site/year and writes both a machine-read
 `data_audit_{SITE}_{YEAR}.json` and a human-readable summary into `stage1_data_and_features/qa/`.
 
 Checks are grouped as in the spec:
-  11.1 inventory                 1-5
-  11.2 georeferencing/alignment  6-9    (10-12 need the PlanetScope LSP product)
-  11.3 radiometry/value sanity   13-19
-  11.4 class/sampling sanity     19a-23 (need Step 1 outputs or user input)
-  11.5 cross-site               24-29   (transfer site only)
-  11.6 PlanetScope LSP          30-35   (need the LSP product)
+  11.1 inventory 1-5
+  11.2 georeferencing/alignment 6-9 (10-12 need the PlanetScope LSP product)
+  11.3 radiometry/value sanity 13-19
+  11.4 class/sampling sanity 19a-23 (need Step 1 outputs or user input)
+  11.5 cross-site 24-29 (transfer site only)
+  11.6 PlanetScope LSP 30-35 (need the LSP product)
 
 Checks that cannot run yet are recorded as DEFERRED with the reason, so the audit
 states what is outstanding rather than silently omitting it.
 
 All site-specific values come from the config file (R8) - nothing is hard-coded here.
 
-Usage:  python run_stage1_2_data_audit.py config/srer_2022.json
+Usage: python run_stage1_2_data_audit.py config/srer_2022.json
 """
 
 import argparse
@@ -26,6 +26,7 @@ from pathlib import Path
 
 import numpy as np
 import rasterio
+from constants import SEVENTY
 
 HERE = Path(__file__).resolve().parent
 
@@ -760,16 +761,16 @@ def write_report(audit, config, out_dir, site, year):
 
     lines = [
         f"Step 0 data audit - {site} {year}",
-        "=" * 64,
+        "=" * SEVENTY,
         " ".join(f"{k}={v}" for k, v in sorted(counts.items())),
         "",
     ]
     for c in audit.checks:
         mark = {PASS: "ok ", FAIL: "FAIL", REPORT: "note", DEFERRED: "----"}[c["status"]]
         flag = " [BLOCKER]" if c["blocker"] and c["status"] == FAIL else ""
-        lines.append(f"  {mark} #{c['check']:<4} {c['name']}{flag}")
+        lines.append(f" {mark} #{c['check']:<4} {c['name']}{flag}")
         if c["status"] == DEFERRED:
-            lines.append(f"           deferred: {c['observed']['reason']}")
+            lines.append(f" deferred: {c['observed']['reason']}")
     txt_path = out_dir / f"data_audit_{site}_{year}.txt"
     txt_path.write_text("\n".join(lines) + "\n")
     return json_path, txt_path, counts
@@ -788,7 +789,7 @@ def main():
     if not site_dir.is_dir():
         sys.exit(f"data directory not found: {site_dir}")
     print(f"site dir : {site_dir}")
-    print(f"output   : {out_dir}\n")
+    print(f"output : {out_dir}\n")
 
     audit = Audit()
     check_inventory(audit, config, site_dir)

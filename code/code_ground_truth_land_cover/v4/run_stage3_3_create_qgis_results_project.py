@@ -3,7 +3,7 @@
 
 Run inside QGIS: Plugins -> Python Console -> Show Editor -> Open Script -> Run,
 or paste the file in. It builds the layer tree, applies the LOCKED section 3
-class colours, and saves a .qgz next to the results so the project can simply be
+class colors, and saves a .qgz next to the results so the project can simply be
 reopened afterwards.
 
 Written as a QGIS script rather than a hand-authored .qgs because the project XML
@@ -18,7 +18,7 @@ run stays loadable after the inputs change.
 
 The run is chosen two ways, because this script has two callers:
 
-    --run 2       from a shell, matching run_stage3_1_random_forest_ground_truth_classification.py and
+    --run 2 from a shell, matching run_stage3_1_random_forest_ground_truth_classification.py and
                   run_stage3_2_generate_ground_truth_classification_plots.py
 
 The flag wins when present. The saved .qgz lands inside the run directory, so
@@ -34,10 +34,10 @@ A to B means ticking five boxes and unticking five more.
 Layer tree, top of the panel to bottom. QgsLayerTreeGroup appends, so groups land
 in exactly this order and RGB sits underneath everything as the basemap:
 
-    framework A       classification + per-class probability, all tiles
-    framework B       ...
-    ...               one group per framework found on disk
-    RGB               10 cm imagery, all tiles
+    framework A classification + per-class probability, all tiles
+    framework B ...
+    ... one group per framework found on disk
+    RGB 10 cm imagery, all tiles
 
 Within a framework group, classification layers sit above probability layers, and
 probability layers load UNCHECKED. Four probability bands per tile times five
@@ -88,7 +88,7 @@ def resolve_run():
     a strict parser fail. Only an explicit --run is honoured; anything else is
     ignored and the constant applies.
 
-    Inputs:  none, reads sys.argv
+    Inputs: none, reads sys.argv
     Outputs: int run number
     """
     parser = argparse.ArgumentParser(add_help=False)
@@ -105,7 +105,7 @@ def discover_frameworks(cls_root, site, year):
     later appears automatically, and a framework not yet run is simply absent
     instead of logging a warning per tile.
 
-    Inputs:  cls_root - path to stage3_classification; site, year
+    Inputs: cls_root - path to stage3_classification; site, year
     Outputs: list of (framework name, directory path) tuples
     """
     found = []
@@ -121,16 +121,16 @@ def discover_frameworks(cls_root, site, year):
 
 
 def style_classification(layer):
-    """Paletted renderer using the locked section 3 class colours.
+    """Paletted renderer using the locked section 3 class colors.
 
     The GeoTIFF already carries an embedded colour table written by
     run_stage3_1_random_forest_ground_truth_classification.py, so QGIS would render this correctly unaided. The
     renderer is set explicitly anyway to guarantee the class NAMES appear in the
-    legend - a colour table gives colours but no labels, and an unlabelled
+    legend - a colour table gives colors but no labels, and an unlabelled
     legend defeats the point given the palette fails a normal-vision separation
     check on grass versus bare.
 
-    Inputs:  layer - a QgsRasterLayer of uint8 class codes
+    Inputs: layer - a QgsRasterLayer of uint8 class codes
     Outputs: None, styled in place
     """
     classes = [QgsPalettedRasterRenderer.Class(code, QColor(CLASS_COLORS[code]), f"{code} {CLASS_LABELS[code]}") for code in CLASS_LABELS]
@@ -145,7 +145,7 @@ def style_probability(layer, band, colour):
     White at zero rather than a second hue: this is a magnitude, and a two-hue
     ramp would imply a polarity that does not exist.
 
-    Inputs:  layer - QgsRasterLayer; band - 1-based band number; colour - hex
+    Inputs: layer - QgsRasterLayer; band - 1-based band number; colour - hex
     Outputs: None, styled in place
     """
     shader = QgsRasterShader()
@@ -165,7 +165,7 @@ def style_probability(layer, band, colour):
 def add_layer(project, group, layer, checked, expanded):
     """Register a layer and append it to a group, setting its legend state.
 
-    Inputs:  project - QgsProject; group - QgsLayerTreeGroup; layer -
+    Inputs: project - QgsProject; group - QgsLayerTreeGroup; layer -
              QgsRasterLayer; checked - bool visibility; expanded - bool legend
     Outputs: True when the layer was valid and added
     """
@@ -185,7 +185,7 @@ def build_framework_group(project, root, framework, cls_dir, site, year, tiles):
     Classification layers first so they sit above the probability layers they
     summarize. Probabilities load unchecked - see the module docstring.
 
-    Inputs:  project, root - QGIS objects; framework - key string; cls_dir -
+    Inputs: project, root - QGIS objects; framework - key string; cls_dir -
              directory holding the framework's rasters; site, year; tiles - dict
              of {tile: role}
     Outputs: int, number of layers added
@@ -197,7 +197,7 @@ def build_framework_group(project, root, framework, cls_dir, site, year, tiles):
         path = os.path.join(cls_dir, f"classification_{framework}_{site}_{tile}_{year}.tif")
         if not os.path.exists(path):
             continue
-        layer = QgsRasterLayer(path, f"class RF-A_{framework}  {tile}  ({role})")
+        layer = QgsRasterLayer(path, f"class RF-A_{framework} {tile} ({role})")
         if layer.isValid():
             style_classification(layer)
         added += add_layer(project, group, layer, False, False)
@@ -207,7 +207,7 @@ def build_framework_group(project, root, framework, cls_dir, site, year, tiles):
         if not os.path.exists(path):
             continue
         for code, name in CLASS_LABELS.items():
-            layer = QgsRasterLayer(path, f"p({name}) RF-A_{framework}  {tile}")
+            layer = QgsRasterLayer(path, f"p({name}) RF-A_{framework} {tile}")
             if layer.isValid():
                 # band order is class-code order, written by run_stage3_1_random_forest_ground_truth_classification.py
                 style_probability(layer, code + 1, CLASS_COLORS[code])
@@ -223,7 +223,7 @@ def build_rgb_group(project, root, config, data, tiles):
     Added last so it lands at the bottom of the panel and sits underneath the
     results rather than covering them.
 
-    Inputs:  project, root - QGIS objects; config - parsed config; data - site data
+    Inputs: project, root - QGIS objects; config - parsed config; data - site data
              directory; tiles - dict of {tile: role}
     Outputs: int, number of layers added
     """
@@ -232,7 +232,7 @@ def build_rgb_group(project, root, config, data, tiles):
     added = 0
     for tile, role in tiles.items():
         path = os.path.join(data, product["folder"], product["pattern"].format(tile=tile))
-        layer = QgsRasterLayer(path, f"RGB  {tile}  ({role})")
+        layer = QgsRasterLayer(path, f"RGB {tile} ({role})")
         if layer.isValid():
             layer.setRenderer(QgsMultiBandColorRenderer(layer.dataProvider(), 1, 2, 3))
         added += add_layer(project, group, layer, True, False)

@@ -2,9 +2,9 @@
 
 Two passes, because the luma threshold is pooled across tiles:
 
-  pass 1  accumulate the Rec. 709 luma histogram at 0.6 m over every tile,
+  pass 1 accumulate the Rec. 709 luma histogram at 0.6 m over every tile,
           then take the pooled 20th percentile
-  pass 2  per tile, flag shadow where luma < threshold AND B > R, aggregate to
+  pass 2 per tile, flag shadow where luma < threshold AND B > R, aggregate to
           the 1 m grid by > 70% areal majority, then resolve it
 
 A percentile rather than an absolute cut is required by R3: NEON RGB and NAIP
@@ -34,7 +34,6 @@ import rasterio
 from constants import NO_SHADOW, SHADOW_CODE_LABELS, SHADOW_IS_NODATA, SHADOW_IS_TREE
 from helpers import read_rgb_at_scale, resolve_config_path
 from rasterio.enums import Resampling
-from rasterio.transform import from_bounds
 from rasterio.warp import reproject
 from scipy import ndimage as ndi
 
@@ -186,7 +185,7 @@ def main():
             "tall_px_pct": round(100.0 * float(tall_pixels.mean()), 3),
         }
         summary.append(row)
-        print(f"[{tile}] shadow 0.6m={row['shadow_pct_06m']:>6.2f}%  1m={row['shadow_pct_1m']:>6.2f}%  ->tree={row['resolved_shadow_is_a_tree_pct']:>5.2f}%  ->nodata={row['masked_shadow_is_nodata_pct']:>5.2f}%")
+        print(f"[{tile}] shadow 0.6m={row['shadow_pct_06m']:>6.2f}% 1m={row['shadow_pct_1m']:>6.2f}% ->tree={row['resolved_shadow_is_a_tree_pct']:>5.2f}% ->nodata={row['masked_shadow_is_nodata_pct']:>5.2f}%")
 
     spec = {
         "site": site,

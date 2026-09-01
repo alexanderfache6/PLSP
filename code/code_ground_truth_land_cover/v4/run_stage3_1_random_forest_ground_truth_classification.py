@@ -45,11 +45,16 @@ not preferentially take one part of a polygon.
 RUNS are numbered and fully separated on disk. Every output lands under
 stage3_classification/run{N}/, so a baseline stays intact and comparable after
 the inputs change. Run 1 is the baseline with no subsampling and a partial shrub
-candidate review; run 2 adds subsampling and the completed review. The features,
-segments and shadow directories are NOT run-scoped - they are Step 1a-1c outputs
-shared by every run.
+candidate review; run 2 adds subsampling and the completed review. The features
+and shadow directories are NOT run-scoped - they are stage 1 outputs shared by
+every run.
 
-Usage:  python run_stage3_1_random_forest_ground_truth_classification.py config/srer_2022.json --run 2
+SEGMENTS ARE NOT READ. An earlier design trained per segment and this script
+bound a segments directory to read them from; the binding outlived the design
+and sat unused. run_stage1_7_generate_segments.py has since been retired to
+unused/ because nothing consumed its output at all - see unused/README.md.
+
+Usage: python run_stage3_1_random_forest_ground_truth_classification.py config/srer_2022.json --run 2
         python run_stage3_1_random_forest_ground_truth_classification.py config/srer_2022.json --run 2 --frameworks A C
         python run_stage3_1_random_forest_ground_truth_classification.py config/srer_2022.json --run 2 --max-pixels-per-polygon 100
         python run_stage3_1_random_forest_ground_truth_classification.py config/srer_2022.json --run 1 --no-predict
@@ -63,12 +68,13 @@ import json
 import re
 from collections import Counter
 from pathlib import Path
+from typing import NamedTuple
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import rasterio
-from constants import CLASS_COLORS, CLASS_LABELS, NODATA
+from constants import CLASS_CODES, CLASS_COLORS, CLASS_LABELS, NODATA, SEVENTY
 from helpers import resolve_config_path
 from rasterio.features import rasterize
 from sklearn.ensemble import RandomForestClassifier
@@ -82,7 +88,7 @@ FRAMEWORK_GROUPS = {
 }
 
 
-def run_label(value):
+def validated_run_label(raw_label):
     """Validate a run label: an integer, or an integer with a suffix.
 
     Runs were originally numbered, but a bare number cannot say what a run IS -
@@ -93,87 +99,85 @@ def run_label(value):
     Restricted to letters, digits, underscore and dash so the label can be used
     directly as a path component on any filesystem.
 
-    Inputs:  value - the raw --run argument
+    Inputs: raw_label - the raw --run argument
     Outputs: the validated label string
     """
-    import argparse as _argparse
-
-    if not re.fullmatch(r"[A-Za-z0-9_-]+", value):
-        raise _argparse.ArgumentTypeError(f"run label {value!r} must contain only letters, digits, underscore or dash - it becomes a directory name")
-    return value
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", raw_label):
+        raise argparse.ArgumentTypeError(f"run label {raw_label!r} must contain only letters, digits, underscore or dash - it becomes a directory name")
+    return raw_label
 
 
-def hex_to_rgb(value):
+def hex_color_to_rgba(hex_color):
     """Convert a #rrggbb string to an (r, g, b, 255) tuple for a GeoTIFF colormap.
 
-    Inputs:  value - hex colour string
-    Outputs: 4-tuple of ints
+    Inputs: hex_color - hex color string such as "#c2b280"
+    Outputs: 4-tuple of ints, (red, green, blue, alpha)
     """
-    value = value.lstrip("#")
-    return tuple(int(value[i : i + 2], 16) for i in (0, 2, 4)) + (255,)
+    digits = hex_color.lstrip("#")
+    return tuple(int(digits[offset : offset + 2], 16) for offset in (0, 2, 4)) + (255,)
 
 
-def framework_band_indices(band_order, bands_meta, framework):
+def framework_band_columns(band_order, band_metadata, framework):
     """Column indices of the feature bands a framework is allowed to use.
 
     Frameworks differ by input group only, so the same feature stack is read for
     all of them and simply subset here.
 
-    Inputs:  band_order - list of band names in raster order; bands_meta - list
-             of {name, group} dicts; framework - key into FRAMEWORK_GROUPS
-    Outputs: (list of int indices, list of band-name strings)
+    Inputs: band_order - list of band names in raster order; band_metadata -
+             list of {name, group} dicts; framework - key into FRAMEWORK_GROUPS
+    Outputs: (list of int column indices, list of band-name strings)
     """
-    groups = set(FRAMEWORK_GROUPS[framework])
-    group_of = {b["name"]: b["group"] for b in bands_meta}
-    indices, names = [], []
-    for i, name in enumerate(band_order):
-        if group_of.get(name) in groups:
-            indices.append(i)
-            names.append(name)
-    return indices, names
+    allowed_groups = set(FRAMEWORK_GROUPS[framework])
+    group_of_band = {band["name"]: band["group"] for band in band_metadata}
+    columns, band_names = [], []
+    for column, band_name in enumerate(band_order):
+        if group_of_band.get(band_name) in allowed_groups:
+            columns.append(column)
+            band_names.append(band_name)
+    return columns, band_names
 
 
-def read_labels(label_dir, site, tile, year):
+def read_label_polygons(label_dir, site, tile, year):
     """Training labels for a tile - hand-drawn polygons plus accepted candidates.
 
     The union is the same one run_stage2_4_check_hand_labeling_progress.py counts. An
     accepted CHM candidate was confirmed against RGB by the analyst, which is
     the same act as drawing one, so it is an ordinary label here.
 
-    Inputs:  label_dir - Path to stage2_labeling; site, tile, year
+    Inputs: label_dir - Path to stage2_labeling; site, tile, year
     Outputs: GeoDataFrame with class_code and geometry, or None
     """
-    frames = []
-    drawn = label_dir / f"training_polygons_{site}_{tile}_{year}.gpkg"
-    if drawn.exists():
+    label_frames = []
+    drawn_path = label_dir / f"training_polygons_{site}_{tile}_{year}.gpkg"
+    if drawn_path.exists():
         try:
-            gdf = gpd.read_file(drawn)
-            if len(gdf):
-                frames.append(gdf[["class_code", "geometry"]])
+            drawn_polygons = gpd.read_file(drawn_path)
+            if len(drawn_polygons):
+                label_frames.append(drawn_polygons[["class_code", "geometry"]])
         except Exception:
             pass
-    review = label_dir / f"shrub_review_{site}_{tile}_{year}.gpkg"
-    if review.exists():
-        for kind in ("polygon", "point"):
+    review_path = label_dir / f"shrub_review_{site}_{tile}_{year}.gpkg"
+    if review_path.exists():
+        for geometry_kind in ("polygon", "point"):
             try:
-                gdf = gpd.read_file(review, layer=f"shrub_review_{site}_{tile}_{year}_{kind}")
+                candidates = gpd.read_file(review_path, layer=f"shrub_review_{site}_{tile}_{year}_{geometry_kind}")
             except Exception:
                 continue
-            if not len(gdf) or "reviewed" not in gdf.columns:
+            if not len(candidates) or "reviewed" not in candidates.columns:
                 continue
-            reviewed = gdf["reviewed"].fillna(0).astype(int) == 1
-            rejected = gdf["rejected"].fillna(0).astype(int) == 1 if "rejected" in gdf.columns else False
-            keep = gdf[reviewed & ~rejected]
-            if len(keep):
-                frames.append(keep[["class_code", "geometry"]])
-    if not frames:
+            is_reviewed = candidates["reviewed"].fillna(0).astype(int) == 1
+            is_rejected = candidates["rejected"].fillna(0).astype(int) == 1 if "rejected" in candidates.columns else False
+            accepted = candidates[is_reviewed & ~is_rejected]
+            if len(accepted):
+                label_frames.append(accepted[["class_code", "geometry"]])
+    if not label_frames:
         return None
-    out = pd.concat(frames, ignore_index=True)
-    out = out[out["class_code"].notna()]
-    return gpd.GeoDataFrame(out, crs=frames[0].crs) if len(out) else None
+    all_labels = pd.concat(label_frames, ignore_index=True)
+    all_labels = all_labels[all_labels["class_code"].notna()]
+    return gpd.GeoDataFrame(all_labels, crs=label_frames[0].crs) if len(all_labels) else None
 
 
-def rasterize_labels(labels, shape, transform):
+def rasterize_label_polygons(label_polygons, shape, transform):
     """Burn label polygons onto the 1 m analysis grid, with polygon identity.
 
     Classes are burned in a fixed order so that where polygons overlap, the
@@ -184,36 +188,36 @@ def rasterize_labels(labels, shape, transform):
     a polygon. Identity is burned in the same order as the classes, so the id
     raster and the class raster always agree about who owns an overlap.
 
-    Inputs:  labels - GeoDataFrame; shape - (rows, cols); transform - affine
+    Inputs: label_polygons - GeoDataFrame; shape - (rows, cols); transform - affine
     Outputs: (uint8 class array with NODATA where unlabelled,
               int32 polygon-id array with 0 where unlabelled)
     """
-    out = np.full(shape, NODATA, dtype="uint8")
-    ids = np.zeros(shape, dtype="int32")
-    next_id = 1
-    for code in (0, 1, 2, 3):
-        subset = labels[labels["class_code"].astype(int) == code]
-        if not len(subset):
+    label_raster = np.full(shape, NODATA, dtype="uint8")
+    polygon_ids = np.zeros(shape, dtype="int32")
+    next_polygon_id = 1
+    for class_code in CLASS_CODES:
+        polygons_of_class = label_polygons[label_polygons["class_code"].astype(int) == class_code]
+        if not len(polygons_of_class):
             continue
-        shapes = []
-        for geom in subset.geometry:
-            shapes.append((geom, next_id))
-            next_id += 1
-        burned = rasterize(
-            shapes,
+        geometry_id_pairs = []
+        for geometry in polygons_of_class.geometry:
+            geometry_id_pairs.append((geometry, next_polygon_id))
+            next_polygon_id += 1
+        burned_ids = rasterize(
+            geometry_id_pairs,
             out_shape=shape,
             transform=transform,
             fill=0,
             dtype="int32",
             all_touched=False,
         )
-        mask = burned > 0
-        out[mask] = code
-        ids[mask] = burned[mask]
-    return out, ids
+        burned = burned_ids > 0
+        label_raster[burned] = class_code
+        polygon_ids[burned] = burned_ids[burned]
+    return label_raster, polygon_ids
 
 
-def subsample_by_polygon(ids, train_mask, max_per_polygon, rng):
+def subsample_pixels_within_each_polygon(polygon_ids, train_mask, max_pixels_per_polygon, random_generator):
     """Cap how many pixels each polygon contributes to training.
 
     Pixels inside one polygon are near-duplicates: same object, same lighting,
@@ -222,27 +226,44 @@ def subsample_by_polygon(ids, train_mask, max_per_polygon, rng):
     small shrub one. Sampling is random within the polygon rather than taking a
     prefix, so no part of a polygon is systematically preferred.
 
-    Inputs:  ids - int32 polygon-id raster; train_mask - bool array of labelled
-             and valid pixels; max_per_polygon - int cap, or None to disable;
-             rng - a seeded numpy Generator
+    Inputs: polygon_ids - int32 polygon-id raster; train_mask - bool array of
+             labelled and usable pixels; max_pixels_per_polygon - int cap, or
+             None to disable; random_generator - a seeded numpy Generator
     Outputs: bool array, the retained subset of train_mask
     """
-    if not max_per_polygon:
+    if not max_pixels_per_polygon:
         return train_mask
     kept = np.zeros_like(train_mask)
-    flat_ids = ids[train_mask]
-    positions = np.flatnonzero(train_mask)
-    for polygon_id in np.unique(flat_ids):
+    polygon_id_per_labelled_pixel = polygon_ids[train_mask]
+    flat_positions = np.flatnonzero(train_mask)
+    for polygon_id in np.unique(polygon_id_per_labelled_pixel):
         if polygon_id == 0:
             continue
-        member = positions[flat_ids == polygon_id]
-        if len(member) > max_per_polygon:
-            member = rng.choice(member, size=max_per_polygon, replace=False)
-        kept.ravel()[member] = True
+        pixels_in_polygon = flat_positions[polygon_id_per_labelled_pixel == polygon_id]
+        if len(pixels_in_polygon) > max_pixels_per_polygon:
+            pixels_in_polygon = random_generator.choice(pixels_in_polygon, size=max_pixels_per_polygon, replace=False)
+        kept.ravel()[pixels_in_polygon] = True
     return kept
 
 
-def load_tile(feature_dir, label_dir, shadow_dir, site, tile, year, indices, max_per_polygon, rng):
+class TileData(NamedTuple):
+    """Everything one tile contributes, named so call sites read as English.
+
+    A plain tuple here meant call sites indexed it positionally - `cache[t][0]`
+    for the features and `cache[t][1]` for the labels, which said nothing about
+    what is being fetched and silently returns the wrong array if the return
+    order ever changes.
+    """
+
+    training_features: np.ndarray  # [n_labelled_pixels, n_framework_bands] float32
+    training_labels: np.ndarray  # [n_labelled_pixels] uint8, class codes 0-3
+    framework_stack: np.ndarray  # [n_framework_bands, rows, cols] float32, whole tile
+    pixel_is_usable: np.ndarray  # [rows, cols] bool - all bands finite AND not shadow
+    profile: dict  # rasterio profile, for writing outputs on the same grid
+    label_raster: np.ndarray  # [rows, cols] uint8, NODATA where unlabelled
+
+
+def load_tile_data(feature_dir, label_dir, shadow_dir, site, tile, year, band_columns, max_pixels_per_polygon, random_generator):
     """Feature matrix, label vector, and geometry for one tile.
 
     VALIDITY IS COMPUTED OVER THE FULL BAND STACK, not over the framework's
@@ -253,42 +274,60 @@ def load_tile(feature_dir, label_dir, shadow_dir, site, tile, year, indices, max
     pixels rather than because its features were better. Masking on the full
     stack makes every framework see exactly the same pixels by construction.
 
-    Shadow pixels are dropped from training: section 5 Step 1c resolves shadow
-    to tree or to nodata, so a shadowed pixel carries no reliable class.
+    ALL SHADOW PIXELS ARE DROPPED - both mask codes, deliberately. Reading the
+    mask with .astype(bool) makes SHADOW_IS_TREE and SHADOW_IS_NODATA alike
+    True, and that is the intended behaviour, not an accident of the cast:
+    section 5 Step 1c (resolved 2026-08-18) never assigns shadow to a class.
+    The goal is an accurate map over the majority of pixels, not a label for
+    every pixel - a shadowed pixel was not observed well enough to classify,
+    and inventing a class for it trades a known gap for an unknown error.
 
-    Inputs:  feature_dir, label_dir, shadow_dir - Paths; site, tile, year; indices -
-             feature band column indices for the framework
-    Outputs: (X float32 [n, k], y uint8 [n], stack float32 [k, rows, cols],
-              valid bool [rows, cols], profile, label raster uint8)
+    An earlier version of the spec assigned canopy-adjacent shadow to tree.
+    That would have handed tree up to 3% of every tile on a geometric argument
+    rather than a spectral one, in a class already biased +4.5% by area.
+
+    Inputs: feature_dir, label_dir, shadow_dir - Paths; site, tile, year;
+             band_columns - band column indices for this framework;
+             max_pixels_per_polygon - int cap or None; random_generator - seeded
+             numpy Generator
+    Outputs: TileData - see that class for what each field holds
     """
     with rasterio.open(feature_dir / f"features_{site}_{tile}_{year}.tif") as ds:
-        full = ds.read().astype("float32")
+        all_band_stack = ds.read().astype("float32")
         profile, transform, shape = ds.profile, ds.transform, (ds.height, ds.width)
 
-    finite = np.all(np.isfinite(full), axis=0)
-    stack = full[indices]
+    pixel_is_usable = np.all(np.isfinite(all_band_stack), axis=0)
+    framework_stack = all_band_stack[band_columns]
 
     shadow_path = shadow_dir / f"shadow_mask_ref_{site}_{tile}_{year}.tif"
     if shadow_path.exists():
         with rasterio.open(shadow_path) as ds:
-            shadow = ds.read(1).astype(bool)
-        finite &= ~shadow
+            # Both codes at once, deliberately - see the docstring. Shadow is
+            # never assigned to a class, so SHADOW_IS_TREE and SHADOW_IS_NODATA
+            # are treated identically here.
+            pixel_is_shadow = ds.read(1).astype(bool)
+        pixel_is_usable &= ~pixel_is_shadow
 
-    labels = read_labels(label_dir, site, tile, year)
-    if labels is not None:
-        label_raster, polygon_ids = rasterize_labels(labels, shape, transform)
+    label_polygons = read_label_polygons(label_dir, site, tile, year)
+    if label_polygons is not None:
+        label_raster, polygon_ids = rasterize_label_polygons(label_polygons, shape, transform)
     else:
         label_raster = np.full(shape, NODATA, dtype="uint8")
         polygon_ids = np.zeros(shape, dtype="int32")
 
-    train_mask = (label_raster != NODATA) & finite
-    train_mask = subsample_by_polygon(polygon_ids, train_mask, max_per_polygon, rng)
-    X = stack[:, train_mask].T
-    y = label_raster[train_mask]
-    return X, y, stack, finite, profile, label_raster
+    train_mask = (label_raster != NODATA) & pixel_is_usable
+    train_mask = subsample_pixels_within_each_polygon(polygon_ids, train_mask, max_pixels_per_polygon, random_generator)
+    return TileData(
+        training_features=framework_stack[:, train_mask].T,
+        training_labels=label_raster[train_mask],
+        framework_stack=framework_stack,
+        pixel_is_usable=pixel_is_usable,
+        profile=profile,
+        label_raster=label_raster,
+    )
 
 
-def fit_random_forest_A_models(X, y, seed):
+def fit_random_forest(training_features, training_labels, seed):
     """Fit RF-A on per-pixel samples.
 
     class_weight is balanced because the classes are severely unequal in pixels
@@ -297,7 +336,8 @@ def fit_random_forest_A_models(X, y, seed):
     pixels while bare is ~55%. Without weighting the forest simply under-calls
     shrub, which is the class the project most needs.
 
-    Inputs:  X - [n, k] features; y - [n] class codes; seed - int
+    Inputs: training_features - [n_pixels, n_bands]; training_labels -
+             [n_pixels] class codes; seed - int
     Outputs: fitted RandomForestClassifier
     """
     model = RandomForestClassifier(
@@ -307,120 +347,119 @@ def fit_random_forest_A_models(X, y, seed):
         n_jobs=-1,
         random_state=seed,
     )
-    model.fit(X, y)
+    model.fit(training_features, training_labels)
     return model
 
 
-def per_class_scores(y_true, y_pred):
+def per_class_scores(true_labels, predicted_labels):
     """Per-class recall, precision and F1, plus macro-F1 and overall accuracy.
 
     Per class rather than pooled: overall accuracy at SRER is dominated by bare
     and grass and barely moves on shrub, the class that carries the scientific
     difficulty (instructions5.md section 6.4).
 
-    Inputs:  y_true, y_pred - arrays of class codes
+    Inputs: true_labels, predicted_labels - arrays of class codes
     Outputs: (dict of {class_code: {recall, precision, f1, support}},
-              macro_f1 float, overall float)
+              macro_f1 float, overall_accuracy float)
     """
-    scores, f1s = {}, []
-    for code in CLASS_LABELS:
-        true_c = y_true == code
-        pred_c = y_pred == code
-        support = int(true_c.sum())
-        tp = int((true_c & pred_c).sum())
-        recall = tp / support if support else float("nan")
-        precision = tp / int(pred_c.sum()) if pred_c.sum() else float("nan")
+    scores, f1_per_present_class = {}, []
+    for class_code in CLASS_LABELS:
+        is_truly_class = true_labels == class_code
+        is_predicted_class = predicted_labels == class_code
+        support = int(is_truly_class.sum())
+        true_positives = int((is_truly_class & is_predicted_class).sum())
+        recall = true_positives / support if support else float("nan")
+        precision = true_positives / int(is_predicted_class.sum()) if is_predicted_class.sum() else float("nan")
         f1 = (2 * precision * recall / (precision + recall)) if (precision > 0 and recall > 0) else 0.0
-        scores[code] = {
+        scores[class_code] = {
             "recall": recall,
             "precision": precision,
             "f1": f1,
             "support": support,
         }
         if support:
-            f1s.append(f1)
-    overall = float((y_true == y_pred).mean()) if len(y_true) else float("nan")
-    return scores, float(np.mean(f1s)) if f1s else float("nan"), overall
+            f1_per_present_class.append(f1)
+    overall_accuracy = float((true_labels == predicted_labels).mean()) if len(true_labels) else float("nan")
+    return scores, float(np.mean(f1_per_present_class)) if f1_per_present_class else float("nan"), overall_accuracy
 
 
-def print_scores(title, scores, macro_f1, overall):
+def print_per_class_scores(title, scores, macro_f1, overall_accuracy):
     """Print a per-class score block.
 
-    Inputs:  title - str; scores - dict from per_class_scores; macro_f1,
-             overall - floats
+    Inputs: title - str; scores - dict from per_class_scores; macro_f1,
+             overall_accuracy - floats
     Outputs: None
     """
     print(f"\n{title}")
     print(f"{'class':<8}{'support':>9}{'recall':>9}{'precision':>11}{'f1':>8}")
-    for code, label in CLASS_LABELS.items():
-        s = scores[code]
-        if not s["support"]:
-            print(f"{label:<8}{0:>9}{'-':>9}{'-':>11}{'-':>8}")
+    for class_code, class_name in CLASS_LABELS.items():
+        score = scores[class_code]
+        if not score["support"]:
+            print(f"{class_name:<8}{0:>9}{'-':>9}{'-':>11}{'-':>8}")
             continue
-        print(f"{label:<8}{s['support']:>9}{s['recall']:>9.3f}{s['precision']:>11.3f}{s['f1']:>8.3f}")
-    print(f"macro-F1 {macro_f1:.3f}   overall {overall:.3f}  (overall is dominated by bare and grass - judge on per-class)")
+        print(f"{class_name:<8}{score['support']:>9}{score['recall']:>9.3f}{score['precision']:>11.3f}{score['f1']:>8.3f}")
+    print(f"macro-F1 {macro_f1:.3f} overall {overall_accuracy:.3f} (overall is dominated by bare and grass - judge on per-class)")
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("config", type=Path)
-    ap.add_argument(
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("config", type=Path)
+    parser.add_argument(
         "--run",
-        type=run_label,
+        type=validated_run_label,
         default="1",
         help="run label - a number, optionally suffixed (e.g. 3 or 3_smoke). Every output lands under run{LABEL}/ so baselines stay comparable",
     )
-    ap.add_argument(
+    parser.add_argument(
         "--frameworks",
         nargs="+",
         default=["A", "B", "C", "D"],
         help="which frameworks to run",
     )
-    ap.add_argument(
+    parser.add_argument(
         "--max-pixels-per-polygon",
         type=int,
         default=None,
         help="cap pixels contributed by one polygon; overrides the config value; 0 disables",
     )
-    ap.add_argument(
+    parser.add_argument(
         "--no-predict",
         action="store_true",
         help="cross-validate only, skip full-tile prediction",
     )
-    ap.add_argument(
+    parser.add_argument(
         "--force",
         action="store_true",
         help="overwrite a run directory that already holds a report - THIS DESTROYS A FROZEN BASELINE",
     )
-    args = ap.parse_args()
+    args = parser.parse_args()
 
     config = json.loads(args.config.read_text())
     site, year = config["site"], config["year"]
     seed = config["BASE_SEED"] + year
-    results = resolve_config_path(config["results_root"])
-    feature_dir = results / "stage1_data_and_features" / "features"
-    segments_dir = results / "stage1_data_and_features" / "segments"
-    shadow_dir = results / "stage1_data_and_features" / "shadow"
-    label_dir = results / "stage2_labeling"
+    results_root = resolve_config_path(config["results_root"])
+    feature_dir = results_root / "stage1_data_and_features" / "features"
+    shadow_dir = results_root / "stage1_data_and_features" / "shadow"
+    label_dir = results_root / "stage2_labeling"
 
-    # run directory: step 1d outputs are run-scoped, features/segments/shadow are not
-    run_dir = results / "stage3_classification" / f"run{args.run}"
+    # run directory: step 1d outputs are run-scoped, features and shadow are not
+    run_dir = results_root / "stage3_classification" / f"run{args.run}"
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    settings = config.get("stage3_1_classification", {})
-    max_per_polygon = args.max_pixels_per_polygon if args.max_pixels_per_polygon is not None else settings.get("max_pixels_per_polygon")
-    max_per_polygon = max_per_polygon or None
+    classification_settings = config.get("stage3_1_classification", {})
+    max_pixels_per_polygon = args.max_pixels_per_polygon if args.max_pixels_per_polygon is not None else classification_settings.get("max_pixels_per_polygon")
+    max_pixels_per_polygon = max_pixels_per_polygon or None
 
-    manifest = json.loads((feature_dir / f"features_{site}_{year}_bands.json").read_text())
-    band_order, bands_meta = manifest["band_order"], manifest["bands"]
+    band_spec = json.loads((feature_dir / f"features_{site}_{year}_bands.json").read_text())
+    band_order, band_metadata = band_spec["band_order"], band_spec["bands"]
 
-    train_tiles = [t for t, role in config["tiles"].items() if role == "train"]
-    test_tiles = [t for t, role in config["tiles"].items() if role == "test"]
+    train_tiles = [tile for tile, role in config["tiles"].items() if role == "train"]
+    test_tiles = [tile for tile, role in config["tiles"].items() if role == "test"]
 
     print(f"Step 1d - RF-A per-pixel classification - {site} {year}")
-    print("=" * 74)
-    print(f"run {args.run}   seed {seed}   train tiles {len(train_tiles)}   test tiles {len(test_tiles)}")
-    print(f"polygon subsampling: {('max ' + str(max_per_polygon) + ' px per polygon') if max_per_polygon else 'OFF - every polygon contributes all its pixels'}")
+    print("=" * SEVENTY)
+    print(f"run {args.run} seed {seed} train tiles {len(train_tiles)} test tiles {len(test_tiles)}")
+    print(f"polygon subsampling: {('max ' + str(max_pixels_per_polygon) + ' px per polygon') if max_pixels_per_polygon else 'OFF - every polygon contributes all its pixels'}")
     print("DIAGNOSTIC ONLY - cross-validation over training polygons is not map accuracy.")
     print("Step 6 accuracy needs the Olofsson protocol on an independent sample (section 6).")
 
@@ -429,26 +468,37 @@ def main():
     # A and B, and the comparison figure could only ever show whatever was in
     # the last command. Matches the append-a-named-section convention in
     # instructions1.md section 5.
-    # named report_path, not out: the prediction loop below binds `out` to the
-    # classification array, which would shadow this and turn the final write into
-    # ndarray.write_text
+    # named report_path, never `out`. An earlier version bound `out` to the
+    # report path here and rebound it to the classification array in the
+    # prediction loop below, so the final write became ndarray.write_text.
     report_path = run_dir / f"stage3_1_report_{site}_{year}.json"
 
-    # a completed run is a frozen baseline. Re-running it would silently rewrite
-    # the numbers a later run is being compared against, and labels drift
-    # continuously while labelling is in progress - so the rewrite would not even
+    # A completed framework is a frozen baseline. Re-running it would silently
+    # rewrite numbers a later run is compared against, and labels drift
+    # continuously while labelling is in progress, so the rewrite would not even
     # reproduce the original. Refuse, and say which run to use instead.
+    #
+    # THE GUARD IS PER FRAMEWORK, NOT PER RUN. Running A today and B C D
+    # tomorrow is the normal way a run gets built - frameworks are expensive and
+    # are often added one at a time - and the report is explicitly designed to
+    # accumulate them. An earlier version refused whenever the report FILE
+    # existed, which blocked exactly that workflow and made the carry-forward
+    # logic below unreachable: it could only ever run when there was nothing to
+    # carry forward. Only an actual overwrite of an existing framework is
+    # refused.
     if report_path.exists() and not args.force:
-        existing = json.loads(report_path.read_text())
-        done = ", ".join(sorted(existing.get("frameworks", {})))
-        print(f"run {args.run} already exists at {report_path}")
-        print(f"  it holds framework(s): {done}")
-        print("refusing to overwrite a completed run - use a different --run label for new work, or --force to overwrite deliberately")
-        return
+        existing_report = json.loads(report_path.read_text())
+        already_written = set(existing_report.get("frameworks", {}))
+        would_overwrite = sorted(already_written & set(args.frameworks))
+        if would_overwrite:
+            print(f"run {args.run} already holds framework(s): {', '.join(sorted(already_written))}")
+            print(f"this command would overwrite: {', '.join(would_overwrite)}")
+            print("refusing to overwrite a completed framework - use a different --run label for new work, or --force to overwrite deliberately")
+            return
         # per-run provenance, carried in the config so it is recorded automatically
         # rather than depending on someone remembering. A run that changes several
         # things at once is only interpretable if that is written down at the time.
-    run_note = settings.get("run_notes", {}).get(str(args.run))
+    run_note = classification_settings.get("run_notes", {}).get(str(args.run))
     if run_note:
         print(f"\nrun {args.run} note: {run_note}\n")
     else:
@@ -460,7 +510,7 @@ def main():
         "year": year,
         "seed": seed,
         "training": "per-pixel",
-        "max_pixels_per_polygon": max_per_polygon,
+        "max_pixels_per_polygon": max_pixels_per_polygon,
         "validation": "leave-one-tile-out over train",
         "note": "diagnostic, not a Step 6 accuracy assessment",
         "run_note": run_note,
@@ -469,138 +519,141 @@ def main():
     }
     if report_path.exists():
         try:
-            previous = json.loads(report_path.read_text())
-            report["frameworks"] = previous.get("frameworks", {})
-            kept = [k for k in sorted(report["frameworks"]) if k not in args.frameworks]
-            if kept:
-                print(f"carrying forward earlier results for framework(s): {', '.join(kept)}")
+            previous_report = json.loads(report_path.read_text())
+            report["frameworks"] = previous_report.get("frameworks", {})
+            carried_forward = [name for name in sorted(report["frameworks"]) if name not in args.frameworks]
+            if carried_forward:
+                print(f"carrying forward earlier results for framework(s): {', '.join(carried_forward)}")
         except Exception as exc:
             print(f"warning: could not read the existing report, starting fresh: {exc}")
 
     for framework in args.frameworks:
-        indices, names = framework_band_indices(band_order, bands_meta, framework)
-        print(f"\n{'=' * 74}\nframework {framework} - {len(names)} features: {', '.join(names)}")
+        band_columns, band_names = framework_band_columns(band_order, band_metadata, framework)
+        print(f"\n{'=' * 74}\nframework {framework} - {len(band_names)} features: {', '.join(band_names)}")
 
-        cache = {}
+        tile_cache = {}
         for tile in train_tiles + test_tiles:
             # one generator per tile per framework, seeded identically, so every
             # framework subsamples the SAME pixels and the section 4.1
             # deconfounding survives subsampling
-            cache[tile] = load_tile(
+            tile_cache[tile] = load_tile_data(
                 feature_dir,
                 label_dir,
                 shadow_dir,
                 site,
                 tile,
                 year,
-                indices,
-                max_per_polygon,
+                band_columns,
+                max_pixels_per_polygon,
                 np.random.default_rng(seed),
             )
 
-        counts = Counter()
+        train_pixels_per_class = Counter()
         for tile in train_tiles:
-            counts.update(cache[tile][1].tolist())
-        print("train pixels per class: " + ", ".join(f"{CLASS_LABELS[c]} {counts.get(c, 0)}" for c in CLASS_LABELS))
-        if min(counts.get(c, 0) for c in CLASS_LABELS) == 0:
+            train_pixels_per_class.update(tile_cache[tile].training_labels.tolist())
+        print("train pixels per class: " + ", ".join(f"{name} {train_pixels_per_class.get(code, 0)}" for code, name in CLASS_LABELS.items()))
+        if min(train_pixels_per_class.get(code, 0) for code in CLASS_LABELS) == 0:
             print("skipping: a class has no training pixels in the train block")
             continue
 
-            # ---------------------------------------------------------- leave one tile out
+        # ---------------------------------------------------------- leave one tile out
         folds = []
-        y_all, p_all = [], []
-        for held in train_tiles:
-            fit_tiles = [t for t in train_tiles if t != held]
-            X = np.vstack([cache[t][0] for t in fit_tiles])
-            y = np.concatenate([cache[t][1] for t in fit_tiles])
-            Xh, yh = cache[held][0], cache[held][1]
-            if not len(yh) or len(np.unique(y)) < 2:
+        pooled_true_labels, pooled_predicted_labels = [], []
+        for held_out_tile in train_tiles:
+            fit_tiles = [tile for tile in train_tiles if tile != held_out_tile]
+            fit_features = np.vstack([tile_cache[tile].training_features for tile in fit_tiles])
+            fit_labels = np.concatenate([tile_cache[tile].training_labels for tile in fit_tiles])
+            held_out_features = tile_cache[held_out_tile].training_features
+            held_out_labels = tile_cache[held_out_tile].training_labels
+            if not len(held_out_labels) or len(np.unique(fit_labels)) < 2:
                 continue
-            model = fit_random_forest_A_models(X, y, seed)
-            pred = model.predict(Xh)
-            scores, macro, overall = per_class_scores(yh, pred)
-            print_scores(f"held-out tile {held}  ({len(yh)} labelled px)", scores, macro, overall)
+            model = fit_random_forest(fit_features, fit_labels, seed)
+            predicted_labels = model.predict(held_out_features)
+            scores, macro, overall = per_class_scores(held_out_labels, predicted_labels)
+            print_per_class_scores(f"held-out tile {held_out_tile} ({len(held_out_labels)} labelled px)", scores, macro, overall)
             folds.append(
                 {
-                    "held_out": held,
-                    "n": int(len(yh)),
+                    "held_out": held_out_tile,
+                    "n": int(len(held_out_labels)),
                     "macro_f1": macro,
                     "overall": overall,
-                    "per_class": {CLASS_LABELS[c]: scores[c] for c in CLASS_LABELS},
+                    "per_class": {name: scores[code] for code, name in CLASS_LABELS.items()},
                 }
             )
-            y_all.append(yh)
-            p_all.append(pred)
+            pooled_true_labels.append(held_out_labels)
+            pooled_predicted_labels.append(predicted_labels)
 
-        if y_all:
-            y_all, p_all = np.concatenate(y_all), np.concatenate(p_all)
-            scores, macro, overall = per_class_scores(y_all, p_all)
-            print_scores(f"POOLED across {len(folds)} folds", scores, macro, overall)
-            cm = confusion_matrix(y_all, p_all, labels=list(CLASS_LABELS))
+        if pooled_true_labels:
+            pooled_true_labels = np.concatenate(pooled_true_labels)
+            pooled_predicted_labels = np.concatenate(pooled_predicted_labels)
+            scores, macro, overall = per_class_scores(pooled_true_labels, pooled_predicted_labels)
+            print_per_class_scores(f"POOLED across {len(folds)} folds", scores, macro, overall)
+            confusion = confusion_matrix(pooled_true_labels, pooled_predicted_labels, labels=list(CLASS_LABELS))
             print("\nconfusion (rows true, cols predicted)")
-            print(f"{'':<8}" + "".join(f"{CLASS_LABELS[c]:>8}" for c in CLASS_LABELS))
-            for i, code in enumerate(CLASS_LABELS):
-                print(f"{CLASS_LABELS[code]:<8}" + "".join(f"{cm[i, j]:>8}" for j in range(len(CLASS_LABELS))))
+            print(f"{'':<8}" + "".join(f"{name:>8}" for name in CLASS_LABELS.values()))
+            for true_row, class_code in enumerate(CLASS_LABELS):
+                print(f"{CLASS_LABELS[class_code]:<8}" + "".join(f"{confusion[true_row, predicted_column]:>8}" for predicted_column in range(len(CLASS_LABELS))))
             report["frameworks"][framework] = {
-                "features": names,
-                "train_pixels_per_class": {CLASS_LABELS[c]: int(counts.get(c, 0)) for c in CLASS_LABELS},
+                "features": band_names,
+                "train_pixels_per_class": {name: int(train_pixels_per_class.get(code, 0)) for code, name in CLASS_LABELS.items()},
                 "folds": folds,
                 "pooled": {
                     "macro_f1": macro,
                     "overall": overall,
-                    "per_class": {CLASS_LABELS[c]: scores[c] for c in CLASS_LABELS},
+                    "per_class": {name: scores[code] for code, name in CLASS_LABELS.items()},
                 },
-                "confusion": cm.tolist(),
+                "confusion": confusion.tolist(),
             }
 
         if args.no_predict:
             continue
 
-            # ------------------------------------------------------------- full prediction
-        X = np.vstack([cache[t][0] for t in train_tiles])
-        y = np.concatenate([cache[t][1] for t in train_tiles])
-        model = fit_random_forest_A_models(X, y, seed)
-        importance = sorted(zip(names, model.feature_importances_), key=lambda kv: -kv[1])
-        print("\ntop features: " + ", ".join(f"{n} {v:.3f}" for n, v in importance[:8]))
-        report["frameworks"].setdefault(framework, {})["feature_importance"] = {n: float(v) for n, v in importance}
+        # ------------------------------------------------------------- full prediction
+        fit_features = np.vstack([tile_cache[tile].training_features for tile in train_tiles])
+        fit_labels = np.concatenate([tile_cache[tile].training_labels for tile in train_tiles])
+        model = fit_random_forest(fit_features, fit_labels, seed)
+        feature_importance = sorted(zip(band_names, model.feature_importances_), key=lambda pair: -pair[1])
+        print("\ntop features: " + ", ".join(f"{band} {weight:.3f}" for band, weight in feature_importance[:8]))
+        report["frameworks"].setdefault(framework, {})["feature_importance"] = {band: float(weight) for band, weight in feature_importance}
 
         out_dir = run_dir / framework
         out_dir.mkdir(parents=True, exist_ok=True)
         for tile in train_tiles + test_tiles:
-            _, _, stack, valid, profile, _ = cache[tile]
-            k, rows, cols = stack.shape
-            flat = stack.reshape(k, -1).T
-            out = np.full(rows * cols, NODATA, dtype="uint8")
-            good = valid.reshape(-1)
-            if good.any():
-                out[good] = model.predict(flat[good]).astype("uint8")
-                proba = model.predict_proba(flat[good]).astype("float32")
-            out = out.reshape(rows, cols)
+            tile_data = tile_cache[tile]
+            framework_stack, profile = tile_data.framework_stack, tile_data.profile
+            n_bands, rows, cols = framework_stack.shape
+            pixel_rows = framework_stack.reshape(n_bands, -1).T
+            predicted_classes = np.full(rows * cols, NODATA, dtype="uint8")
+            usable = tile_data.pixel_is_usable.reshape(-1)
+            if usable.any():
+                predicted_classes[usable] = model.predict(pixel_rows[usable]).astype("uint8")
+                class_probabilities = model.predict_proba(pixel_rows[usable]).astype("float32")
+            predicted_classes = predicted_classes.reshape(rows, cols)
 
             profile.update(count=1, dtype="uint8", nodata=NODATA, compress="deflate")
             path = out_dir / f"classification_{framework}_{site}_{tile}_{year}.tif"
             with rasterio.open(path, "w", **profile) as ds:
-                ds.write(out, 1)
-                # colour table travels inside the file, so QGIS and GDAL both render
+                ds.write(predicted_classes, 1)
+                # color table travels inside the file, so QGIS and GDAL both render
                 # the locked section 3 palette with no sidecar (section 12 Q10)
-                ds.write_colormap(1, {code: hex_to_rgb(CLASS_COLORS[code]) for code in CLASS_LABELS})
+                ds.write_colormap(1, {code: hex_color_to_rgba(CLASS_COLORS[code]) for code in CLASS_LABELS})
 
                 # NaN, not zero, outside the valid mask. predict_proba always sums
                 # to 1 for a classified pixel, so an all-zero pixel could only ever
                 # be masked - but written as 0 it reads as a legitimate probability
                 # of zero and renders opaque. NaN matches the declared nodata and
                 # renders transparent.
-            prob = np.full((len(CLASS_LABELS), rows * cols), np.nan, dtype="float32")
-            for i, code in enumerate(model.classes_):
-                prob[int(code)][good] = proba[:, i]
-            pprofile = dict(profile)
-            pprofile.update(count=len(CLASS_LABELS), dtype="float32", nodata=np.nan)
+            probability_bands = np.full((len(CLASS_LABELS), rows * cols), np.nan, dtype="float32")
+            for column, code in enumerate(model.classes_):
+                probability_bands[int(code)][usable] = class_probabilities[:, column]
+            probability_profile = dict(profile)
+            probability_profile.update(count=len(CLASS_LABELS), dtype="float32", nodata=np.nan)
             with rasterio.open(
                 out_dir / f"class_probability_{framework}_{site}_{tile}_{year}.tif",
                 "w",
-                **pprofile,
+                **probability_profile,
             ) as ds:
-                ds.write(prob.reshape(len(CLASS_LABELS), rows, cols))
+                ds.write(probability_bands.reshape(len(CLASS_LABELS), rows, cols))
                 for code, name in CLASS_LABELS.items():
                     ds.set_band_description(code + 1, f"p_{name}")
 
@@ -608,33 +661,33 @@ def main():
                     # The hard label is argmax regardless of how weak the winner is - by
                     # design - so the strength of that call has to be carried separately
                     # or it is lost.
-            quality = np.full(rows * cols, np.nan, dtype="float32")
+            prediction_quality = np.full(rows * cols, np.nan, dtype="float32")
             margin = np.full(rows * cols, np.nan, dtype="float32")
-            if good.any():
-                safe = np.clip(proba, 1e-12, 1.0)
-                entropy = -(safe * np.log(safe)).sum(axis=1)
-                quality[good] = 1.0 - entropy / np.log(len(CLASS_LABELS))
-                ordered = np.sort(proba, axis=1)
-                margin[good] = ordered[:, -1] - ordered[:, -2]
-            qprofile = dict(profile)
-            qprofile.update(count=1, dtype="float32", nodata=np.nan)
+            if usable.any():
+                clipped_probabilities = np.clip(class_probabilities, 1e-12, 1.0)
+                entropy = -(clipped_probabilities * np.log(clipped_probabilities)).sum(axis=1)
+                prediction_quality[usable] = 1.0 - entropy / np.log(len(CLASS_LABELS))
+                sorted_probabilities = np.sort(class_probabilities, axis=1)
+                margin[usable] = sorted_probabilities[:, -1] - sorted_probabilities[:, -2]
+            single_band_profile = dict(profile)
+            single_band_profile.update(count=1, dtype="float32", nodata=np.nan)
             with rasterio.open(
                 out_dir / f"prediction_quality_{framework}_{site}_{tile}_{year}.tif",
                 "w",
-                **qprofile,
+                **single_band_profile,
             ) as ds:
-                ds.write(quality.reshape(rows, cols), 1)
+                ds.write(prediction_quality.reshape(rows, cols), 1)
             with rasterio.open(
                 out_dir / f"margin_{framework}_{site}_{tile}_{year}.tif",
                 "w",
-                **qprofile,
+                **single_band_profile,
             ) as ds:
                 ds.write(margin.reshape(rows, cols), 1)
 
-            share = {CLASS_LABELS[c]: float((out == c).mean()) for c in CLASS_LABELS}
-            masked = float((out == NODATA).mean())
-            median_quality = float(np.nanmedian(quality)) if good.any() else float("nan")
-            print(f"[{tile}] " + " ".join(f"{k2} {v:.1%}" for k2, v in share.items()) + f"   masked {masked:.1%}   median quality {median_quality:.2f}")
+            share = {CLASS_LABELS[code]: float((predicted_classes == code).mean()) for code in CLASS_LABELS}
+            masked = float((predicted_classes == NODATA).mean())
+            median_quality = float(np.nanmedian(prediction_quality)) if usable.any() else float("nan")
+            print(f"[{tile}] " + " ".join(f"{name} {fraction:.1%}" for name, fraction in share.items()) + f" masked {masked:.1%} median quality {median_quality:.2f}")
 
     report_path.write_text(json.dumps(report, indent=2, default=float) + "\n")
     print(f"\nwrote {report_path}")

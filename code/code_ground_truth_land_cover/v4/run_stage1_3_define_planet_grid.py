@@ -16,29 +16,29 @@ is still pending generation and Step 5 is gated on it, but Steps 3 and 4 are not
 
 WHAT THIS SCRIPT DECIDES, once, for every later step to read:
 
-    planet_pixel_m     PlanetScope cell size, measured from the coordinate array
-    N                  planet_pixel_m / analysis_grid_m, required to be an integer
-    origin             the grid's cell-EDGE origin in native UTM
-    epsg               derived from the netCDF crs variable, cross-checked
+    planet_pixel_m PlanetScope cell size, measured from the coordinate array
+    N planet_pixel_m / analysis_grid_m, required to be an integer
+    origin the grid's cell-EDGE origin in native UTM
+    epsg derived from the netCDF crs variable, cross-checked
                        against config `expected_crs`
 
 WHAT IT CHECKS, and why each one can ruin the pipeline silently:
 
-    uniform spacing    a non-uniform coordinate array is not a grid at all, and
+    uniform spacing a non-uniform coordinate array is not a grid at all, and
                        every block would be a different size on the ground
-    square pixels      N is one number; non-square pixels need two
-    integer N          a fractional N means 1 m cells straddle Planet cell
+    square pixels N is one number; non-square pixels need two
+    integer N a fractional N means 1 m cells straddle Planet cell
                        boundaries everywhere, and no aggregation is well defined
-    integer edges      cell edges must land on whole metres or the 1 m analysis
+    integer edges cell edges must land on whole metres or the 1 m analysis
                        grid cannot be nested inside them without a remainder
-    tile congruence    per tile, the offset of the NEON tile origin modulo
+    tile congruence per tile, the offset of the NEON tile origin modulo
                        planet_pixel_m. A non-zero offset does NOT break nesting -
                        the 1 m grid still nests globally - but it means the tile
                        boundary cuts THROUGH Planet cells, so N x N blocks at the
                        tile edge draw pixels from two tiles. Aggregation that
                        runs per tile in isolation produces partial blocks there
                        and must either mosaic first or carry a halo.
-    footprint overlap  a NEON tile can lie partly outside the LSP footprint, in
+    footprint overlap a NEON tile can lie partly outside the LSP footprint, in
                        which case part of its ground truth has no Planet pixel to
                        aggregate into and cannot enter Steps 3-6 at all
 
@@ -51,9 +51,9 @@ loss is visible rather than implied.
 
 OUTPUTS -> `stage1_data_and_features/qa/`:
 
-    planet_grid_{SITE}_{YEAR}.json   machine-readable: parameters and checks
-    planet_grid_{SITE}_{YEAR}.gpkg   the QGIS verification layers, below
-    planet_{VAR}_{SITE}_{YEAR}.tif   one real LSP layer on the measured grid,
+    planet_grid_{SITE}_{YEAR}.json machine-readable: parameters and checks
+    planet_grid_{SITE}_{YEAR}.gpkg the QGIS verification layers, below
+    planet_{VAR}_{SITE}_{YEAR}.tif one real LSP layer on the measured grid,
                                      default EVIamp - see below
 
 VISUAL VERIFICATION IS PART OF THE STEP, NOT AN OPTIONAL EXTRA. instructions5.md
@@ -62,14 +62,14 @@ confirmed by eye against the NEON tiles before anything is computed. A numeric
 check confirms the arithmetic is self-consistent; it cannot confirm the grid sits
 where the imagery sits. Layers written:
 
-    planet_footprint            LSP extent, one polygon
-    tile_footprints             one polygon per configured tile, carrying the
+    planet_footprint LSP extent, one polygon
+    tile_footprints one polygon per configured tile, carrying the
                                 offsets, the congruence verdict and the overlap
                                 fraction as attributes
-    tile_footprints_cropped     the same tiles clipped to the LSP footprint -
+    tile_footprints_cropped the same tiles clipped to the LSP footprint -
                                 what actually enters Steps 3-6
-    verification_windows        the small windows the cell grids are drawn in
-    planet_cells_verification   planet_pixel_m cells inside those windows
+    verification_windows the small windows the cell grids are drawn in
+    planet_cells_verification planet_pixel_m cells inside those windows
     analysis_cells_verification analysis_grid_m cells inside those windows
 
 A REAL LSP LAYER IS EXPORTED ALONGSIDE THE GRIDS, and it is the check that
@@ -469,13 +469,13 @@ def main():
     n_factor = int(round(planet_pixel_m / analysis_grid_m)) if planet_pixel_m else None
 
     print("")
-    print(f"CRS               {grid['epsg']} (config expects {config.get('expected_crs')})")
-    print(f"planet_pixel_m    {planet_pixel_m}")
-    print(f"analysis_grid_m   {analysis_grid_m}")
-    print(f"N                 {n_factor}")
-    print(f"grid size         {grid['nx']} x {grid['ny']} Planet cells")
-    print(f"origin (edge)     {grid['x_min']}, {grid['y_max']}")
-    print(f"extent            x [{grid['x_min']}, {grid['x_max']}] y [{grid['y_min']}, {grid['y_max']}]")
+    print(f"CRS {grid['epsg']} (config expects {config.get('expected_crs')})")
+    print(f"planet_pixel_m {planet_pixel_m}")
+    print(f"analysis_grid_m {analysis_grid_m}")
+    print(f"N {n_factor}")
+    print(f"grid size {grid['nx']} x {grid['ny']} Planet cells")
+    print(f"origin (edge) {grid['x_min']}, {grid['y_max']}")
+    print(f"extent x [{grid['x_min']}, {grid['x_max']}] y [{grid['y_min']}, {grid['y_max']}]")
     print("")
     print("tile role offset_x offset_y congruent overlap")
     for row in tile_rows:

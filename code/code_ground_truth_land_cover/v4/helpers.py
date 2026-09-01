@@ -51,16 +51,28 @@ def read_rgb_at_scale(path, scale_m):
     stage 1_6, so the boundary lands in one place rather than eroding or
     dilating the hole.
 
-    Inputs:  path - RGB GeoTIFF; scale_m - target pixel size in metres
+    Inputs: path - RGB GeoTIFF; scale_m - target pixel size in metres
     Outputs: (arr float32 [3, h, w] with NaN where unflown, transform, crs, bounds)
     """
     with rasterio.open(path) as ds:
         width = int(round((ds.bounds.right - ds.bounds.left) / scale_m))
         height = int(round((ds.bounds.top - ds.bounds.bottom) / scale_m))
         unflown_native = (ds.read() == 0).all(axis=0).astype("float32")
-        arr = ds.read(out_shape=(ds.count, height, width), resampling=Resampling.average, out_dtype="float32",)
+        arr = ds.read(
+            out_shape=(ds.count, height, width),
+            resampling=Resampling.average,
+            out_dtype="float32",
+        )
         transform = from_bounds(*ds.bounds, width, height)
         unflown = np.empty((height, width), dtype="float32")
-        reproject(source=unflown_native, destination=unflown, src_transform=ds.transform, src_crs=ds.crs, dst_transform=transform, dst_crs=ds.crs, resampling=Resampling.average,)
+        reproject(
+            source=unflown_native,
+            destination=unflown,
+            src_transform=ds.transform,
+            src_crs=ds.crs,
+            dst_transform=transform,
+            dst_crs=ds.crs,
+            resampling=Resampling.average,
+        )
         arr[:, unflown > 0.5] = np.nan
         return arr, transform, ds.crs, ds.bounds

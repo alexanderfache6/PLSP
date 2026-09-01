@@ -4,9 +4,9 @@ Builds the per-tile 1 m feature stack.
 
 The order of operations is fixed by R2 and is the whole point of this step:
 
-    RGB 10 cm  ->  resample to TEXTURE_SCALE (0.6 m)
-               ->  compute chromatic coordinates, indices, texture THERE
-               ->  area-average onto the canonical 1 m analysis grid
+    RGB 10 cm -> resample to TEXTURE_SCALE (0.6 m)
+               -> compute chromatic coordinates, indices, texture THERE
+               -> area-average onto the canonical 1 m analysis grid
 
 Indices are nonlinear ratios, so computing at 0.6 m then averaging is not the
 same number as averaging then computing. 0.6 m is the finest resolution NAIP
@@ -29,7 +29,6 @@ import numpy as np
 import rasterio
 from helpers import read_rgb_at_scale, resolve_config_path
 from rasterio.enums import Resampling
-from rasterio.transform import from_bounds
 from rasterio.warp import reproject
 from scipy.ndimage import uniform_filter
 
@@ -95,7 +94,7 @@ def glcm_features(img, window, levels, offset):
     means of per-pixel-pair quantities and are exactly computable with a uniform
     filter - no per-window graycomatrix loop:
 
-        contrast    = E[(i-j)^2]
+        contrast = E[(i-j)^2]
         homogeneity = E[1/(1+(i-j)^2)]
         correlation = (E[ij] - mu_i mu_j) / (sigma_i sigma_j)
 
@@ -305,7 +304,7 @@ def main():
                 ds.write(arr.astype("float32"), i)
                 ds.set_band_description(i, name)
         valid = {n: float(np.isfinite(a).mean()) for n, a in bands.items()}
-        print(f"[{tile}] wrote {path.name}  bands={len(bands)}  edge margin={margin} m  min valid frac={min(valid.values()):.3f}")
+        print(f"[{tile}] wrote {path.name} bands={len(bands)} edge margin={margin} m min valid frac={min(valid.values()):.3f}")
 
     if band_meta:
         # section 4.1 is authoritative (resolved). Each framework adds exactly one input
