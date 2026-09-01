@@ -1,6 +1,6 @@
 # Stage 3_1 — metric definitions and how to read them
 
-Companion to `stage2_results.md`. Every quantity reported there is defined here, with what a good value looks like **in this project specifically** and the trap attached to each.
+Companion to `stage3_results.md`. Every quantity reported there is defined here, with what a good value looks like **in this project specifically** and the trap attached to each.
 
 > **All Step 1d metrics are DIAGNOSTIC.** They come from cross-validation over training polygons and describe how well the model fits labels the analyst chose. Map accuracy is a different quantity, produced only by the Olofsson area-weighted protocol on an independent probability sample (`instructions5.md` §6). §7 below sets out exactly how the two differ and why one cannot substitute for the other.
 
@@ -159,7 +159,7 @@ Random-forest **mean decrease in impurity**: how much each feature reduced node 
 ## 10. `prediction_quality` — normalized Shannon entropy
 
 ```
-prediction_quality = 1 − H(p) / log(K),   H(p) = −Σ p_c · log p_c,   K = 4
+prediction_quality = 1 − H(p) / log(K), H(p) = −Σ p_c · log p_c, K = 4
 ```
 
 Per-pixel, from the class probability vector (`instructions5.md` §3.1).
