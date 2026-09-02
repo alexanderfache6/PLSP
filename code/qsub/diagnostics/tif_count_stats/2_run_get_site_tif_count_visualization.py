@@ -530,7 +530,7 @@ def main() -> None:
 
         cleanup_per_site_files(discovered, INPUT_DIR)
     else:
-        print('monthly and yearly files were already created, delete if a new run needs to happen')
+        print('---------- NOTE monthly and yearly files were already created, delete if a new run needs to happen ----------')
     
     # create visualization
     df_monthly = pd.read_csv(monthly_path)
