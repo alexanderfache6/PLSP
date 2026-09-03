@@ -1,9 +1,9 @@
 plsp_product_id,plsp_raw_id,ameriflux_id,neon_id,is_neon,neon_domain,site_name,site_name_2,phenocam1,phenocam2,plsp_site_number,is_focus
-US-xSR_NEON_Santa_Rita_Experimental_Range,Santa_Rita_Experimental_Range_NEON,US-xSR,SRER,1,D14,Santa Rita Experimental Range NEON,,NEON.D14.SRER.DP1.00042,NEON.D14.SRER.DP1.00033,-1,1
+US-xSR_NEON_Santa_Rita_Experimental_Range,Santa_Rita_Experimental_Range_NEON,US-xSR,SRER,1,D14,Santa Rita Experimental Range NEON,,NEON.D14.SRER.DP1.00042,NEON.D14.SRER.DP1.00033,75,1
 US-Wkg_Walnut_Gulch_Kendall_Grasslands,Walnut_Gulch_Kendall_Grasslands,US-Wkg,,0,D14,Walnut Gulch Kendall Grasslands,,kendall,,103,1
-US-xNQ_NEON_Onaqui-Ault,Onaqui_NEON,US-xNQ,ONAQ,1,D15,Onaqui NEON,,NEON.D15.ONAQ.DP1.00042,NEON.D15.ONAQ.DP1.00033,-1,1
-US-Rws_Reynolds_Creek_Wyoming_big_sagebrush,Reynolds_Creek_Wyoming_big_sagebrush,US-Rws,,0,D15,Reynolds Creek Wyoming big sagebrush,,arsgreatbasinltar098,,-1,1
-US-xMB_NEON_Moab,Moab_NEON,US-xMB,MOAB,1,D13,Moab NEON,,NEON.D13.MOAB.DP1.00042,NEON.D13.MOAB.DP1.00033,-1,1
+US-xNQ_NEON_Onaqui-Ault,Onaqui_NEON,US-xNQ,ONAQ,1,D15,Onaqui NEON,,NEON.D15.ONAQ.DP1.00042,NEON.D15.ONAQ.DP1.00033,64,1
+US-Rws_Reynolds_Creek_Wyoming_big_sagebrush,Reynolds_Creek_Wyoming_big_sagebrush,US-Rws,,0,D15,Reynolds Creek Wyoming big sagebrush,,arsgreatbasinltar098,,69,1
+US-xMB_NEON_Moab,Moab_NEON,US-xMB,MOAB,1,D13,Moab NEON,,NEON.D13.MOAB.DP1.00042,NEON.D13.MOAB.DP1.00033,49,1
 US-Wjs_Willard_Juniper_Savannah,Willard_Juniper_Savannah,US-Wjs,,0,D13,Willard Juniper Savannah,,junipersavannah,,105,1
-US-xSJ_NEON_San_Joaquin_Experimental_Range,San_Joaquin_Experimental_Range_NEON,US-xSJ,SJER,1,D17,San Joaquin Experimental Range NEON,,,,-1,0
-US-Ton_Tonzi_Ranch,Tonzi_Ranch,US-Ton,,0,D17,Tonzi Ranch,,tonzi,,,0
+US-xSJ_NEON_San_Joaquin_Experimental_Range,San_Joaquin_Experimental_Range_NEON,US-xSJ,SJER,1,D17,San Joaquin Experimental Range NEON,,,,74,0
+US-Ton_Tonzi_Ranch,Tonzi_Ranch,US-Ton,,0,D17,Tonzi Ranch,,tonzi,,89,0
