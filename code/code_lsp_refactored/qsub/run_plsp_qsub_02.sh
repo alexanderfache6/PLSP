@@ -26,4 +26,4 @@ R --vanilla --args $siteNumber < $Rfile
 
 # USAGE
 # run with
-# qsub run_qsub_02.sh <siteNumber>
+# qsub run_plsp_qsub_02.sh <siteNumber>

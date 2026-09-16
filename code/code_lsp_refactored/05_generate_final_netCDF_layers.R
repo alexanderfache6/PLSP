@@ -33,7 +33,7 @@ library(geojsonR) # FROM_GeoJson()
 # print(args)
 
 # siteNumber <- as.numeric(args[4])
-siteNumber <- 75 # NOTE temp when running in RStudio
+siteNumber <- TODO # NOTE temp when running in RStudio
 print(paste("siteNumber:", siteNumber))
 
 ########################################

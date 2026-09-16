@@ -28,14 +28,14 @@ library(raster)
 library(terra)
 library(sf)
 library(rjson)
-library(geojsonR) # could not find function "FROM_GeoJson"
+library(geojsonR) # for could not find function "FROM_GeoJson"
 
 ########################################
 # args <- commandArgs()
 # print(args)
 
 # siteNumber <- as.numeric(args[4])
-siteNumber <- 75 # NOTE temp when running in RStudio
+siteNumber <- TODO # NOTE temp when running in RStudio
 print(paste("siteNumber:", siteNumber))
 
 ########################################
