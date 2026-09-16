@@ -11,17 +11,31 @@ A percentile rather than an absolute cut is required by R3: NEON RGB and NAIP
 differ in radiometry and bit depth, so a fixed DN threshold would not mean the
 same thing at the transfer site, while "darkest 20% of this site" does.
 
-Resolution rule: shadow within SHADOW_TREE_RADIUS of CHM >= H_TREE_MIN becomes
-tree; all remaining shadow is masked to nodata and excluded from training, from
-Step 3 aggregation denominators, and from accuracy assessment.
+Resolution (diagnostic only): shadow within SHADOW_TREE_RADIUS of CHM >=
+H_TREE_MIN is coded SHADOW_IS_TREE; all remaining shadow is coded
+SHADOW_IS_NODATA. DOWNSTREAM, BOTH CODES ARE EXCLUDED - run_stage3_1 reads this
+mask with .astype(bool), which casts both codes to True, so every shadow pixel
+(canopy-adjacent or not) is dropped from training, from Step 3 aggregation
+denominators, and from accuracy assessment. The tree/nodata split is not a
+class assignment; it exists only to report how much shadow sits near canopy
+versus elsewhere.
+
+Why exclude rather than assign: the goal is an accurate land-cover map over the
+majority of pixels, not a label for every pixel. Full wall-to-wall coverage is
+not required, so there is nothing to gain by guessing a shadowed pixel's class
+(e.g. "shadow near a tree is tree") - that would trade a known coverage gap for
+an unknown labeling error. An honest hole removes uncertainty; a guess adds it.
+See instructions5.md Step 1c (retired 2026-08-18) and results/stage1_results.md
+section 4.
 
 This is the REFERENCE (CHM-bearing) resolution, so it is the D/E path. Frameworks
 A-C have no CHM and must run the same proximity test against their own predicted
-tree mask, which does not exist until Step 1d.
+tree mask, which does not exist until Step 1d - that test is diagnostic only for
+them too, per the rule above.
 
 Output per tile: stage1_data_and_features/shadow/shadow_mask_ref_{SITE}_{tile}_{YEAR}.tif
     0 = not shadow
-    1 = shadow resolved to tree
+    1 = shadow resolved to tree (diagnostic only - still excluded downstream)
     2 = shadow masked to nodata
 """
 
@@ -158,7 +172,12 @@ def main():
         )
         shadow1m = fraction_shadow_06m_within_1m_cell > shadow_settings["majority_fraction"]
 
-        # resolve: shadow near a tall object is that object's own shadow
+        # resolve: shadow near a tall object is that object's own shadow.
+        # DIAGNOSTIC ONLY - run_stage3_1 excludes ALL shadow via .astype(bool)
+        # on this mask, so shadow_is_a_tree is never assigned to the tree
+        # class. It exists to report how much shadow is canopy-adjacent, not
+        # to relabel pixels; wall-to-wall coverage is not the goal, removing
+        # uncertainty is.
         chm_valid = chm.filled(0.0)
         chm_valid = np.where(chm_valid > config["thresholds"]["chm_max_valid_m"], 0.0, chm_valid)
         tall_pixels = chm_valid >= h_tree
@@ -202,7 +221,9 @@ def main():
         "shadow_tree_radius_m": radius,
         "h_tree_min_m": h_tree,
         "mask_codes": {str(code): label for code, label in SHADOW_CODE_LABELS.items()},
-        "mask_codes_note": ("ONLY code 2 (SHADOW_IS_NODATA) is a loss. Code 1 (SHADOW_IS_TREE) is shadow within SHADOW_TREE_RADIUS of CHM >= H_TREE_MIN and is assigned to the tree class - classified, not discarded. Import these from constants.py; do not hard-code the integers."),
+        "mask_codes_note": (
+            "BOTH codes are excluded downstream - run_stage3_1 reads this mask with .astype(bool), which treats code 1 and code 2 identically as shadow. Code 1 (SHADOW_IS_TREE) is shadow within SHADOW_TREE_RADIUS of CHM >= H_TREE_MIN; it is NOT assigned to the tree class, it is a diagnostic only (how much shadow sits near canopy). Full wall-to-wall coverage is not required, so shadow is dropped rather than guessed, to remove uncertainty. Import these from constants.py; do not hard-code the integers."
+        ),
         "path": "reference (CHM-based). Frameworks A-C repeat this test against their own predicted tree mask at Step 1d.",
         "tiles": summary,
     }
