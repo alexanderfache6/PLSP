@@ -244,5 +244,7 @@
     "517000_3531000",
     "516000_3528000"
   ],
-  "tiles_pending_labeling_note": "Downloaded and in the tile set, but carrying no labels yet. Stage 1_5 through 1_7 and all of stage 2 must run for these before stage 3 is re-run. NOTE that stage 1_6 pools its luma threshold across all tiles, so adding these two shifts the site-wide 20th percentile and re-cuts shadow on every tile - the same confound recorded in stage3_1_classification.run_notes for run 3_smoke. Stage 2_1 also refits k-means across all tiles and renumbers clusters. Clear this list once labelling passes the gate in run_stage2_4_check_hand_labeling_progress.py."
+  "tiles_pending_labeling_note": "Downloaded and in the tile set, but carrying no labels yet. Stage 1_5 through 1_7 and all of stage 2 must run for these before stage 3 is re-run. NOTE that stage 1_6 pools its luma threshold across all tiles, so adding these two shifts the site-wide 20th percentile and re-cuts shadow on every tile - the same confound recorded in stage3_1_classification.run_notes for run 3_smoke. Stage 2_1 also refits k-means across all tiles and renumbers clusters. Clear this list once labelling passes the gate in run_stage2_4_check_hand_labeling_progress.py.",
+  "plsp_layers_csv": "../../../PLSP_Layers.csv",
+  "plsp_layers_csv_note": "The PLSP product layer specification: product_lyr, short_name, units, scale, offset, data_type, valid_min, valid_max, fill_value. It is the AUTHORITY for layer metadata and is read rather than transcribed. NOTE that four short_names in the CSV do not match the variable names in the netCDF - 50PCGI, 50PCGD, 50PCGI_2, 50PCGD_2 appear in the file as GI_50PC, GD_50PC, GI_50PC_2, GD_50PC_2. All other names, and every scale and fill_value, agree."
 }
