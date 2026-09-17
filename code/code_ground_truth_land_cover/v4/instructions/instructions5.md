@@ -33,11 +33,12 @@ They diverge because the pipeline is not executed in the order it is described. 
 | **2** | hand labeling | §4.2 | `stage2_labeling/` |
 | **3** | ground-truth classification | Step 1d–1e | `stage3_classification/run{N}/` |
 | **4** | aggregation to Planet scale | Step 2, Step 3 | `stage4_aggregation/run{N}/` — `run_stage4_1_aggregate_to_planet_blocks.py`, then `run_stage4_2_create_qgis_aggregation_project.py` for visual review |
-| **5** | pure end members | Step 4 | `stage5_pure_endmembers/` |
-| **6** | phenology regression | Step 5 | `stage6_rf_phenology/` |
-| **7** | accuracy assessment | Step 6 | `stage7_accuracy_assessment/` |
-| **8** | RAP comparison | Step 7 | `stage8_rap_comparison/` |
-| **9** | transferability | Step 8 | `stage9_transferability_wkg/` |
+| **5** | phenology regression, RF-B | Step 5 | `stage5_rf_phenology/run{N}/` |
+| **6** | accuracy assessment | Step 6 | `stage6_accuracy_assessment/` |
+| **7** | RAP comparison | Step 7 | `stage7_rap_comparison/` |
+| **8** | transferability | Step 8 | `stage8_transferability_wkg/` |
+
+> **There is no separate stage for pure end members, and an earlier version of this table wrongly listed one.** Step 4 selection is not a script: `run_stage4_1_aggregate_to_planet_blocks.py` already writes `pure_endmember_{fw}_{SITE}_{YEAR}.tif` alongside the fractions, because purity is a per-block property of the same aggregation. End members are then *used* as the transferability instrument at stage 8, not produced as a stage of their own. Everything downstream shifted down by one.
 
 **Config keys follow the stage of the script that reads them** — `stage1_3_planet_grid`, `stage2_1_labeling_zones`, `stage3_1_classification`, `stage4_1_aggregation` — so a key is traceable to exactly one script.
 
@@ -480,11 +481,10 @@ results/
     stage1_data_and_features/qa/ # per-tile QA, CHM noise floor, grid alignment reports
     stage3_classification/ # per-framework 1 m hard classification (A-E)
     stage4_aggregation/ # N x N m window % cover per class
-    stage5_pure_endmembers/ # pure end-member windows + validation
-    stage6_rf_phenology/ # PlanetScope fractional-cover model
-    stage7_accuracy_assessment/ # shared sample set, manual labels, per-framework accuracy
-    stage8_rap_comparison/ # RAP 10 m vs. ground truth vs. Planet
-    stage9_transferability_wkg/ # WKG transfer test
+    stage5_rf_phenology/ # RF-B, PlanetScope fractional-cover model
+    stage6_accuracy_assessment/ # shared sample set, manual labels, per-framework accuracy
+    stage7_rap_comparison/ # RAP 10 m vs. ground truth vs. Planet
+    stage8_transferability_wkg/ # WKG transfer test
 ```
 
 ---
@@ -1214,7 +1214,17 @@ Apply the PlanetScope QA layers to remove faulty Planet pixels: **`NumCycles == 
 > | `QA_2` | Int16 | 32767 | 1 | 4: 99.99% (no second cycle anywhere) |
 > | `numObs` | Int16 | 32767 | 1 | 14 to 246 days, median 137, no fill |
 >
-> **THE TWO FILTERS ARE REDUNDANT AT THIS SITE.** `NumCycles == 1` retains 91.11%; `QA ∈ {1,2}` retains 91.11%; together they retain **91.11%** — the identical 10,123,809 pixels. The cross-tabulation is exactly diagonal: **`QA = 4` occurs only where `NumCycles = 0`**, and `QA ∈ {1,2}` only where `NumCycles = 1`. Keep both conditions in code, because that co-incidence is a property of this site-year and must be re-checked per site (§2.4), but do not expect the second to remove anything the first did not.
+> **BOTH FILTERS DO REAL WORK, and an earlier version of this note claimed otherwise.** Rounded to two decimals the two conditions look identical at 91.11% each, and that is how the mistake was made. Counted exactly, they are not:
+>
+> | | pixels |
+> |---|---|
+> | `NumCycles == 1` | 10,123,843 |
+> | `QA ∈ {1,2}` | 10,124,379 |
+> | **both** | **10,123,809** |
+> | in `QA` but not `NumCycles` | **570** — `NumCycles` 2 or 3 with good quality |
+> | in `NumCycles` but not `QA` | **34** — single cycle at `QA = 3` |
+>
+> **604 pixels are removed by exactly one of the two conditions**, so each catches something the other does not. The cross-tabulation is nearly but not exactly diagonal. Keep both, and never infer set equality from rounded percentages.
 >
 > **The 32767 trap is real and is confined to the seven timing layers.** Measured:
 >
@@ -1364,7 +1374,9 @@ Outputs → `stage4_aggregation/`, per framework:
 
 Flag blocks where **at least `min_pure_pixels_per_block` of the N² pixels share one class** as candidate pure end members. At SRER that is **8 or 9 of 9**.
 
-> **RESOLVED 2026-08-27 — purity is a COUNT, not a percentage, and the earlier ">= 90%" wording was broken at N = 3.** The achievable hard-count fractions are multiples of 1/9, and **8/9 = 0.889 < 0.90**, so a 90% rule admits **only perfectly uniform 9-of-9 blocks** and silently discards every 8-of-9 one. Measured on run 4, correcting it roughly doubles the pool: shrub under `RF-A_C` goes from 90,111 to **172,028** blocks, under `RF-A_D` from 52,590 to **111,491**. Every class gains 50–120%.
+> **RESOLVED 2026-08-27 — purity is a COUNT, not a percentage, and the earlier ">= 90%" wording was broken at N = 3.** The achievable hard-count fractions are multiples of 1/9 when all nine one-metre pixels are valid, and **8/9 = 0.889 < 0.90**, so a 90% rule admits **only perfectly uniform 9-of-9 blocks** and silently discards every 8-of-9 one. Measured on run 4, correcting it roughly doubles the pool: shrub under `RF-A_C` goes from 90,111 to **172,028** blocks, under `RF-A_D` from 52,590 to **111,491**. Every class gains 50–120%.
+
+> **MEASURED 2026-09-16 - the denominator is the VALID pixel count, so it is 9 or 8, never lower.** A block is kept at 8 or 9 valid one-metre pixels (`stage4_1_aggregation.min_valid_pixels_per_block`), and stage 4 divides by however many are valid, not by 9. Measured on run 5 framework C over all 1,031,535 blocks: **956,723 blocks have all nine valid** and carry fractions that are exact multiples of **1/9**, while **74,812 have one pixel masked**, overwhelmingly by shadow, and carry exact multiples of **1/8**. The target therefore has **17 achievable values, the union of k/9 and k/8**, not 10. Blocks with fewer than 8 valid pixels are dropped outright, so 1/7 and coarser never appear.
 >
 > This is the **same trap as the retention rule** (Step 3), which read as "75% valid" and operated as ">= 7 of 9". At N = 3 a percentage cannot express an intent that a count expresses exactly. **Any threshold on a block quantity at this scale must be written as a count.**
 >
@@ -1377,7 +1389,7 @@ Flag blocks where **at least `min_pure_pixels_per_block` of the N² pixels share
 - End-member blocks cluster spatially. Use **spatial** (block/tile) holdout, never random holdout, in Step 5.
 - Export for manual validation as GeoPackage with class, hard fraction, soft fraction, block confidence, and tile attributes.
 
-Outputs → `stage5_pure_endmembers/`.
+Outputs → written by stage 4_1 as `pure_endmember_{fw}_{SITE}_{YEAR}.tif`, alongside the fractions. There is no separate stage: purity is a per-block property of the same aggregation (§0.1).
 
 #### What pure end members are FOR, and what they are not for
 
@@ -1498,6 +1510,19 @@ Consequences:
 
 24 layers, 1-based `product_lyr`. All layers are **Int16** with **fill value 32767**.
 
+> **READ `PLSP_Layers.csv` — DO NOT TRANSCRIBE THIS TABLE.** The CSV at the repository root is the product specification and carries `product_lyr`, `short_name`, `units`, `scale`, `offset`, `data_type`, `valid_min`, `valid_max`, `fill_value`. Config key: `plsp_layers_csv`. A hand-copied table drifts, and a hand-typed feature list is how `50PCGD` once appeared twice in the stage 5 constants, silently dropping the 50% green-up date and double-counting the green-down one. **Address layers by `product_lyr` number, never by a typed name.**
+>
+> **FOUR CSV NAMES DO NOT MATCH THE netCDF VARIABLE NAMES**, verified against `US-xSR_..._PLSP_2021.nc`:
+>
+> | `product_lyr` | CSV `short_name` | netCDF variable |
+> |---|---|---|
+> | 3 | `50PCGI` | `GI_50PC` |
+> | 7 | `50PCGD` | `GD_50PC` |
+> | 14 | `50PCGI_2` | `GI_50PC_2` |
+> | 18 | `50PCGD_2` | `GD_50PC_2` |
+>
+> All 20 other names match, and **every `scale` and `fill_value` agrees between the two**. The reconciliation lives in one map in `run_stage5_1_fit_phenology_fractional_cover.py`, and a layer that resolves to neither spelling raises an error naming both rather than dropping a feature.
+
 | Lyr | Short name | Long name | Units | Scale | Valid min | Valid max | Used |
 |---|---|---|---|---|---|---|---|
 | 1 | `NumCycles` | Number of phenological cycles | cycles | 1 | 0 | 6 | **QA filter** |
@@ -1612,7 +1637,7 @@ Instead:
 - Constrain or post-normalize predictions to sum to 1 and lie in [0, 1].
 - Cross-check the seasonal signal against the phenocam in the train block.
 
-Outputs → `stage6_rf_phenology/`.
+Outputs → `stage5_rf_phenology/run{N}/`.
 
 ### Step 6 — Accuracy assessment
 
@@ -1748,7 +1773,7 @@ Because strata already cross class with confidence bin, per-bin accuracy falls o
 
 This protocol governs **categorical** accuracy: the 1 m classification and the block-level end-member classification. It does **not** apply to RF-B's continuous fractional-cover predictions, which need regression metrics — see §12 Q3 (per-class RMSE, MAE, bias, 1:1 scatter). Do not force fractional output into an error matrix.
 
-Outputs → `stage7_accuracy_assessment/`: the sample set with inclusion probabilities and stratum weights, reference labels, the area-proportion error matrix per framework, all estimators with 95% intervals, error-adjusted areas, and the accuracy-vs-confidence plot.
+Outputs → `stage6_accuracy_assessment/`: the sample set with inclusion probabilities and stratum weights, reference labels, the area-proportion error matrix per framework, all estimators with 95% intervals, error-adjusted areas, and the accuracy-vs-confidence plot.
 
 ### Step 7 — RAP comparison
 
