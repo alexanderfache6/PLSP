@@ -90,7 +90,7 @@ import json
 import os
 
 from constants import CLASS_COLORS, CLASS_LABELS, CLASS_NAMES
-from helpers import expand_path
+from helpers import expand_path, planet_blocks_directory
 from qgis.core import (
     QgsApplication,
     QgsColorRampShader,
@@ -386,9 +386,9 @@ def main():
     # directory that does not exist. Every stage 5_1 report records the run that
     # supplied its targets, which makes the pairing self-describing.
     source_run = report.get("source_run", args.run)
-    aggregation_directory = os.path.join(results_root, "stage4_aggregation", f"run{source_run}")
+    aggregation_directory = str(planet_blocks_directory(results_root, source_run))
     if not os.path.isdir(aggregation_directory):
-        raise SystemExit(f"MISSING {aggregation_directory} - the report names source_run {source_run}, which has no stage 4 aggregation directory")
+        raise SystemExit(f"MISSING {aggregation_directory} - the report names source_run {source_run}, which has no stage 4 planet_blocks directory")
 
     project = QgsProject.instance()
     project.clear()

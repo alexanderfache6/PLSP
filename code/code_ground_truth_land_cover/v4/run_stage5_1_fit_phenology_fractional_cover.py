@@ -127,7 +127,7 @@ ARGUMENTS
         positional, required. Site config JSON, e.g. config/srer_2022.json.
     --run
         required. The STAGE 4 run supplying the fraction targets, read from
-        `stage4_aggregation/run{N}/`. It also identifies the saved model, since
+        `stage4_aggregation/run{N}/stage4_2_planet_blocks/`. It also identifies the saved model, since
         what a model was fitted on is what defines it.
     --output-run
         default: the same as --run. The STAGE 5 output label, written to
@@ -142,13 +142,27 @@ ARGUMENTS
         default fraction_hard_count, the AREA fraction counted from the hard
         1 m classification, 0/9 through 9/9. `fraction_soft_mean` averages
         RF-A's probability vectors instead and is available but not the default.
-THE PHENOLOGY YEAR IS NOT A COMMAND-LINE ARGUMENT. It comes from the config:
-`year` is the year the model trains on. An optional `stage5_1_phenology`
-block naming a different `phenology_year` puts the script in PREDICT MODE, which
-loads the saved model and maps that year without fitting. The report records
-`mode`, `is_training_year`, `year_role` and `years_from_training`.
     --no-predict
         flag. Fit and score only, skip the site-wide map.
+    --normalisation
+        default T1_G1, the end member normalisation. `none` fits the raw
+        features and exists for the invariance check described below.
+
+THIS SCRIPT TRAINS, AND ONLY TRAINS, AND ONLY ON SRER'S GROUND TRUTH YEAR. The
+year comes from the config's `year`; there is no phenology-year argument. Stage
+4 made a fractional cover map for that one year, so it is the only year anything
+can be fitted or scored against. Applying the model to another year, or to any
+other site, is stage 5_2's job.
+
+NORMALISATION, AND WHY IT MUST NOT CHANGE THE SCORES HERE. Every feature is
+expressed relative to the site's own end members: subtract m, the median of the
+four class medians recorded by stage 4_7. m is one number per feature, the same
+for every pixel, and a random forest splits one feature at a time, so a constant
+shift moves every split by the same amount and cannot change a single tree.
+Running with --normalisation none must therefore reproduce these scores. If it
+does not, m is being applied per pixel somewhere and the transfer is unsound.
+The shift earns its keep at OTHER sites, where each subtracts ITS OWN m and the
+features arrive on a common, end-member-relative scale.
 
 EXAMPLE COMMANDS. Activate the environment rather than calling the interpreter
 by absolute path: a bare `/opt/miniconda3/envs/LCSC/bin/python` does not set
@@ -173,15 +187,17 @@ Then, in order, using the same run label:
 import argparse
 import csv
 import gzip
+import hashlib
 import json
 import pickle
 from pathlib import Path
 
 import numpy as np
 import rasterio
+import sklearn
 import xarray as xr
 from constants import CLASS_COLORS, CLASS_LABELS, CLASS_NAMES, NODATA, SEVENTY
-from helpers import resolve_config_path
+from helpers import endmember_stats_directory, planet_blocks_directory, resolve_config_path
 from rasterio.transform import from_origin
 from sklearn.ensemble import RandomForestRegressor
 
@@ -205,6 +221,30 @@ ACCEPTED_QA_VALUES = (1, 2)
 # alternate-spelling fallback - verified against every SRER year 2017 to 2025.
 GREENING_LAYER_NUMBERS = [9, 10, 11]
 FEATURE_SET_NAME = "phenology"
+
+# NORMALISATION IS WHAT MAKES ONE MODEL TRANSFERABLE. Every feature is expressed
+# relative to the site's own end members: subtract m, the median of the four
+# class medians, recorded by stage 4_7 from the hand-drawn polygons. T1 does the
+# seven dates, G1 the three greening features, and the three durations are
+# RECOMPUTED from the shifted dates so LOS = OGMn - OGI still holds exactly.
+#
+# AT SRER THIS CANNOT CHANGE THE FIT, and that is the point of checking it. m is
+# one number per feature, subtracted from every pixel alike, and a random forest
+# splits one feature at a time, so a constant shift moves every split by the
+# same amount and changes no tree. The scores must reproduce the unnormalised
+# run; if they do not, m is being applied per pixel somewhere. Run the same
+# command with --normalisation none to produce that comparison.
+#
+# The shift only matters at OTHER sites, where each site subtracts ITS OWN m and
+# the features arrive on a common, end-member-relative scale.
+NORMALISATION_NAME = "T1_G1"
+
+# WHERE THE ONE MODEL COMES FROM. RF-B is fitted at SRER 2022 and nowhere else,
+# because stage 4 built a fractional cover map for that site-year alone. Stage
+# 5_2 needs to name the same pickle from a different site's config, so the pair
+# is a constant here rather than something each caller reconstructs.
+TRAINING_SITE = "SRER"
+TRAINING_YEAR = 2022
 
 # THE TWO PRODUCT TIERS SPELL FOUR LAYERS DIFFERENTLY, and neither spelling can
 # be assumed. PLSP_stage_nc uses the specification names 50PCGI and 50PCGD;
@@ -383,6 +423,67 @@ def read_phenology_feature_stack(dataset, specification):
 
     feature_stack = np.stack(ordered_layers).astype("float32")
     return feature_stack, feature_names
+
+
+def read_endmember_normalisation(config, stage4_run, feature_names):
+    """The site's end member offsets from stage 4_7, checked against this feature set.
+
+    m IS READ, NEVER RECOMPUTED HERE. Stage 4_7 owns the definition, from the
+    hand-drawn polygons through the buffer and QA rules, and a second
+    implementation of the same median is a second thing to drift.
+
+    The statistics file's feature list must equal this run's, in order. A model
+    normalised against a differently ordered m would subtract EVIarea's offset
+    from OGI and produce a plausible-looking map of nothing.
+
+    Inputs: config - the site config; stage4_run - the stage 4 run label;
+            feature_names - this run's 13 names, in order
+    Outputs: dict with offsets, the source path, its sha256, and the class
+             medians, ready to travel with the model
+    """
+    stats_path = endmember_stats_directory(config["results_root"], stage4_run) / f"{config['site']}_{config['year']}_endmember_stats.json"
+    if not stats_path.exists():
+        raise SystemExit(f"FAIL - no end member statistics at {stats_path}. Run run_stage4_7_compute_endmember_statistics.py --run {stage4_run} first; the site must PASS stage 4_6.")
+    statistics = json.loads(stats_path.read_text())
+    if statistics["feature_names"] != feature_names:
+        raise SystemExit(f"FAIL - {stats_path.name} was written for {statistics['feature_names']} but this run uses {feature_names}")
+    digest = hashlib.sha256(stats_path.read_bytes()).hexdigest()
+    return {
+        "name": NORMALISATION_NAME,
+        "features": feature_names,
+        "offsets": statistics["m_median_of_class_medians"],
+        "source": str(stats_path),
+        "source_sha256": digest,
+        "endmember_year": statistics["plsp_year"],
+        "class_medians": {class_name: summary["median"] for class_name, summary in statistics["classes"].items()},
+    }
+
+
+def apply_endmember_normalisation(feature_stack, feature_names, specification, normalisation):
+    """Subtract the site's end member offsets, then rebuild the durations.
+
+    THE DURATIONS ARE RECOMPUTED, NOT SHIFTED BY THEIR OWN OFFSET. A duration is
+    a difference of two dates, so once the dates move it must be taken again
+    from the moved dates or the identity LOS = OGMn - OGI quietly stops holding
+    and the feature set becomes internally inconsistent.
+
+    Inputs: feature_stack [13, ny, nx]; feature_names; specification - the
+            PLSP_Layers.csv table; normalisation - from
+            read_endmember_normalisation, or None to leave the features alone
+    Outputs: float32 array of the same shape
+    """
+    if normalisation is None:
+        return feature_stack
+    index_of = {name: position for position, name in enumerate(feature_names)}
+    normalised = feature_stack.astype("float32", copy=True)
+    for layer_number in RAW_TIMING_LAYER_NUMBERS + GREENING_LAYER_NUMBERS:
+        position = index_of[specification[layer_number]["short_name"]]
+        normalised[position] -= np.float32(normalisation["offsets"][position])
+    for derived_name, minuend_number, subtrahend_number in DERIVED_DURATION_FEATURES:
+        minuend = index_of[specification[minuend_number]["short_name"]]
+        subtrahend = index_of[specification[subtrahend_number]["short_name"]]
+        normalised[index_of[derived_name]] = normalised[minuend] - normalised[subtrahend]
+    return normalised
 
 
 def assert_grid_alignment(fraction_dataset, netcdf_dataset, grid):
@@ -683,7 +784,7 @@ def predict_site_wide(model_name, fitted_model, feature_stack, usable_mask, grid
         chunk_positions = usable_positions[start : start + PREDICTION_CHUNK_ROWS]
         chunk_prediction = predict_with_model(model_name, fitted_model, flat_features[:, chunk_positions].T)
         predicted_flat[:, chunk_positions] = chunk_prediction.T.astype("float32")
-        print(f" predicted {min(start + PREDICTION_CHUNK_ROWS, len(usable_positions)):,} of {len(usable_positions):,} pixels", end="\r")
+        print(f"predicted {min(start + PREDICTION_CHUNK_ROWS, len(usable_positions)):,} of {len(usable_positions):,} pixels", end="\r")
     print(" " * SEVENTY, end="\r")
     predicted = predicted_flat.reshape(len(CLASS_NAMES), grid["ny"], grid["nx"])
     raw_sum = predicted.sum(axis=0)
@@ -838,9 +939,30 @@ def save_fitted_model(path, model_name, fitted_model, report):
         "feature_set": report["feature_set"],
         "features": report["features"],
         "source_run": report["source_run"],
+        # THE NORMALISATION TRAVELS WITH THE MODEL. Stage 5_2 subtracts the
+        # TARGET site's own m, but it has to know which transform was used and
+        # against which statistics, or it could feed raw features to a model
+        # fitted on shifted ones and return a map that looks fine.
+        "normalisation": report["normalisation"],
+        "training_feature_range": report["training_feature_range"],
+        "sklearn_version": sklearn.__version__,
     }
     with gzip.open(path, "wb", compresslevel=6) as handle:
         pickle.dump(payload, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def read_model_payload(path):
+    """The whole pickled bundle: the model and everything saved beside it.
+
+    Stage 5_2 needs the metadata as much as the forest - the feature order, the
+    normalisation it was fitted with, and the training range it must report
+    extrapolation against - so it reads the payload rather than the model alone.
+
+    Inputs: path - Path to the gzipped pickle
+    Outputs: dict
+    """
+    with gzip.open(path, "rb") as handle:
+        return pickle.load(handle)
 
 
 def load_fitted_model(path, model_name, report):
@@ -872,27 +994,22 @@ def main():
     parser.add_argument("--target", default="fraction_hard_count", choices=["fraction_hard_count", "fraction_soft_mean"], help="which stage 4 fraction estimate to regress on (default fraction_hard_count, the area fraction from hard classification)")
     parser.add_argument("--output-run", default=None, help="stage 5 output label (default: the same as --run)")
     parser.add_argument("--no-predict", action="store_true", help="fit and score only, skip the site-wide map")
+    parser.add_argument("--normalisation", default=NORMALISATION_NAME, choices=[NORMALISATION_NAME, "none"], help=f"end member normalisation (default {NORMALISATION_NAME}; 'none' fits the raw features, for the invariance check)")
     args = parser.parse_args()
 
     config = json.loads(Path(args.config).read_text())
     site, ground_truth_year = config["site"], config["year"]
     seed = config["BASE_SEED"] + ground_truth_year
-    # THE PHENOLOGY YEAR COMES FROM THE CONFIG, NOT THE COMMAND LINE. `year` is
-    # the year the model trains on. An optional stage5_1_phenology block can
-    # name a different year to run PREDICT MODE against; absent, this trains.
-    phenology_year = config.get("stage5_1_phenology", {}).get("phenology_year", ground_truth_year)
-    # TRAINING HAPPENS ON THE GROUND TRUTH YEAR AND NOWHERE ELSE. Stage 4 made a
-    # fractional cover map for that year only, so it is the only year a model can
-    # be fitted or scored against. Passing any other --phenology-year switches
-    # this script into PREDICT MODE: it loads the model already trained on the
-    # ground truth year and maps the off year, fitting nothing.
-    is_training_year = phenology_year == ground_truth_year
-    year_role = "training year" if is_training_year else "off year"
-    mode = "train" if is_training_year else "predict"
+    # THIS SCRIPT TRAINS, AND ONLY TRAINS, AND ONLY ON THE GROUND TRUTH YEAR.
+    # Stage 4 made a fractional cover map for that one year, so it is the only
+    # year a model can be fitted or scored against. Applying the model to any
+    # other year, or to any other site, is stage 5_2's job: it loads this
+    # script's pickle, reads THAT site's end members, and predicts.
+    phenology_year = ground_truth_year
 
     results_root = resolve_config_path(config["results_root"])
     qa_directory = results_root / "stage1_data_and_features" / "qa"
-    aggregation_directory = results_root / "stage4_aggregation" / f"run{args.run}"
+    aggregation_directory = planet_blocks_directory(results_root, args.run)
     # THE INPUT RUN AND THE OUTPUT LABEL CAN DIFFER, and usually must. Stage 4
     # targets live in run5, while run5 and run5_timing_evi on the stage 5 side
     # are frozen controls, so a new stage 5 run reads run5 and writes elsewhere.
@@ -919,14 +1036,6 @@ def main():
         existing_feature_set = json.loads(existing_report_path.read_text()).get("feature_set", "timing")
         if existing_feature_set != FEATURE_SET_NAME:
             raise SystemExit(f"FAIL - {output_directory} already holds a '{existing_feature_set}' run and this script writes '{FEATURE_SET_NAME}'. Pass a different --output-run label, or move that directory aside first.")
-    print(f"phenology year {phenology_year}, {year_role}, mode {mode}")
-    if not is_training_year:
-        if args.no_predict:
-            raise SystemExit("FAIL - --no-predict skips the map, and an off year produces nothing else. Drop the flag, or pass the ground truth year to fit and score.")
-        print("")
-        print(f"PREDICT MODE - nothing is fitted. The model trained on {ground_truth_year} is loaded from")
-        print("its pickle and applied to this year. Stage 4 has no map for this year, so there are")
-        print("no scores and no difference layers.")
     print("")
 
     netcdf_path = lsp_netcdf_path(config, phenology_year)
@@ -934,7 +1043,7 @@ def main():
         raise SystemExit(f"FAIL - LSP netCDF not found: {netcdf_path}")
     fraction_path = aggregation_directory / f"{args.target}_{args.framework}_{site}_{ground_truth_year}.tif"
     if not fraction_path.exists():
-        raise SystemExit(f"FAIL - {fraction_path} not found. Run run_stage4_1_aggregate_to_planet_blocks.py --run {args.run} --frameworks {args.framework} first.")
+        raise SystemExit(f"FAIL - {fraction_path} not found. Run run_stage4_1_aggregate_base_map_to_planet_blocks.py --run {args.run} --frameworks {args.framework} first.")
 
     with xr.open_dataset(netcdf_path, mask_and_scale=False) as netcdf_dataset:
         with rasterio.open(fraction_path) as fraction_dataset:
@@ -943,23 +1052,33 @@ def main():
         quality_mask, quality_diagnostics = read_quality_mask(netcdf_dataset, layer_specification)
         feature_stack, feature_names = read_phenology_feature_stack(netcdf_dataset, layer_specification)
 
+    # NORMALISE BEFORE ANYTHING ELSE TOUCHES THE FEATURES, so every score, every
+    # importance and the pickled model all describe the same, end-member-relative
+    # feature space. Normalising later, after the usable mask or the split, would
+    # leave the saved model expecting inputs no one else produces.
+    normalisation = read_endmember_normalisation(config, args.run, feature_names) if args.normalisation != "none" else None
+    if normalisation:
+        print(f"normalisation {normalisation['name']} from {Path(normalisation['source']).name}, end members {normalisation['endmember_year']}")
+        print("m per feature: " + ", ".join(f"{name} {value:.3f}" for name, value in zip(feature_names, normalisation["offsets"])))
+        feature_stack = apply_endmember_normalisation(feature_stack, feature_names, layer_specification, normalisation)
+    else:
+        print("normalisation none - raw features, for the invariance check against the normalised run")
+
     all_features_finite = np.all(np.isfinite(feature_stack), axis=0)
     usable_phenology = quality_mask & all_features_finite
     quality_diagnostics["all_features_finite"] = float(all_features_finite.mean())
     quality_diagnostics["usable_phenology"] = float(usable_phenology.mean())
 
     print(f"QA: NumCycles == 1 {quality_diagnostics['num_cycles_equals_one']:.2%}, QA in {ACCEPTED_QA_VALUES} {quality_diagnostics['qa_in_accepted_values']:.2%}, both {quality_diagnostics['both_conditions']:.2%}")
-    print(f" the two conditions select identical pixels: {quality_diagnostics['conditions_select_identical_pixels']}")
-    print(f" all {len(feature_names)} features finite {quality_diagnostics['all_features_finite']:.2%}, usable phenology {quality_diagnostics['usable_phenology']:.2%}")
+    print(f"the two conditions select identical pixels: {quality_diagnostics['conditions_select_identical_pixels']}")
+    print(f"all {len(feature_names)} features finite {quality_diagnostics['all_features_finite']:.2%}, usable phenology {quality_diagnostics['usable_phenology']:.2%}")
 
     report = {
         "site": site,
         "ground_truth_year": ground_truth_year,
         "phenology_year": phenology_year,
-        "mode": mode,
-        "is_training_year": is_training_year,
-        "year_role": year_role,
-        "years_from_training": phenology_year - ground_truth_year,
+        "mode": "train",
+        "normalisation": normalisation if normalisation else {"name": "none"},
         "source_run": args.run,
         "output_label": output_label,
         "feature_set": FEATURE_SET_NAME,
@@ -969,35 +1088,6 @@ def main():
         "qa": quality_diagnostics,
         "models": {},
     }
-
-    if not is_training_year:
-        for model_name in ("joint", "independent"):
-            model_pickle_path = fitted_model_path(results_root, site, ground_truth_year, args.framework, model_name, args.target, args.run)
-            fitted_model = load_fitted_model(model_pickle_path, model_name, report)
-            print(f"\n{'=' * SEVENTY}\nmodel: {model_name}")
-            print("predicting site-wide")
-            predicted_stack, raw_sum = predict_site_wide(model_name, fitted_model, feature_stack, usable_phenology, grid)
-            stem = f"{model_name}_{args.framework}_{site}_{phenology_year}"
-            write_prediction_raster(output_directory / f"fraction_predicted_{stem}.tif", predicted_stack, grid, CLASS_NAMES)
-            write_prediction_raster(output_directory / f"fraction_predicted_sum_{stem}.tif", raw_sum, grid, ["raw_sum_before_renormalisation"])
-            write_class_raster(output_directory / f"class_predicted_{stem}.tif", hard_class_from_fractions(predicted_stack), grid)
-            finite_sum = raw_sum[np.isfinite(raw_sum)]
-            report["models"][model_name] = {
-                "site_wide": {
-                    "pixels_predicted": int(np.isfinite(raw_sum).sum()),
-                    "raw_sum_mean": float(finite_sum.mean()),
-                    "raw_sum_min": float(finite_sum.min()),
-                    "raw_sum_max": float(finite_sum.max()),
-                    "raw_sum_mean_absolute_deviation_from_one": float(np.abs(finite_sum - 1.0).mean()),
-                }
-            }
-            print(f" site-wide: {np.isfinite(raw_sum).sum():,} pixels, raw sum mean {finite_sum.mean():.4f}, mean absolute deviation from 1 {np.abs(finite_sum - 1.0).mean():.4f}")
-        report_path = output_directory / f"stage5_1_report_{site}_{phenology_year}.json"
-        report_path.write_text(json.dumps(report, indent=2))
-        print(f"\n{'=' * SEVENTY}")
-        print(f"PREDICT MODE complete for {phenology_year}. No scores were produced: stage 4 has ground truth for {ground_truth_year} only.")
-        print(f"wrote {report_path}")
-        return
 
     has_ground_truth = np.all(np.isfinite(true_fraction_stack), axis=0)
     tile_index, tile_ids = assign_blocks_to_tiles(config, grid)
@@ -1029,6 +1119,21 @@ def main():
     report["train_tiles"] = train_tile_ids
     report["test_tiles"] = test_tile_ids
     report["pure_share"] = float((mixedness < 0.001).mean())
+    # THE TRAINING RANGE TRAVELS WITH THE MODEL, because a random forest cannot
+    # extrapolate: fed a value beyond anything it saw, it returns the edge of
+    # what it saw, confidently and with no warning. Stage 5_2 reports the share
+    # of each site's pixels that fall outside this range, which is the only
+    # honest measure of how far a transfer is being stretched. p1 and p99 are
+    # kept beside the extremes so one outlying training block cannot make the
+    # range look wider than it usefully is.
+    training_features = feature_matrix[is_train_row]
+    report["training_feature_range"] = {
+        "features": feature_names,
+        "minimum": np.min(training_features, axis=0).tolist(),
+        "maximum": np.max(training_features, axis=0).tolist(),
+        "p1": np.percentile(training_features, 1, axis=0).tolist(),
+        "p99": np.percentile(training_features, 99, axis=0).tolist(),
+    }
     report["constant_mean_baseline"] = baseline
 
     for model_name in ("joint", "independent"):
@@ -1048,7 +1153,7 @@ def main():
             truth = fraction_matrix[held_rows]
             scores = score_fraction_predictions(truth, predicted)
             fold_scores.append({"held_out": held_out_tile, **scores})
-            print(f" held out {held_out_tile}: n {scores['n']:>7,} MAE {scores['mae']:.4f} shrub MAE {scores['per_class']['shrub']['mae']:.4f} raw sum {scores['raw_sum_before_renormalisation']['mean']:.4f}")
+            print(f"held out {held_out_tile}: n {scores['n']:>7,} MAE {scores['mae']:.4f} shrub MAE {scores['per_class']['shrub']['mae']:.4f} raw sum {scores['raw_sum_before_renormalisation']['mean']:.4f}")
             pooled_truth.append(truth)
             pooled_prediction.append(predicted)
             pooled_mixedness.append(mixedness[held_rows])
@@ -1062,25 +1167,25 @@ def main():
         print(f"\n CROSS-VALIDATED over {len(fold_scores)} folds: n {cross_validated['n']:,} MAE {cross_validated['mae']:.4f} RMSE {cross_validated['rmse']:.4f}")
         print("per class MAE: " + " ".join(f"{name} {cross_validated['per_class'][name]['mae']:.4f}" for name in CLASS_NAMES))
         print("per class bias: " + " ".join(f"{name} {cross_validated['per_class'][name]['bias']:+.4f}" for name in CLASS_NAMES))
-        print(f" raw sum before renormalisation: mean {cross_validated['raw_sum_before_renormalisation']['mean']:.4f}, mean absolute deviation from 1 {cross_validated['raw_sum_before_renormalisation']['mean_absolute_deviation_from_one']:.4f}")
+        print(f"raw sum before renormalisation: mean {cross_validated['raw_sum_before_renormalisation']['mean']:.4f}, mean absolute deviation from 1 {cross_validated['raw_sum_before_renormalisation']['mean_absolute_deviation_from_one']:.4f}")
         print("MAE by how mixed the block is:")
         for label, scores in by_mixedness.items():
-            print(f" {label:<15} n {scores['n']:>8,} MAE {scores['mae']:.4f} shrub {scores['per_class']['shrub']['mae']:.4f}")
+            print(f"{label:<15} n {scores['n']:>8,} MAE {scores['mae']:.4f} shrub {scores['per_class']['shrub']['mae']:.4f}")
 
         print("\n fitting on all train tiles, evaluating on the held-out test tiles")
         fitted_on_train = fit_function(feature_matrix[is_train_row], fraction_matrix[is_train_row], seed)
         model_pickle_path = fitted_model_path(results_root, site, ground_truth_year, args.framework, model_name, args.target, args.run)
         save_fitted_model(model_pickle_path, model_name, fitted_on_train, report)
-        print(f" saved {model_name} model to {model_pickle_path.name} ({model_pickle_path.stat().st_size / 1048576:.1f} MB gzipped)")
+        print(f"saved {model_name} model to {model_pickle_path.name} ({model_pickle_path.stat().st_size / 1048576:.1f} MB gzipped)")
         out_of_bag = score_out_of_bag(model_name, fitted_on_train, fraction_matrix[is_train_row])
-        print(f" OUT OF BAG on the train rows: n {out_of_bag['n']:,} MAE {out_of_bag['mae']:.4f} - a RANDOM holdout, so optimistic against the spatial folds above")
+        print(f"OUT OF BAG on the train rows: n {out_of_bag['n']:,} MAE {out_of_bag['mae']:.4f} - a RANDOM holdout, so optimistic against the spatial folds above")
         if out_of_bag["n_without_oob_prediction"]:
-            print(f" {out_of_bag['n_without_oob_prediction']:,} rows were in-bag for every tree and have no OOB prediction, dropped from this score")
+            print(f"{out_of_bag['n_without_oob_prediction']:,} rows were in-bag for every tree and have no OOB prediction, dropped from this score")
         test_prediction = predict_with_model(model_name, fitted_on_train, feature_matrix[~is_train_row])
         test_truth = fraction_matrix[~is_train_row]
         test_scores = score_fraction_predictions(test_truth, test_prediction)
         test_by_mixedness = score_by_mixedness_stratum(test_truth, test_prediction, mixedness[~is_train_row])
-        print(f" TEST TILES: n {test_scores['n']:,} MAE {test_scores['mae']:.4f} shrub MAE {test_scores['per_class']['shrub']['mae']:.4f} raw sum {test_scores['raw_sum_before_renormalisation']['mean']:.4f}")
+        print(f"TEST TILES: n {test_scores['n']:,} MAE {test_scores['mae']:.4f} shrub MAE {test_scores['per_class']['shrub']['mae']:.4f} raw sum {test_scores['raw_sum_before_renormalisation']['mean']:.4f}")
 
         print(" permutation importance, train rows then test tiles")
         feature_importance = {
@@ -1097,7 +1202,7 @@ def main():
             "folds": fold_scores,
             "out_of_bag": out_of_bag,
             "feature_importance": feature_importance,
-            -"cross_validated": cross_validated,
+            "cross_validated": cross_validated,
             "cross_validated_by_mixedness": by_mixedness,
             "test_tiles": test_scores,
             "test_tiles_by_mixedness": test_by_mixedness,
@@ -1121,7 +1226,7 @@ def main():
                 "raw_sum_max": float(finite_sum.max()),
                 "raw_sum_mean_absolute_deviation_from_one": float(np.abs(finite_sum - 1.0).mean()),
             }
-            print(f" site-wide: {np.isfinite(raw_sum).sum():,} pixels, raw sum mean {finite_sum.mean():.4f}, mean absolute deviation from 1 {np.abs(finite_sum - 1.0).mean():.4f}")
+            print(f"site-wide: {np.isfinite(raw_sum).sum():,} pixels, raw sum mean {finite_sum.mean():.4f}, mean absolute deviation from 1 {np.abs(finite_sum - 1.0).mean():.4f}")
 
     joint_mae = report["models"]["joint"]["cross_validated"]["mae"]
     independent_mae = report["models"]["independent"]["cross_validated"]["mae"]
