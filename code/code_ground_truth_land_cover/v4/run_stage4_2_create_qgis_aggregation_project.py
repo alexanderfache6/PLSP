@@ -80,7 +80,7 @@ import json
 import os
 
 from constants import CLASS_COLORS, CLASS_LABELS, CLASS_NAMES
-from helpers import expand_path
+from helpers import expand_path, planet_blocks_directory
 from qgis.core import (
     QgsApplication,
     QgsColorRampShader,
@@ -261,14 +261,14 @@ def main():
     config = json.load(open(CONFIG))
     site, year = config["site"], config["year"]
     results_root = os.path.expanduser(config["results_root"])
-    aggregation_dir = os.path.join(results_root, "stage4_aggregation", f"run{RUN}")
+    aggregation_dir = str(planet_blocks_directory(results_root, RUN))
     classification_dir = os.path.join(results_root, "stage3_classification", f"run{RUN}")
     qa_dir = os.path.join(results_root, "stage1_data_and_features", "qa")
     data_dir = expand_path(config["data_root"], config["site_name"])
 
     report_path = os.path.join(aggregation_dir, f"stage4_1_report_{site}_{year}.json")
     if not os.path.exists(report_path):
-        raise SystemExit(f"MISSING {report_path} - run run_stage4_1_aggregate_to_planet_blocks.py --run {RUN} first")
+        raise SystemExit(f"MISSING {report_path} - run run_stage4_1_aggregate_base_map_to_planet_blocks.py --run {RUN} first")
     report = json.load(open(report_path))
     frameworks = sorted(report.get("frameworks", {}))
     if not frameworks:

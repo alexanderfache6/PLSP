@@ -75,7 +75,7 @@ pixels are aggregated: random per-pixel error averages out over 9 samples, a
 systematic bias does not. At run 4 / RF-A_C shrub is under-predicted by 4.7%,
 so every block's shrub fraction is low by roughly that proportion.
 
-Outputs -> `stage4_aggregation/run{N}/`, one set per framework, site-wide on the
+Outputs -> `stage4_aggregation/run{N}/stage4_2_planet_blocks/`, one set per framework, site-wide on the
 full Planet grid so the arrays align 1:1 with the LSP netCDF. RUN-SCOPED because
 a fraction product is only meaningful against the classification run it came
 from:
@@ -92,7 +92,7 @@ from:
 histogram stays inspectable after the fact; the fraction rasters are NaN wherever
 the block failed the rule.
 
-Usage: python run_stage4_1_aggregate_to_planet_blocks.py config/srer_2022.json --run 4 --frameworks C D
+Usage: python run_stage4_1_aggregate_base_map_to_planet_blocks.py config/srer_2022.json --run 4 --frameworks C D
 """
 
 import argparse
@@ -103,7 +103,7 @@ import numpy as np
 import rasterio
 import xarray as xr
 from constants import CLASS_CODES, CLASS_NAMES, NODATA, SHADOW_IS_NODATA, SHADOW_IS_TREE
-from helpers import resolve_config_path
+from helpers import planet_blocks_directory, resolve_config_path
 from rasterio.transform import from_origin
 
 COORDINATE_TOLERANCE_M = 1e-6
@@ -364,7 +364,7 @@ def main():
     # and run 4 carries -4.7%, so a single unscoped directory means whichever ran
     # last silently replaces the other and the two can never be compared. An
     # earlier version wrote here unscoped and did exactly that.
-    out_dir = results / "stage4_aggregation" / f"run{args.run}"
+    out_dir = planet_blocks_directory(results, args.run)
     data_dir = Path(str(config["data_root"])).expanduser() / config["site_name"]
     chm_product = config["products"]["chm"]
     out_dir.mkdir(parents=True, exist_ok=True)

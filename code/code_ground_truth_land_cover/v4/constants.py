@@ -3,6 +3,8 @@ CLASS_NAMES = ["bare", "grass", "shrub", "tree"]
 CLASS_CODES = [0, 1, 2, 3]
 CLASS_COLORS = {0: "#c2b280", 1: "#7cb342", 2: "#8d6e63", 3: "#1b5e20"}
 CLASS_ORDER = ["bare", "grass", "shrub", "tree"]
+CLASS_ACRONYMS = {0: "BAR", 1: "GRA", 2: "SHR", 3: "TRE"}
+
 UNLABELLED_COLOR = "#e6007e"  # deliberately outside the earth/green family
 CLUSTER_COLORS = [
     "#1f77b4",

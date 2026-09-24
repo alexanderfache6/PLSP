@@ -1,3 +1,5 @@
+import csv
+import math
 import os
 from pathlib import Path
 
@@ -15,6 +17,146 @@ def resolve_config_path(root, *parts):
 
 def expand_path(root, *parts):
     return os.path.join(os.path.expanduser(str(root)), *parts)
+
+
+def resolve_script_relative(relative_path):
+    """Resolve a config path that is written relative to the v4 script directory.
+
+    Config entries such as plsp_layers_csv and phenocam_csv are recorded
+    relative to where the scripts live, not to the config file or the shell's
+    working directory. Resolving them here, once, keeps every stage agreeing.
+
+    Inputs: relative_path - str from the config
+    Outputs: absolute Path
+    """
+    return (Path(__file__).resolve().parent / relative_path).resolve()
+
+
+def endmember_imagery_year(config):
+    """The year a site's end members are drawn in: imagery AND PLSP.
+
+    NEON AOP or NAIP, whichever the site has, closest to 2022. Set per site in
+    the optional stage4_4_endmember_tiles block, defaulting to the config year.
+
+    THE PLSP YEAR FOLLOWS THE IMAGERY YEAR. A site whose closest flight is 2023,
+    such as SJER, is labelled against PLSP 2023 and its end member statistics
+    come from PLSP 2023. Only RF-B's training is fixed to SRER 2022.
+
+    Inputs: config - site config dict
+    Outputs: int
+    """
+    return int(config.get("stage4_4_endmember_tiles", {}).get("imagery_year", config["year"]))
+
+
+def planet_blocks_directory(results_root, stage4_run):
+    """Where stage 4_1 writes, and stages 4_2, 5_1 and 5_3 read, the Planet-block products.
+
+    stage4_aggregation/run{N}/stage4_2_planet_blocks/, beside the run's
+    stage4_6_labeling_progress/ and stage4_7_stats/ folders, so a run's three
+    kinds of product never share one. One place for the path, so writer and readers cannot disagree about
+    it: 4_1 writes here, and 4_2, 5_1, 5_3 and the 4_7 diagnostic read from it.
+    It was plain planet_blocks/ until 2026-09-18, when runs 4 and 5 were moved
+    and their QGIS projects repointed.
+
+    Inputs: results_root - str or Path, may start with ~; stage4_run - e.g. "5"
+    Outputs: Path, not created here
+    """
+    return resolve_config_path(results_root, "stage4_aggregation", f"run{stage4_run}", "stage4_2_planet_blocks")
+
+
+def labeling_progress_directory(results_root, stage4_run):
+    """Where stage 4_4, 4_5 and 4_6 write: the labelling side of stage 4.
+
+    stage4_aggregation/run{N}/stage4_6_labeling_progress/, holding one folder
+    per site plus 4_6's own report. Named for the stage that gates it, beside
+    run{N}/stage4_2_planet_blocks/ and run{N}/stage4_7_stats/, so a run's three
+    kinds of product are told apart by their folder rather than by memory.
+
+    Inputs: results_root - str or Path, may start with ~; stage4_run
+    Outputs: Path, not created here
+    """
+    return resolve_config_path(results_root, "stage4_aggregation", f"run{stage4_run}", "stage4_6_labeling_progress")
+
+
+def endmember_directory(config, stage4_run):
+    """Where every stage 4_4, 4_5 and 4_6 file for ONE SITE lives.
+
+    One place for the path, so the three stages cannot disagree about it. Stage
+    4_7's outputs are NOT here: they go to the shared stage4_7_stats folder,
+    because they are read site against site.
+
+    Inputs: config; stage4_run - run label, e.g. "5"
+    Outputs: Path, not created here
+    """
+    return labeling_progress_directory(config["results_root"], stage4_run) / config["site_name"]
+
+
+def endmember_polygon_path(config, stage4_run):
+    """The hand-drawn end member polygon GeoPackage for one site.
+
+    Named by the IMAGERY year the polygons are drawn on, which differs by site.
+    THIS FILE HOLDS HAND LABELS AND IS NEVER DELETED OR REWRITTEN by any stage.
+
+    Inputs: config; stage4_run
+    Outputs: Path
+    """
+    return endmember_directory(config, stage4_run) / f"endmember_polygons_{config['site_name']}_{endmember_imagery_year(config)}.gpkg"
+
+
+def endmember_stats_directory(results_root, stage4_run):
+    """Where every stage 4_7 output lands, for all sites together.
+
+    stage4_aggregation/run{N}/stage4_7_stats/, beside the labelling folder that
+    holds polygons and imagery reports. The statistics, figures and tables are
+    read site against site, so they live together rather than scattered one per
+    site folder. Files are named by SITE CODE, SRER_2022_..., not by the long
+    site_name.
+
+    Inputs: results_root - str or Path, may start with ~; stage4_run - e.g. "5"
+    Outputs: Path, not created here
+    """
+    return resolve_config_path(results_root, "stage4_aggregation", f"run{stage4_run}", "stage4_7_stats")
+
+
+def read_selected_site_row(csv_path, site_name):
+    """The row for one site from the selected-sites table.
+
+    Matched on site_name, which is also the directory name under the PLSP
+    product tiers and the NEON and NAIP data roots, so one key ties them all.
+
+    Inputs: csv_path - Path to 01_selected_sites_short_2.csv; site_name
+    Outputs: dict of that row's columns, as strings
+    """
+    with open(csv_path, newline="") as handle:
+        for site_row in csv.DictReader(handle):
+            if site_row["site_name"] == site_name:
+                return site_row
+    raise SystemExit(f"FAIL - site_name {site_name} not found in {csv_path}")
+
+
+def read_phenocam_positions(site_row):
+    """Phenocam 1 and 2 for a site, whichever are recorded.
+
+    Stdlib only, because stage 4_5 calls this from the QGIS environment. A
+    camera is kept only when its name and both coordinates are present and
+    finite: the table writes a missing camera as an empty cell or as NaN, and
+    SJER has neither camera.
+
+    Inputs: site_row - dict from read_selected_site_row
+    Outputs: list of {number, name, latitude, longitude}, possibly empty
+    """
+    positions = []
+    for camera_number in (1, 2):
+        camera_name = (site_row.get(f"phenocam{camera_number}") or "").strip()
+        latitude_text = (site_row.get(f"(p{camera_number})latitude") or "").strip()
+        longitude_text = (site_row.get(f"(p{camera_number})longitude") or "").strip()
+        if not camera_name or camera_name.lower() == "nan" or not latitude_text or not longitude_text:
+            continue
+        latitude, longitude = float(latitude_text), float(longitude_text)
+        if not (math.isfinite(latitude) and math.isfinite(longitude)):
+            continue
+        positions.append({"number": camera_number, "name": camera_name, "latitude": latitude, "longitude": longitude})
+    return positions
 
 
 def read_rgb_at_scale(path, scale_m):

@@ -1,0 +1,53 @@
+{
+  "config_note": "Config created by running code/code_ground_truth_land_cover/v4/run_stage4_3_create_site_endmember_configs.py.",
+  "site": "SJER",
+  "site_name": "San_Joaquin_Experimental_Range_NEON",
+  "site_id": "US-xSJ",
+  "domain": "D17",
+  "year": 2023,
+  "year_note": "The year the end member polygons are drawn in: the NEON AOP or NAIP imagery year closest to 2022, and the PLSP year used for labelling and end member statistics.",
+  "data_root": "~/Dropbox/planet/data/NEON",
+  "results_root": "~/Dropbox/planet/results/v4",
+  "planet_data_root": "~/Dropbox/planet/data/planet",
+  "expected_crs": "EPSG:32611",
+  "expected_crs_note": "Must equal the UTM zone of the site's production PLSP file; 4_4 and 4_5 stop otherwise.",
+  "phenocam_csv": "../../selected_sites_info/results/01_selected_sites_short_2.csv",
+  "plsp_layers_csv": "../../../PLSP_Layers.csv",
+  "parameters": {
+    "H_GRASS_MAX": 0.7,
+    "H_TREE_MIN": 2.0
+  },
+  "parameters_note": "Height rule for tile choice: CHM below H_GRASS_MAX is bare or grass, H_GRASS_MAX up to H_TREE_MIN is shrub, H_TREE_MIN and above is tree. woody_share counts pixels at or above H_GRASS_MAX. Calibrated at SRER and used unchanged at every site.",
+  "products": {
+    "rgb": {
+      "code": "DP3.30010.001",
+      "expected_size": [
+        10000,
+        10000
+      ],
+      "expected_res": 0.1,
+      "folder": "NEON_images-camera-ortho-mosaic/NEON.D17.SJER.DP3.30010.001.2023-04.basic",
+      "pattern": "2023_SJER_6_{tile}_image.tif"
+    },
+    "chm": {
+      "code": "DP3.30015.001",
+      "expected_size": [
+        1000,
+        1000
+      ],
+      "expected_res": 1.0,
+      "folder": "NEON_struct-ecosystem/NEON.D17.SJER.DP3.30015.001.2023-04.basic",
+      "pattern": "NEON_D17_SJER_DP3_{tile}_CHM.tif"
+    }
+  },
+  "stage4_4_endmember_tiles": {
+    "min_flown_share": 0.95,
+    "naip_window_m": 2000,
+    "imagery_year": 2023
+  },
+  "neon_flight_month": "2023-04",
+  "neon_flight_months_found": [
+    "2023-04"
+  ],
+  "provenance_note": "Shared values from SRER_2022_endmembers.json. expected_crs from US-xSJ_NEON_San_Joaquin_Experimental_Range_PLSP_2017.nc; flight month and filename patterns from the NEON API for SJER 2023-04."
+}

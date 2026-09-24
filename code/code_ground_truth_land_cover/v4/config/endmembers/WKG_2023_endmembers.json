@@ -1,0 +1,28 @@
+{
+  "config_note": "Config created by running code/code_ground_truth_land_cover/v4/run_stage4_3_create_site_endmember_configs.py.",
+  "site": "WKG",
+  "site_name": "Walnut_Gulch_Kendall_Grasslands",
+  "site_id": "US-Wkg",
+  "domain": "D14",
+  "year": 2023,
+  "year_note": "The year the end member polygons are drawn in: the NEON AOP or NAIP imagery year closest to 2022, and the PLSP year used for labelling and end member statistics.",
+  "results_root": "~/Dropbox/planet/results/v4",
+  "planet_data_root": "~/Dropbox/planet/data/planet",
+  "expected_crs": "EPSG:32612",
+  "expected_crs_note": "Must equal the UTM zone of the site's production PLSP file; 4_4 and 4_5 stop otherwise.",
+  "phenocam_csv": "../../selected_sites_info/results/01_selected_sites_short_2.csv",
+  "plsp_layers_csv": "../../../PLSP_Layers.csv",
+  "parameters": {
+    "H_GRASS_MAX": 0.7,
+    "H_TREE_MIN": 2.0
+  },
+  "parameters_note": "Height rule for tile choice: CHM below H_GRASS_MAX is bare or grass, H_GRASS_MAX up to H_TREE_MIN is shrub, H_TREE_MIN and above is tree. woody_share counts pixels at or above H_GRASS_MAX. Calibrated at SRER and used unchanged at every site.",
+  "stage4_4_endmember_tiles": {
+    "min_flown_share": 0.95,
+    "naip_window_m": 2000,
+    "imagery_year": 2023
+  },
+  "naip_root": "~/Dropbox/planet/data/NAIP",
+  "imagery_note": "NAIP, one window centred on phenocam 1 and snapped to the PLSP grid. Stage 4_4 finds it by a STAC search of the Planetary Computer naip collection, so this config carries no products block.",
+  "provenance_note": "Shared values from SRER_2022_endmembers.json. expected_crs from US-Wkg_Walnut_Gulch_Kendall_Grasslands_PLSP_2017.nc; NAIP year chosen as the available flight nearest 2022."
+}
