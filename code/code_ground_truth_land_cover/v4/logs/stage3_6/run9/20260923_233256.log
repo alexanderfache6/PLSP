@@ -1,0 +1,6 @@
+qt.qpa.fonts: Populating font family aliases took 100 ms. Replace uses of missing font family "Open Sans" with one that exists to avoid this cost. 
+Stage 3_6 - Tier 3 blind labelling project - run 9, SRER 2022, 4 test tiles
+reference points: 300 (0 labelled)
+NEON CHM: 4, SAVI: 4, RGB 10cm: 4 of 4 tiles
+saved project: /Users/alexfache/Dropbox/planet/results/v4/stage3_classification/run9_tier3_olofsson/tier3_labeling_SRER_2022.qgz
+Blind: no map is loaded. Label each 1 m square by the class covering most of it; shrub 0.7 to 2 m and tree 2 m or more by the CHM. Toggle editing on the points layer, set ref_class and confidence, save the layer.

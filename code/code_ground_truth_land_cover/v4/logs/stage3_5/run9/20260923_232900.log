@@ -1,0 +1,11 @@
+Stage 3_5 - Tier 3 sampling design - run 9, SRER 2022
+======================================================================
+population 3,900,252 classified pixels on 4 test tiles; unclassified 99,748: shadow, resolved to tree 55,599, shadow, masked to nodata 12,714, non-finite features, edge or unflown 31,435, other 0
+515000_3530000: agree bare 358,621 px -> 32, agree grass 6,694 px -> 16, agree shrub 380,182 px -> 32, agree tree 116,820 px -> 20, disagree 122,912 px -> 50
+515000_3531000: agree bare 498,913 px -> 36, agree grass 1,219 px -> 16, agree shrub 326,675 px -> 30, agree tree 70,338 px -> 18, disagree 88,342 px -> 50
+516000_3528000: agree bare 65,896 px -> 18, agree grass 453,278 px -> 38, agree shrub 87,666 px -> 20, agree tree 166,645 px -> 24, disagree 194,270 px -> 50
+518000_3529000: agree bare 69,891 px -> 20, agree grass 67,568 px -> 20, agree shrub 520,236 px -> 40, agree tree 89,099 px -> 20, disagree 214,987 px -> 50
+planning, map C: anticipated SE of overall accuracy 0.0201 with batch 1, 0.0142 with both
+planning, map D: anticipated SE of overall accuracy 0.0178 with batch 1, 0.0126 with both
+wrote tier3_plan_SRER_2022.json and .md
+drew 600 points into tier3_sample_key_SRER_2022.csv; batch 1, 300 points, written blind to tier3_reference_points_SRER_2022.gpkg
