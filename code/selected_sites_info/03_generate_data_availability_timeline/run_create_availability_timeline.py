@@ -25,6 +25,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.dates as mdates  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+from aquarel import load_theme  # noqa: E402
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -53,6 +54,22 @@ DOT_SOURCES = ("3DEP", "NAIP", "NEON")
 # vertical offsets for the two phenocam spans inside the PhenoCam row
 CAM_OFFSETS = (0.14, -0.14)
 
+# THE SAME THEME AND FONT AS THE MAPS IN 02_generate_site_domain_pairs, so the
+# figures across this folder read as one set. The theme is applied per figure
+# rather than at import, because applying one edits global rcParams.
+FIGURE_THEME = "boxy_light"
+FIGURE_FONT = "DejaVu Sans"
+
+# The legend sits centred under the axis, as on the domain maps in
+# 02_generate_site_domain_pairs, in one row with the keys pulled in close to
+# their labels.
+LEGEND_ANCHOR = (0.5, -0.07)
+LEGEND_FONTSIZE = 9.5
+LEGEND_MARKER_SIZE = 7
+LEGEND_LINE_WIDTH = 3.5
+LEGEND_HANDLE_TEXT_PAD = 0.4
+LEGEND_COLUMN_SPACING = 1.4
+
 SURFACE = "#fcfcfb"
 TEXT_PRIMARY = "#0b0b0b"
 TEXT_SECONDARY = "#52514e"
@@ -64,10 +81,7 @@ BAND_GAP = 0.8  # extra spacing between site bands
 
 def parse_date_list(cell):
     """Pull YYYY-MM-DD dates out of a '[d1, d2, ...]' cell."""
-    return [
-        date(int(y), int(m), int(d))
-        for y, m, d in re.findall(r"(\d{4})-(\d{2})-(\d{2})", cell or "")
-    ]
+    return [date(int(y), int(m), int(d)) for y, m, d in re.findall(r"(\d{4})-(\d{2})-(\d{2})", cell or "")]
 
 
 def read_site_order(path):
@@ -143,14 +157,8 @@ def read_neon_dates(path):
         reader = csv.DictReader(f)
         fields = reader.fieldnames or []
         if "year_month" not in fields:
-            sys.exit(
-                f"{path} has no year_month column - re-run run_neon_availability.py"
-            )
-        products = [
-            c
-            for c in fields
-            if c not in ("neon_id", "year", "month", "year_month", "all_products")
-        ]
+            sys.exit(f"{path} has no year_month column - re-run run_neon_availability.py")
+        products = [c for c in fields if c not in ("neon_id", "year", "month", "year_month", "all_products")]
         for row in reader:
             if str(row.get("all_products", "")).strip() != "1":
                 continue
@@ -211,13 +219,15 @@ def main():
     x_min = date(args.min_year, 1, 1)
     # stop at the month after the last acquisition rather than the next new year
     latest = max(all_dates)
-    x_max = (
-        date(latest.year + 1, 1, 1)
-        if latest.month == 12
-        else date(latest.year, latest.month + 1, 1)
-    )
+    x_max = date(latest.year + 1, 1, 1) if latest.month == 12 else date(latest.year, latest.month + 1, 1)
 
     height = 1.6 + 0.42 * len(rows) + 0.3 * len(sites)
+    theme = load_theme(FIGURE_THEME)
+    theme.apply()
+    plt.rcParams["font.family"] = FIGURE_FONT
+    # The explicit colours below are set AFTER the theme on purpose: the theme
+    # supplies the typography and the axis treatment, while this figure keeps
+    # its own surface and text colours.
     fig, ax = plt.subplots(figsize=(14, height), facecolor=SURFACE)
     ax.set_facecolor(SURFACE)
 
@@ -306,15 +316,14 @@ def main():
         spine.set_color(GRID)
 
     ax.set_title(
-        "Ground truth data availability",
+        "Base Map Data Availability",
         loc="left",
         fontsize=14,
         color=TEXT_PRIMARY,
         pad=42,
     )
     ax.annotate(
-        f"{args.min_year}-present (PlanetScope coverage), one dot per acquisition, "
-        f"NEON shown only where all AOP ({', '.join(neon_products)}) products exist",
+        f"{args.min_year}-present (PlanetScope coverage). One dot per acquisition. NEON shown only where all AOP ({', '.join(neon_products)}) products exist.",
         xy=(0, 1.0),
         xytext=(0, 12),
         xycoords="axes fraction",
@@ -329,7 +338,7 @@ def main():
             [],
             marker="o",
             linestyle="none",
-            markersize=8,
+            markersize=LEGEND_MARKER_SIZE,
             markerfacecolor=color,
             markeredgecolor=SURFACE,
             markeredgewidth=1.6,
@@ -337,33 +346,31 @@ def main():
         )
         if source in DOT_SOURCES
         # phenocam is an operating period, so its key is a line, not a dot
-        else plt.Line2D([], [], color=color, linewidth=4, label=f"{source} (operating)")
+        else plt.Line2D([], [], color=color, linewidth=LEGEND_LINE_WIDTH, label=f"{source} (operational)")
         for source, color in SOURCES.items()
     ]
-    # legend sits below the axis so it never collides with the subtitle
+    # legend sits centred below the axis so it never collides with the subtitle
     legend = ax.legend(
         handles=handles,
-        loc="upper left",
-        bbox_to_anchor=(0, -0.09),
+        loc="upper center",
+        bbox_to_anchor=LEGEND_ANCHOR,
         ncol=len(SOURCES),
         frameon=False,
-        fontsize=10,
-        handletextpad=0.5,
-        columnspacing=2.2,
+        fontsize=LEGEND_FONTSIZE,
+        handletextpad=LEGEND_HANDLE_TEXT_PAD,
+        columnspacing=LEGEND_COLUMN_SPACING,
     )
     for text in legend.get_texts():
         text.set_color(TEXT_SECONDARY)
 
+    theme.apply_transforms()
     fig.tight_layout()
     fig.savefig(args.out_png, dpi=200, facecolor=SURFACE, bbox_inches="tight")
     print(f"Wrote {args.out_png}")
 
     for _, site_id, source, dates, spans in rows:
         if spans:
-            label = "; ".join(
-                f"{name} {start.isoformat()}..{end.isoformat()}"
-                for name, start, end in spans
-            )
+            label = "; ".join(f"{name} {start.isoformat()}..{end.isoformat()}" for name, start, end in spans)
             print(f"{site_id:<8} {source:<9} {len(spans):>3}  {label}")
         else:
             label = ", ".join(d.isoformat() for d in sorted(dates, reverse=True))

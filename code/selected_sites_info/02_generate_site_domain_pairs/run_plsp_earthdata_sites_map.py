@@ -9,7 +9,6 @@ https://www.neonscience.org/field-site-map-and-info
 Writes an interactive Plotly HTML map plus the joined site/domain table.
 """
 
-import argparse
 import csv
 import io
 import sys
@@ -101,34 +100,17 @@ def load_sites(plsp_csv, flux_tsv):
 
 def hover_text(row):
     kind = "NEON" if row.is_neon else "AmeriFlux"
-    domain = (
-        f"{row.domainID} {row.domainName}"
-        if isinstance(row.domainID, str)
-        else "outside any NEON domain"
-    )
+    domain = f"{row.domainID} {row.domainName}" if isinstance(row.domainID, str) else "outside any NEON domain"
     igbp = "<br>".join(textwrap.wrap(f"IGBP: {row.igbp} ({row.veg})", HOVER_WRAP))
-    return (
-        f"<b>{row.site_code}</b> — {row['name']}<br>"
-        f"{kind}<br>"
-        f"Domain: {domain}<br>"
-        f"{igbp}<br>"
-        f"Koppen: {row.koeppen} · MAP {row.map_mm} mm · MAT {row.mat_c} C<br>"
-        f"AmeriFlux BASE: {row.data_start}-{row.data_end}<br>"
-        f"{row.lat:.4f}, {row.lon:.4f}"
-    )
+    return f"<b>{row.site_code}</b> — {row['name']}<br>{kind}<br>Domain: {domain}<br>{igbp}<br>Koppen: {row.koeppen} · MAP {row.map_mm} mm · MAT {row.mat_c} C<br>AmeriFlux BASE: {row.data_start}-{row.data_end}<br>{row.lat:.4f}, {row.lon:.4f}"
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--plsp-csv", type=Path, default=PLSP_CSV)
-    ap.add_argument("--flux-tsv", type=Path, default=FLUX_TSV)
-    ap.add_argument("--domain-dir", type=Path, default=DOMAIN_DIR)
-    ap.add_argument("--out-html", type=Path, default=OUT_HTML)
-    ap.add_argument("--out-csv", type=Path, default=OUT_CSV)
-    args = ap.parse_args()
-
-    domains = load_domains(args.domain_dir)
-    sites = load_sites(args.plsp_csv, args.flux_tsv)
+    # NO PATH ARGUMENTS. Every input and output is a constant at the top of this
+    # file, derived from the script's own location, so the two maps in this
+    # folder cannot be pointed at different copies of the same data.
+    domains = load_domains(DOMAIN_DIR)
+    sites = load_sites(PLSP_CSV, FLUX_TSV)
 
     # restrict to the lower 48: drop Alaska, Hawaii and Puerto Rico sites, then
     # keep only the domains that still reach into that window
@@ -141,8 +123,7 @@ def main():
     outside = sites[~sites.geometry.within(conus)]
     if len(outside):
         print(
-            f"dropped {len(outside)} site(s) outside the lower 48: "
-            + ", ".join(outside.site_code),
+            f"dropped {len(outside)} site(s) outside the lower 48: " + ", ".join(outside.site_code),
             file=sys.stderr,
         )
     sites = sites[sites.geometry.within(conus)].reset_index(drop=True)
@@ -154,13 +135,12 @@ def main():
         how="left",
         predicate="within",
     ).drop(columns="index_right")
-    joined.drop(columns="geometry").to_csv(args.out_csv, index=False)
+    joined.drop(columns="geometry").to_csv(OUT_CSV, index=False)
 
     orphans = joined[joined.domainID.isna()]
     if len(orphans):
         print(
-            f"note: {len(orphans)} site(s) fall outside every domain polygon: "
-            + ", ".join(orphans.site_code),
+            f"note: {len(orphans)} site(s) fall outside every domain polygon: " + ", ".join(orphans.site_code),
             file=sys.stderr,
         )
 
@@ -177,11 +157,7 @@ def main():
     # a domain is pairable only if it holds at least one NEON and one AmeriFlux
     # site; the rest are flagged so unusable domains are visible at a glance
     counts = joined.dropna(subset=["domainID"]).groupby("domainID")["is_neon"]
-    pairable = {
-        domain_id
-        for domain_id, flags in counts
-        if flags.any() and (~flags).any()
-    }
+    pairable = {domain_id for domain_id, flags in counts if flags.any() and (~flags).any()}
     simplified["pairable"] = simplified.domainID.isin(pairable)
 
     for is_pairable, fill, label in (
@@ -233,23 +209,15 @@ def main():
             x=0.01,
             font=dict(size=17),
         ),
-        legend=dict(
-            orientation="h", yanchor="bottom", y=1.005, xanchor="right", x=1
-        ),
+        legend=dict(orientation="h", yanchor="bottom", y=1.005, xanchor="right", x=1),
         height=760,
     )
 
-    fig.write_html(args.out_html, include_plotlyjs="cdn")
-    print(f"Wrote {args.out_html}")
-    print(f"Wrote {args.out_csv}")
+    fig.write_html(OUT_HTML, include_plotlyjs="cdn")
+    print(f"Wrote {OUT_HTML}")
+    print(f"Wrote {OUT_CSV}")
 
-    summary = (
-        joined.dropna(subset=["domainID"])
-        .groupby(["domainID", "domainName"])
-        .agg(neon=("is_neon", "sum"), flux=("is_neon", lambda s: (~s).sum()))
-        .reset_index()
-        .sort_values("domainID")
-    )
+    summary = joined.dropna(subset=["domainID"]).groupby(["domainID", "domainName"]).agg(neon=("is_neon", "sum"), flux=("is_neon", lambda s: (~s).sum())).reset_index().sort_values("domainID")
     print("\ndomain            NEON  flux  pairable")
     for _, r in summary.iterrows():
         mark = "yes" if r.neon and r.flux else ""
