@@ -1,0 +1,1365 @@
+Stage 3_3 - RF-A_C hyperparameter tuning against run 9 - SRER 2022
+======================================================================
+started 2026-09-23T18:51:38
+labels stage2_labeling/labels_clean, manifest 825b955c52dc, matches run 9
+19 features, 6 train tiles, cap 100, subsample seed 2028, forest seeds 2028, 2029, 2030
+order: tree check at run 9's settings, then the grid of 64 configurations x 3 seeds x 6 folds = 1,152 fits, then the tree check on the winner if it differs
+run 9 settings: max_features sqrt, min_samples_leaf 2, class_weight balanced, max_samples all, n_estimators 300
+rule: seed-mean macro-F1 > 0.8564 + 0.0041, shrub F1 >= 0.6614, shrub -> tree <= 0.1394
+
+loaded 11,327 training pixels
+
+[tree check before grid 1/3, n_estimators 100] start: max_features sqrt, min_samples_leaf 2, class_weight balanced, max_samples all
+[tree check before grid 1/3, n_estimators 100] seed 2028 fold 1/6, held out 511000_3527000
+[tree check before grid 1/3, n_estimators 100] seed 2028 fold 2/6, held out 511000_3528000
+[tree check before grid 1/3, n_estimators 100] seed 2028 fold 3/6, held out 511000_3529000
+[tree check before grid 1/3, n_estimators 100] seed 2028 fold 4/6, held out 519000_3527000
+[tree check before grid 1/3, n_estimators 100] seed 2028 fold 5/6, held out 515000_3526000
+[tree check before grid 1/3, n_estimators 100] seed 2028 fold 6/6, held out 517000_3531000
+[tree check before grid 1/3, n_estimators 100] seed 2029 fold 1/6, held out 511000_3527000
+[tree check before grid 1/3, n_estimators 100] seed 2029 fold 2/6, held out 511000_3528000
+[tree check before grid 1/3, n_estimators 100] seed 2029 fold 3/6, held out 511000_3529000
+[tree check before grid 1/3, n_estimators 100] seed 2029 fold 4/6, held out 519000_3527000
+[tree check before grid 1/3, n_estimators 100] seed 2029 fold 5/6, held out 515000_3526000
+[tree check before grid 1/3, n_estimators 100] seed 2029 fold 6/6, held out 517000_3531000
+[tree check before grid 1/3, n_estimators 100] seed 2030 fold 1/6, held out 511000_3527000
+[tree check before grid 1/3, n_estimators 100] seed 2030 fold 2/6, held out 511000_3528000
+[tree check before grid 1/3, n_estimators 100] seed 2030 fold 3/6, held out 511000_3529000
+[tree check before grid 1/3, n_estimators 100] seed 2030 fold 4/6, held out 519000_3527000
+[tree check before grid 1/3, n_estimators 100] seed 2030 fold 5/6, held out 515000_3526000
+[tree check before grid 1/3, n_estimators 100] seed 2030 fold 6/6, held out 517000_3531000
+[tree check before grid 1/3, n_estimators 100, run time: 4 s] done: macro-F1 0.8539 (seeds 0.8505 to 0.8561)
+[tree check before grid 2/3, n_estimators 300] start: max_features sqrt, min_samples_leaf 2, class_weight balanced, max_samples all
+[tree check before grid 2/3, n_estimators 300] seed 2028 fold 1/6, held out 511000_3527000
+[tree check before grid 2/3, n_estimators 300] seed 2028 fold 2/6, held out 511000_3528000
+[tree check before grid 2/3, n_estimators 300] seed 2028 fold 3/6, held out 511000_3529000
+[tree check before grid 2/3, n_estimators 300] seed 2028 fold 4/6, held out 519000_3527000
+[tree check before grid 2/3, n_estimators 300] seed 2028 fold 5/6, held out 515000_3526000
+[tree check before grid 2/3, n_estimators 300] seed 2028 fold 6/6, held out 517000_3531000
+[tree check before grid 2/3, n_estimators 300] seed 2029 fold 1/6, held out 511000_3527000
+[tree check before grid 2/3, n_estimators 300] seed 2029 fold 2/6, held out 511000_3528000
+[tree check before grid 2/3, n_estimators 300] seed 2029 fold 3/6, held out 511000_3529000
+[tree check before grid 2/3, n_estimators 300] seed 2029 fold 4/6, held out 519000_3527000
+[tree check before grid 2/3, n_estimators 300] seed 2029 fold 5/6, held out 515000_3526000
+[tree check before grid 2/3, n_estimators 300] seed 2029 fold 6/6, held out 517000_3531000
+[tree check before grid 2/3, n_estimators 300] seed 2030 fold 1/6, held out 511000_3527000
+[tree check before grid 2/3, n_estimators 300] seed 2030 fold 2/6, held out 511000_3528000
+[tree check before grid 2/3, n_estimators 300] seed 2030 fold 3/6, held out 511000_3529000
+[tree check before grid 2/3, n_estimators 300] seed 2030 fold 4/6, held out 519000_3527000
+[tree check before grid 2/3, n_estimators 300] seed 2030 fold 5/6, held out 515000_3526000
+[tree check before grid 2/3, n_estimators 300] seed 2030 fold 6/6, held out 517000_3531000
+[tree check before grid 2/3, n_estimators 300, run time: 11 s] done: macro-F1 0.8564 (seeds 0.8545 to 0.8586)
+[tree check before grid 3/3, n_estimators 1000] start: max_features sqrt, min_samples_leaf 2, class_weight balanced, max_samples all
+[tree check before grid 3/3, n_estimators 1000] seed 2028 fold 1/6, held out 511000_3527000
+[tree check before grid 3/3, n_estimators 1000] seed 2028 fold 2/6, held out 511000_3528000
+[tree check before grid 3/3, n_estimators 1000] seed 2028 fold 3/6, held out 511000_3529000
+[tree check before grid 3/3, n_estimators 1000] seed 2028 fold 4/6, held out 519000_3527000
+[tree check before grid 3/3, n_estimators 1000] seed 2028 fold 5/6, held out 515000_3526000
+[tree check before grid 3/3, n_estimators 1000] seed 2028 fold 6/6, held out 517000_3531000
+[tree check before grid 3/3, n_estimators 1000] seed 2029 fold 1/6, held out 511000_3527000
+[tree check before grid 3/3, n_estimators 1000] seed 2029 fold 2/6, held out 511000_3528000
+[tree check before grid 3/3, n_estimators 1000] seed 2029 fold 3/6, held out 511000_3529000
+[tree check before grid 3/3, n_estimators 1000] seed 2029 fold 4/6, held out 519000_3527000
+[tree check before grid 3/3, n_estimators 1000] seed 2029 fold 5/6, held out 515000_3526000
+[tree check before grid 3/3, n_estimators 1000] seed 2029 fold 6/6, held out 517000_3531000
+[tree check before grid 3/3, n_estimators 1000] seed 2030 fold 1/6, held out 511000_3527000
+[tree check before grid 3/3, n_estimators 1000] seed 2030 fold 2/6, held out 511000_3528000
+[tree check before grid 3/3, n_estimators 1000] seed 2030 fold 3/6, held out 511000_3529000
+[tree check before grid 3/3, n_estimators 1000] seed 2030 fold 4/6, held out 519000_3527000
+[tree check before grid 3/3, n_estimators 1000] seed 2030 fold 5/6, held out 515000_3526000
+[tree check before grid 3/3, n_estimators 1000] seed 2030 fold 6/6, held out 517000_3531000
+[tree check before grid 3/3, n_estimators 1000, run time: 36 s] done: macro-F1 0.8564 (seeds 0.8559 to 0.8568)
+[tree check before grid] 1,000 trees against 300: macro-F1 -0.0000, within the seed range 0.0041; use n_estimators 300
+
+[config 1/64] start: max_features 2, min_samples_leaf 1, class_weight balanced, max_samples all
+[config 1/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 1/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 1/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 1/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 1/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 1/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 1/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 1/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 1/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 1/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 1/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 1/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 1/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 1/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 1/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 1/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 1/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 1/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 1/64, run time: 7 s] done: macro-F1 0.8565 (seeds 0.8564 to 0.8568), shrub F1 0.6575, shrub -> tree 0.1471, about 7 min 18 s left
+[config 2/64] start: max_features 2, min_samples_leaf 1, class_weight balanced, max_samples 0.5
+[config 2/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 2/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 2/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 2/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 2/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 2/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 2/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 2/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 2/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 2/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 2/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 2/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 2/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 2/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 2/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 2/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 2/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 2/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 2/64, run time: 5 s] done: macro-F1 0.8568 (seeds 0.8558 to 0.8576), shrub F1 0.6582, shrub -> tree 0.1456, about 6 min 21 s left
+[config 3/64] start: max_features 2, min_samples_leaf 1, class_weight balanced_subsample, max_samples all
+[config 3/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 3/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 3/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 3/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 3/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 3/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 3/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 3/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 3/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 3/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 3/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 3/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 3/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 3/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 3/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 3/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 3/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 3/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 3/64, run time: 10 s] done: macro-F1 0.8557 (seeds 0.8542 to 0.8574), shrub F1 0.6551, shrub -> tree 0.1450, about 7 min 24 s left
+[config 4/64] start: max_features 2, min_samples_leaf 1, class_weight balanced_subsample, max_samples 0.5
+[config 4/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 4/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 4/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 4/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 4/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 4/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 4/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 4/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 4/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 4/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 4/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 4/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 4/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 4/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 4/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 4/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 4/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 4/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 4/64, run time: 7 s] done: macro-F1 0.8580 (seeds 0.8571 to 0.8592), shrub F1 0.6617, shrub -> tree 0.1424, about 7 min 19 s left
+[config 5/64] start: max_features 2, min_samples_leaf 2, class_weight balanced, max_samples all
+[config 5/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 5/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 5/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 5/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 5/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 5/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 5/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 5/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 5/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 5/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 5/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 5/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 5/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 5/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 5/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 5/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 5/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 5/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 5/64, run time: 7 s] done: macro-F1 0.8570 (seeds 0.8563 to 0.8575), shrub F1 0.6625, shrub -> tree 0.1400, about 7 min 9 s left
+[config 6/64] start: max_features 2, min_samples_leaf 2, class_weight balanced, max_samples 0.5
+[config 6/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 6/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 6/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 6/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 6/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 6/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 6/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 6/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 6/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 6/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 6/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 6/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 6/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 6/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 6/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 6/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 6/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 6/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 6/64, run time: 5 s] done: macro-F1 0.8561 (seeds 0.8555 to 0.8566), shrub F1 0.6614, shrub -> tree 0.1394, about 6 min 43 s left
+[config 7/64] start: max_features 2, min_samples_leaf 2, class_weight balanced_subsample, max_samples all
+[config 7/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 7/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 7/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 7/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 7/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 7/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 7/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 7/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 7/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 7/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 7/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 7/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 7/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 7/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 7/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 7/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 7/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 7/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 7/64, run time: 10 s] done: macro-F1 0.8570 (seeds 0.8557 to 0.8584), shrub F1 0.6625, shrub -> tree 0.1400, about 6 min 58 s left
+[config 8/64] start: max_features 2, min_samples_leaf 2, class_weight balanced_subsample, max_samples 0.5
+[config 8/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 8/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 8/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 8/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 8/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 8/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 8/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 8/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 8/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 8/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 8/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 8/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 8/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 8/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 8/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 8/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 8/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 8/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 8/64, run time: 8 s] done: macro-F1 0.8564 (seeds 0.8557 to 0.8569), shrub F1 0.6618, shrub -> tree 0.1394, about 6 min 54 s left
+[config 9/64] start: max_features 2, min_samples_leaf 5, class_weight balanced, max_samples all
+[config 9/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 9/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 9/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 9/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 9/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 9/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 9/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 9/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 9/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 9/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 9/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 9/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 9/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 9/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 9/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 9/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 9/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 9/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 9/64, run time: 7 s] done: macro-F1 0.8541 (seeds 0.8528 to 0.8550), shrub F1 0.6585, shrub -> tree 0.1323, about 6 min 44 s left
+[config 10/64] start: max_features 2, min_samples_leaf 5, class_weight balanced, max_samples 0.5
+[config 10/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 10/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 10/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 10/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 10/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 10/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 10/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 10/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 10/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 10/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 10/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 10/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 10/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 10/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 10/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 10/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 10/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 10/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 10/64, run time: 6 s] done: macro-F1 0.8537 (seeds 0.8529 to 0.8551), shrub F1 0.6591, shrub -> tree 0.1301, about 6 min 27 s left
+[config 11/64] start: max_features 2, min_samples_leaf 5, class_weight balanced_subsample, max_samples all
+[config 11/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 11/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 11/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 11/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 11/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 11/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 11/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 11/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 11/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 11/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 11/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 11/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 11/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 11/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 11/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 11/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 11/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 11/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 11/64, run time: 10 s] done: macro-F1 0.8544 (seeds 0.8538 to 0.8549), shrub F1 0.6600, shrub -> tree 0.1317, about 6 min 33 s left
+[config 12/64] start: max_features 2, min_samples_leaf 5, class_weight balanced_subsample, max_samples 0.5
+[config 12/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 12/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 12/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 12/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 12/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 12/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 12/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 12/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 12/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 12/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 12/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 12/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 12/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 12/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 12/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 12/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 12/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 12/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 12/64, run time: 8 s] done: macro-F1 0.8537 (seeds 0.8529 to 0.8545), shrub F1 0.6588, shrub -> tree 0.1317, about 6 min 27 s left
+[config 13/64] start: max_features 2, min_samples_leaf 10, class_weight balanced, max_samples all
+[config 13/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 13/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 13/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 13/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 13/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 13/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 13/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 13/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 13/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 13/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 13/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 13/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 13/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 13/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 13/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 13/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 13/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 13/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 13/64, run time: 7 s] done: macro-F1 0.8501 (seeds 0.8497 to 0.8505), shrub F1 0.6526, shrub -> tree 0.1275, about 6 min 18 s left
+[config 14/64] start: max_features 2, min_samples_leaf 10, class_weight balanced, max_samples 0.5
+[config 14/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 14/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 14/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 14/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 14/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 14/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 14/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 14/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 14/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 14/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 14/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 14/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 14/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 14/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 14/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 14/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 14/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 14/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 14/64, run time: 6 s] done: macro-F1 0.8502 (seeds 0.8492 to 0.8508), shrub F1 0.6554, shrub -> tree 0.1246, about 6 min 5 s left
+[config 15/64] start: max_features 2, min_samples_leaf 10, class_weight balanced_subsample, max_samples all
+[config 15/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 15/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 15/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 15/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 15/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 15/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 15/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 15/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 15/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 15/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 15/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 15/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 15/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 15/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 15/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 15/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 15/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 15/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 15/64, run time: 10 s] done: macro-F1 0.8505 (seeds 0.8500 to 0.8512), shrub F1 0.6535, shrub -> tree 0.1256, about 6 min 6 s left
+[config 16/64] start: max_features 2, min_samples_leaf 10, class_weight balanced_subsample, max_samples 0.5
+[config 16/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 16/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 16/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 16/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 16/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 16/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 16/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 16/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 16/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 16/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 16/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 16/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 16/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 16/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 16/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 16/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 16/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 16/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 16/64, run time: 8 s] done: macro-F1 0.8494 (seeds 0.8492 to 0.8496), shrub F1 0.6522, shrub -> tree 0.1270, about 6 min 0 s left
+[config 17/64] start: max_features 4, min_samples_leaf 1, class_weight balanced, max_samples all
+[config 17/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 17/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 17/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 17/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 17/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 17/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 17/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 17/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 17/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 17/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 17/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 17/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 17/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 17/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 17/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 17/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 17/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 17/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 17/64, run time: 12 s] done: macro-F1 0.8555 (seeds 0.8544 to 0.8564), shrub F1 0.6572, shrub -> tree 0.1445, about 6 min 4 s left
+[config 18/64] start: max_features 4, min_samples_leaf 1, class_weight balanced, max_samples 0.5
+[config 18/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 18/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 18/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 18/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 18/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 18/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 18/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 18/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 18/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 18/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 18/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 18/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 18/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 18/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 18/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 18/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 18/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 18/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 18/64, run time: 8 s] done: macro-F1 0.8557 (seeds 0.8537 to 0.8569), shrub F1 0.6589, shrub -> tree 0.1445, about 5 min 57 s left
+[config 19/64] start: max_features 4, min_samples_leaf 1, class_weight balanced_subsample, max_samples all
+[config 19/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 19/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 19/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 19/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 19/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 19/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 19/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 19/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 19/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 19/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 19/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 19/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 19/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 19/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 19/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 19/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 19/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 19/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 19/64, run time: 14 s] done: macro-F1 0.8555 (seeds 0.8546 to 0.8564), shrub F1 0.6566, shrub -> tree 0.1453, about 6 min 3 s left
+[config 20/64] start: max_features 4, min_samples_leaf 1, class_weight balanced_subsample, max_samples 0.5
+[config 20/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 20/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 20/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 20/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 20/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 20/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 20/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 20/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 20/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 20/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 20/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 20/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 20/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 20/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 20/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 20/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 20/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 20/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 20/64, run time: 10 s] done: macro-F1 0.8571 (seeds 0.8556 to 0.8584), shrub F1 0.6631, shrub -> tree 0.1432, about 5 min 59 s left
+[config 21/64] start: max_features 4, min_samples_leaf 2, class_weight balanced, max_samples all
+[config 21/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 21/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 21/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 21/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 21/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 21/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 21/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 21/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 21/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 21/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 21/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 21/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 21/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 21/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 21/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 21/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 21/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 21/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 21/64, run time: 12 s] done: macro-F1 0.8564 (seeds 0.8545 to 0.8586), shrub F1 0.6614, shrub -> tree 0.1394, about 5 min 58 s left
+[config 22/64] start: max_features 4, min_samples_leaf 2, class_weight balanced, max_samples 0.5
+[config 22/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 22/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 22/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 22/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 22/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 22/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 22/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 22/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 22/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 22/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 22/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 22/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 22/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 22/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 22/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 22/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 22/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 22/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 22/64, run time: 8 s] done: macro-F1 0.8564 (seeds 0.8558 to 0.8575), shrub F1 0.6630, shrub -> tree 0.1386, about 5 min 48 s left
+[config 23/64] start: max_features 4, min_samples_leaf 2, class_weight balanced_subsample, max_samples all
+[config 23/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 23/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 23/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 23/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 23/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 23/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 23/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 23/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 23/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 23/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 23/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 23/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 23/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 23/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 23/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 23/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 23/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 23/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 23/64, run time: 13 s] done: macro-F1 0.8564 (seeds 0.8555 to 0.8570), shrub F1 0.6609, shrub -> tree 0.1389, about 5 min 49 s left
+[config 24/64] start: max_features 4, min_samples_leaf 2, class_weight balanced_subsample, max_samples 0.5
+[config 24/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 24/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 24/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 24/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 24/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 24/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 24/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 24/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 24/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 24/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 24/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 24/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 24/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 24/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 24/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 24/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 24/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 24/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 24/64, run time: 9 s] done: macro-F1 0.8558 (seeds 0.8550 to 0.8570), shrub F1 0.6611, shrub -> tree 0.1397, about 5 min 42 s left
+[config 25/64] start: max_features 4, min_samples_leaf 5, class_weight balanced, max_samples all
+[config 25/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 25/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 25/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 25/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 25/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 25/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 25/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 25/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 25/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 25/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 25/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 25/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 25/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 25/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 25/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 25/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 25/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 25/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 25/64, run time: 11 s] done: macro-F1 0.8522 (seeds 0.8516 to 0.8528), shrub F1 0.6548, shrub -> tree 0.1301, about 5 min 37 s left
+[config 26/64] start: max_features 4, min_samples_leaf 5, class_weight balanced, max_samples 0.5
+[config 26/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 26/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 26/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 26/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 26/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 26/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 26/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 26/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 26/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 26/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 26/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 26/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 26/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 26/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 26/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 26/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 26/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 26/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 26/64, run time: 7 s] done: macro-F1 0.8536 (seeds 0.8519 to 0.8547), shrub F1 0.6614, shrub -> tree 0.1299, about 5 min 27 s left
+[config 27/64] start: max_features 4, min_samples_leaf 5, class_weight balanced_subsample, max_samples all
+[config 27/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 27/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 27/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 27/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 27/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 27/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 27/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 27/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 27/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 27/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 27/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 27/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 27/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 27/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 27/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 27/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 27/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 27/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 27/64, run time: 13 s] done: macro-F1 0.8532 (seeds 0.8519 to 0.8548), shrub F1 0.6566, shrub -> tree 0.1323, about 5 min 24 s left
+[config 28/64] start: max_features 4, min_samples_leaf 5, class_weight balanced_subsample, max_samples 0.5
+[config 28/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 28/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 28/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 28/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 28/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 28/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 28/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 28/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 28/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 28/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 28/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 28/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 28/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 28/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 28/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 28/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 28/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 28/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 28/64, run time: 9 s] done: macro-F1 0.8536 (seeds 0.8531 to 0.8540), shrub F1 0.6609, shrub -> tree 0.1291, about 5 min 17 s left
+[config 29/64] start: max_features 4, min_samples_leaf 10, class_weight balanced, max_samples all
+[config 29/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 29/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 29/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 29/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 29/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 29/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 29/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 29/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 29/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 29/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 29/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 29/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 29/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 29/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 29/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 29/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 29/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 29/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 29/64, run time: 11 s] done: macro-F1 0.8498 (seeds 0.8493 to 0.8501), shrub F1 0.6564, shrub -> tree 0.1254, about 5 min 10 s left
+[config 30/64] start: max_features 4, min_samples_leaf 10, class_weight balanced, max_samples 0.5
+[config 30/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 30/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 30/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 30/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 30/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 30/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 30/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 30/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 30/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 30/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 30/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 30/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 30/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 30/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 30/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 30/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 30/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 30/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 30/64, run time: 7 s] done: macro-F1 0.8490 (seeds 0.8484 to 0.8494), shrub F1 0.6562, shrub -> tree 0.1232, about 5 min 0 s left
+[config 31/64] start: max_features 4, min_samples_leaf 10, class_weight balanced_subsample, max_samples all
+[config 31/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 31/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 31/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 31/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 31/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 31/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 31/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 31/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 31/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 31/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 31/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 31/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 31/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 31/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 31/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 31/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 31/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 31/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 31/64, run time: 13 s] done: macro-F1 0.8490 (seeds 0.8476 to 0.8506), shrub F1 0.6543, shrub -> tree 0.1246, about 4 min 56 s left
+[config 32/64] start: max_features 4, min_samples_leaf 10, class_weight balanced_subsample, max_samples 0.5
+[config 32/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 32/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 32/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 32/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 32/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 32/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 32/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 32/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 32/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 32/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 32/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 32/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 32/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 32/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 32/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 32/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 32/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 32/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 32/64, run time: 9 s] done: macro-F1 0.8489 (seeds 0.8481 to 0.8495), shrub F1 0.6560, shrub -> tree 0.1232, about 4 min 47 s left
+[config 33/64] start: max_features 6, min_samples_leaf 1, class_weight balanced, max_samples all
+[config 33/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 33/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 33/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 33/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 33/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 33/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 33/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 33/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 33/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 33/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 33/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 33/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 33/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 33/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 33/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 33/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 33/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 33/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 33/64, run time: 17 s] done: macro-F1 0.8536 (seeds 0.8534 to 0.8537), shrub F1 0.6533, shrub -> tree 0.1485, about 4 min 45 s left
+[config 34/64] start: max_features 6, min_samples_leaf 1, class_weight balanced, max_samples 0.5
+[config 34/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 34/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 34/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 34/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 34/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 34/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 34/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 34/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 34/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 34/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 34/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 34/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 34/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 34/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 34/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 34/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 34/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 34/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 34/64, run time: 10 s] done: macro-F1 0.8558 (seeds 0.8537 to 0.8568), shrub F1 0.6596, shrub -> tree 0.1453, about 4 min 37 s left
+[config 35/64] start: max_features 6, min_samples_leaf 1, class_weight balanced_subsample, max_samples all
+[config 35/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 35/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 35/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 35/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 35/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 35/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 35/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 35/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 35/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 35/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 35/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 35/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 35/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 35/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 35/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 35/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 35/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 35/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 35/64, run time: 18 s] done: macro-F1 0.8549 (seeds 0.8542 to 0.8557), shrub F1 0.6569, shrub -> tree 0.1479, about 4 min 35 s left
+[config 36/64] start: max_features 6, min_samples_leaf 1, class_weight balanced_subsample, max_samples 0.5
+[config 36/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 36/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 36/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 36/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 36/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 36/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 36/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 36/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 36/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 36/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 36/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 36/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 36/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 36/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 36/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 36/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 36/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 36/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 36/64, run time: 12 s] done: macro-F1 0.8562 (seeds 0.8555 to 0.8565), shrub F1 0.6606, shrub -> tree 0.1442, about 4 min 27 s left
+[config 37/64] start: max_features 6, min_samples_leaf 2, class_weight balanced, max_samples all
+[config 37/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 37/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 37/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 37/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 37/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 37/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 37/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 37/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 37/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 37/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 37/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 37/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 37/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 37/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 37/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 37/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 37/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 37/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 37/64, run time: 16 s] done: macro-F1 0.8542 (seeds 0.8537 to 0.8546), shrub F1 0.6568, shrub -> tree 0.1397, about 4 min 22 s left
+[config 38/64] start: max_features 6, min_samples_leaf 2, class_weight balanced, max_samples 0.5
+[config 38/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 38/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 38/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 38/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 38/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 38/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 38/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 38/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 38/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 38/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 38/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 38/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 38/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 38/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 38/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 38/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 38/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 38/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 38/64, run time: 10 s] done: macro-F1 0.8561 (seeds 0.8544 to 0.8574), shrub F1 0.6626, shrub -> tree 0.1378, about 4 min 13 s left
+[config 39/64] start: max_features 6, min_samples_leaf 2, class_weight balanced_subsample, max_samples all
+[config 39/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 39/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 39/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 39/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 39/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 39/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 39/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 39/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 39/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 39/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 39/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 39/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 39/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 39/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 39/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 39/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 39/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 39/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 39/64, run time: 18 s] done: macro-F1 0.8542 (seeds 0.8531 to 0.8550), shrub F1 0.6571, shrub -> tree 0.1416, about 4 min 8 s left
+[config 40/64] start: max_features 6, min_samples_leaf 2, class_weight balanced_subsample, max_samples 0.5
+[config 40/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 40/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 40/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 40/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 40/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 40/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 40/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 40/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 40/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 40/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 40/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 40/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 40/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 40/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 40/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 40/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 40/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 40/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 40/64, run time: 12 s] done: macro-F1 0.8551 (seeds 0.8537 to 0.8559), shrub F1 0.6600, shrub -> tree 0.1394, about 3 min 59 s left
+[config 41/64] start: max_features 6, min_samples_leaf 5, class_weight balanced, max_samples all
+[config 41/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 41/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 41/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 41/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 41/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 41/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 41/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 41/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 41/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 41/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 41/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 41/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 41/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 41/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 41/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 41/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 41/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 41/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 41/64, run time: 16 s] done: macro-F1 0.8499 (seeds 0.8489 to 0.8509), shrub F1 0.6514, shrub -> tree 0.1307, about 3 min 53 s left
+[config 42/64] start: max_features 6, min_samples_leaf 5, class_weight balanced, max_samples 0.5
+[config 42/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 42/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 42/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 42/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 42/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 42/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 42/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 42/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 42/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 42/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 42/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 42/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 42/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 42/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 42/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 42/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 42/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 42/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 42/64, run time: 10 s] done: macro-F1 0.8512 (seeds 0.8504 to 0.8521), shrub F1 0.6578, shrub -> tree 0.1304, about 3 min 42 s left
+[config 43/64] start: max_features 6, min_samples_leaf 5, class_weight balanced_subsample, max_samples all
+[config 43/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 43/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 43/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 43/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 43/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 43/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 43/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 43/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 43/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 43/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 43/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 43/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 43/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 43/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 43/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 43/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 43/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 43/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 43/64, run time: 18 s] done: macro-F1 0.8505 (seeds 0.8488 to 0.8519), shrub F1 0.6517, shrub -> tree 0.1301, about 3 min 36 s left
+[config 44/64] start: max_features 6, min_samples_leaf 5, class_weight balanced_subsample, max_samples 0.5
+[config 44/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 44/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 44/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 44/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 44/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 44/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 44/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 44/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 44/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 44/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 44/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 44/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 44/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 44/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 44/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 44/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 44/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 44/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 44/64, run time: 11 s] done: macro-F1 0.8519 (seeds 0.8508 to 0.8530), shrub F1 0.6587, shrub -> tree 0.1307, about 3 min 26 s left
+[config 45/64] start: max_features 6, min_samples_leaf 10, class_weight balanced, max_samples all
+[config 45/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 45/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 45/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 45/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 45/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 45/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 45/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 45/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 45/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 45/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 45/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 45/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 45/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 45/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 45/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 45/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 45/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 45/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 45/64, run time: 15 s] done: macro-F1 0.8472 (seeds 0.8463 to 0.8482), shrub F1 0.6521, shrub -> tree 0.1246, about 3 min 17 s left
+[config 46/64] start: max_features 6, min_samples_leaf 10, class_weight balanced, max_samples 0.5
+[config 46/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 46/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 46/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 46/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 46/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 46/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 46/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 46/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 46/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 46/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 46/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 46/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 46/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 46/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 46/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 46/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 46/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 46/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 46/64, run time: 9 s] done: macro-F1 0.8477 (seeds 0.8474 to 0.8483), shrub F1 0.6557, shrub -> tree 0.1230, about 3 min 7 s left
+[config 47/64] start: max_features 6, min_samples_leaf 10, class_weight balanced_subsample, max_samples all
+[config 47/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 47/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 47/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 47/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 47/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 47/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 47/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 47/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 47/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 47/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 47/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 47/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 47/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 47/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 47/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 47/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 47/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 47/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 47/64, run time: 16 s] done: macro-F1 0.8468 (seeds 0.8465 to 0.8474), shrub F1 0.6502, shrub -> tree 0.1259, about 2 min 58 s left
+[config 48/64] start: max_features 6, min_samples_leaf 10, class_weight balanced_subsample, max_samples 0.5
+[config 48/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 48/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 48/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 48/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 48/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 48/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 48/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 48/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 48/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 48/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 48/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 48/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 48/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 48/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 48/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 48/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 48/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 48/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 48/64, run time: 11 s] done: macro-F1 0.8480 (seeds 0.8476 to 0.8487), shrub F1 0.6560, shrub -> tree 0.1222, about 2 min 48 s left
+[config 49/64] start: max_features 8, min_samples_leaf 1, class_weight balanced, max_samples all
+[config 49/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 49/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 49/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 49/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 49/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 49/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 49/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 49/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 49/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 49/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 49/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 49/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 49/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 49/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 49/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 49/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 49/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 49/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 49/64, run time: 21 s] done: macro-F1 0.8529 (seeds 0.8519 to 0.8534), shrub F1 0.6526, shrub -> tree 0.1448, about 2 min 41 s left
+[config 50/64] start: max_features 8, min_samples_leaf 1, class_weight balanced, max_samples 0.5
+[config 50/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 50/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 50/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 50/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 50/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 50/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 50/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 50/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 50/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 50/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 50/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 50/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 50/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 50/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 50/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 50/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 50/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 50/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 50/64, run time: 12 s] done: macro-F1 0.8553 (seeds 0.8543 to 0.8565), shrub F1 0.6592, shrub -> tree 0.1434, about 2 min 31 s left
+[config 51/64] start: max_features 8, min_samples_leaf 1, class_weight balanced_subsample, max_samples all
+[config 51/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 51/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 51/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 51/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 51/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 51/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 51/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 51/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 51/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 51/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 51/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 51/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 51/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 51/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 51/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 51/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 51/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 51/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 51/64, run time: 23 s] done: macro-F1 0.8527 (seeds 0.8526 to 0.8528), shrub F1 0.6517, shrub -> tree 0.1458, about 2 min 23 s left
+[config 52/64] start: max_features 8, min_samples_leaf 1, class_weight balanced_subsample, max_samples 0.5
+[config 52/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 52/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 52/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 52/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 52/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 52/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 52/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 52/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 52/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 52/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 52/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 52/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 52/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 52/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 52/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 52/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 52/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 52/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 52/64, run time: 14 s] done: macro-F1 0.8553 (seeds 0.8549 to 0.8556), shrub F1 0.6606, shrub -> tree 0.1440, about 2 min 13 s left
+[config 53/64] start: max_features 8, min_samples_leaf 2, class_weight balanced, max_samples all
+[config 53/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 53/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 53/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 53/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 53/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 53/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 53/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 53/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 53/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 53/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 53/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 53/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 53/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 53/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 53/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 53/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 53/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 53/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 53/64, run time: 21 s] done: macro-F1 0.8527 (seeds 0.8524 to 0.8531), shrub F1 0.6532, shrub -> tree 0.1410, about 2 min 4 s left
+[config 54/64] start: max_features 8, min_samples_leaf 2, class_weight balanced, max_samples 0.5
+[config 54/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 54/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 54/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 54/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 54/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 54/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 54/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 54/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 54/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 54/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 54/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 54/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 54/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 54/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 54/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 54/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 54/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 54/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 54/64, run time: 12 s] done: macro-F1 0.8550 (seeds 0.8542 to 0.8560), shrub F1 0.6613, shrub -> tree 0.1392, about 1 min 53 s left
+[config 55/64] start: max_features 8, min_samples_leaf 2, class_weight balanced_subsample, max_samples all
+[config 55/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 55/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 55/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 55/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 55/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 55/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 55/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 55/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 55/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 55/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 55/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 55/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 55/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 55/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 55/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 55/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 55/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 55/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 55/64, run time: 22 s] done: macro-F1 0.8523 (seeds 0.8515 to 0.8528), shrub F1 0.6531, shrub -> tree 0.1410, about 1 min 43 s left
+[config 56/64] start: max_features 8, min_samples_leaf 2, class_weight balanced_subsample, max_samples 0.5
+[config 56/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 56/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 56/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 56/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 56/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 56/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 56/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 56/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 56/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 56/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 56/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 56/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 56/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 56/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 56/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 56/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 56/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 56/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 56/64, run time: 14 s] done: macro-F1 0.8550 (seeds 0.8543 to 0.8557), shrub F1 0.6605, shrub -> tree 0.1386, about 1 min 32 s left
+[config 57/64] start: max_features 8, min_samples_leaf 5, class_weight balanced, max_samples all
+[config 57/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 57/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 57/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 57/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 57/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 57/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 57/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 57/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 57/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 57/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 57/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 57/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 57/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 57/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 57/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 57/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 57/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 57/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 57/64, run time: 20 s] done: macro-F1 0.8482 (seeds 0.8474 to 0.8489), shrub F1 0.6474, shrub -> tree 0.1317, about 1 min 22 s left
+[config 58/64] start: max_features 8, min_samples_leaf 5, class_weight balanced, max_samples 0.5
+[config 58/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 58/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 58/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 58/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 58/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 58/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 58/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 58/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 58/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 58/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 58/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 58/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 58/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 58/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 58/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 58/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 58/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 58/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 58/64, run time: 12 s] done: macro-F1 0.8495 (seeds 0.8486 to 0.8507), shrub F1 0.6539, shrub -> tree 0.1304, about 1 min 10 s left
+[config 59/64] start: max_features 8, min_samples_leaf 5, class_weight balanced_subsample, max_samples all
+[config 59/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 59/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 59/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 59/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 59/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 59/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 59/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 59/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 59/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 59/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 59/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 59/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 59/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 59/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 59/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 59/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 59/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 59/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 59/64, run time: 21 s] done: macro-F1 0.8491 (seeds 0.8478 to 0.8504), shrub F1 0.6494, shrub -> tree 0.1325, about 59 s left
+[config 60/64] start: max_features 8, min_samples_leaf 5, class_weight balanced_subsample, max_samples 0.5
+[config 60/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 60/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 60/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 60/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 60/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 60/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 60/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 60/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 60/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 60/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 60/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 60/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 60/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 60/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 60/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 60/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 60/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 60/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 60/64, run time: 13 s] done: macro-F1 0.8499 (seeds 0.8492 to 0.8506), shrub F1 0.6551, shrub -> tree 0.1283, about 47 s left
+[config 61/64] start: max_features 8, min_samples_leaf 10, class_weight balanced, max_samples all
+[config 61/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 61/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 61/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 61/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 61/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 61/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 61/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 61/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 61/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 61/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 61/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 61/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 61/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 61/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 61/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 61/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 61/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 61/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 61/64, run time: 19 s] done: macro-F1 0.8435 (seeds 0.8428 to 0.8444), shrub F1 0.6438, shrub -> tree 0.1264, about 36 s left
+[config 62/64] start: max_features 8, min_samples_leaf 10, class_weight balanced, max_samples 0.5
+[config 62/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 62/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 62/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 62/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 62/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 62/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 62/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 62/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 62/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 62/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 62/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 62/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 62/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 62/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 62/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 62/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 62/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 62/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 62/64, run time: 11 s] done: macro-F1 0.8462 (seeds 0.8454 to 0.8474), shrub F1 0.6531, shrub -> tree 0.1224, about 24 s left
+[config 63/64] start: max_features 8, min_samples_leaf 10, class_weight balanced_subsample, max_samples all
+[config 63/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 63/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 63/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 63/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 63/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 63/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 63/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 63/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 63/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 63/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 63/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 63/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 63/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 63/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 63/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 63/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 63/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 63/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 63/64, run time: 21 s] done: macro-F1 0.8437 (seeds 0.8432 to 0.8446), shrub F1 0.6445, shrub -> tree 0.1248, about 12 s left
+[config 64/64] start: max_features 8, min_samples_leaf 10, class_weight balanced_subsample, max_samples 0.5
+[config 64/64] seed 2028 fold 1/6, held out 511000_3527000
+[config 64/64] seed 2028 fold 2/6, held out 511000_3528000
+[config 64/64] seed 2028 fold 3/6, held out 511000_3529000
+[config 64/64] seed 2028 fold 4/6, held out 519000_3527000
+[config 64/64] seed 2028 fold 5/6, held out 515000_3526000
+[config 64/64] seed 2028 fold 6/6, held out 517000_3531000
+[config 64/64] seed 2029 fold 1/6, held out 511000_3527000
+[config 64/64] seed 2029 fold 2/6, held out 511000_3528000
+[config 64/64] seed 2029 fold 3/6, held out 511000_3529000
+[config 64/64] seed 2029 fold 4/6, held out 519000_3527000
+[config 64/64] seed 2029 fold 5/6, held out 515000_3526000
+[config 64/64] seed 2029 fold 6/6, held out 517000_3531000
+[config 64/64] seed 2030 fold 1/6, held out 511000_3527000
+[config 64/64] seed 2030 fold 2/6, held out 511000_3528000
+[config 64/64] seed 2030 fold 3/6, held out 511000_3529000
+[config 64/64] seed 2030 fold 4/6, held out 519000_3527000
+[config 64/64] seed 2030 fold 5/6, held out 515000_3526000
+[config 64/64] seed 2030 fold 6/6, held out 517000_3531000
+[config 64/64, run time: 13 s] done: macro-F1 0.8461 (seeds 0.8458 to 0.8466), shrub F1 0.6517, shrub -> tree 0.1243, about 0 s left
+
+======================================================================
+top 5 by mean macro-F1:
+config_04: max_features 2, min_samples_leaf 1, class_weight balanced_subsample, max_samples 0.5, macro-F1 0.8580, shrub F1 0.6617, shrub -> tree 0.1424, passes False
+config_20: max_features 4, min_samples_leaf 1, class_weight balanced_subsample, max_samples 0.5, macro-F1 0.8571, shrub F1 0.6631, shrub -> tree 0.1432, passes False
+config_05: max_features 2, min_samples_leaf 2, class_weight balanced, max_samples all, macro-F1 0.8570, shrub F1 0.6625, shrub -> tree 0.1400, passes False
+config_07: max_features 2, min_samples_leaf 2, class_weight balanced_subsample, max_samples all, macro-F1 0.8570, shrub F1 0.6625, shrub -> tree 0.1400, passes False
+config_02: max_features 2, min_samples_leaf 1, class_weight balanced, max_samples 0.5, macro-F1 0.8568, shrub F1 0.6582, shrub -> tree 0.1456, passes False
+tree check before the grid: 100 trees 0.8539, 300 trees 0.8564, 1,000 trees 0.8564; the grid used 300
+DECISION: current settings confirmed, n_estimators 300 (no configuration beat the run's seed-mean macro-F1 by more than its seed range while holding shrub F1 and shrub -> tree)
+no tuned hyperparameter file written; runs keep using the pre-tuning file
+finished in 13 min 47 s, wrote /Users/alexfache/Dropbox/planet/results/v4/stage3_classification/run9_tuning

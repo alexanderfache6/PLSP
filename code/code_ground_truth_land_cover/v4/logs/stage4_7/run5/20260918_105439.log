@@ -1,0 +1,49 @@
+Stage 4_7 - end member statistics
+======================================================================
+the polygon is the sample: each polygon's median first, then the median across polygons, 3 per class held out
+
+MOAB Moab_NEON: skipped, stage 4_6 says NOT STARTED
+
+ONAQ Onaqui_NEON: skipped, stage 4_6 says NOT STARTED
+
+RWS Reynolds_Creek_Wyoming_big_sagebrush: skipped, stage 4_6 says NOT STARTED
+
+SJER San_Joaquin_Experimental_Range_NEON: skipped, stage 4_6 says NOT STARTED
+
+SRER Santa_Rita_Experimental_Range_NEON, PLSP 2022 (stage tier, PLSP_2022.nc)
+bare: 15 polygons in stats, 3 held out (20, 51, 63), cells 18 of 18 kept, QA pass 100.0%
+bare medians: EVImax 0.254, EVIamp 0.166, EVIarea 48.320
+grass: 20 polygons in stats, 3 held out (4, 24, 81), cells 23 of 23 kept, QA pass 100.0%
+grass medians: EVImax 0.384, EVIamp 0.279, EVIarea 58.095
+shrub: 19 polygons in stats, 3 held out (18, 25, 68), cells 22 of 22 kept, QA pass 100.0%
+shrub medians: EVImax 0.301, EVIamp 0.197, EVIarea 50.290
+tree: 15 polygons in stats, 3 held out (3, 71, 79), cells 18 of 18 kept, QA pass 100.0%
+tree medians: EVImax 0.379, EVIamp 0.255, EVIarea 64.720
+FLAG EVImax: order broken; observed order bare < shrub < tree < grass, tree - bare 0.125, pooled IQR 0.076
+FLAG EVIamp: order broken; observed order bare < shrub < tree < grass, tree - bare 0.090, pooled IQR 0.075
+FLAG EVIarea: order broken; observed order bare < shrub < grass < tree, tree - bare 16.400, pooled IQR 11.905
+wrote endmember_stats_Santa_Rita_Experimental_Range_NEON_2022.json and endmember_cells_Santa_Rita_Experimental_Range_NEON_2022.csv
+
+TON Tonzi_Ranch: skipped, stage 4_6 says NOT STARTED
+
+WJS Willard_Juniper_Savannah: skipped, stage 4_6 says NOT STARTED
+
+WKG Walnut_Gulch_Kendall_Grasslands, PLSP 2023 (stage tier, PLSP_2023.nc)
+bare: 23 polygons in stats, 3 held out (30, 34, 54), cells 26 of 26 kept, QA pass 100.0%
+bare medians: EVImax 0.351, EVIamp 0.264, EVIarea 50.020
+grass: 12 polygons in stats, 3 held out (15, 67, 75), cells 15 of 15 kept, QA pass 100.0%
+grass medians: EVImax 0.398, EVIamp 0.315, EVIarea 60.350
+shrub: 14 polygons in stats, 3 held out (46, 48, 62), cells 17 of 17 kept, QA pass 100.0%
+shrub medians: EVImax 0.417, EVIamp 0.327, EVIarea 58.485
+tree: 14 polygons in stats, 3 held out (26, 66, 80), cells 17 of 17 kept, QA pass 100.0%
+tree medians: EVImax 0.401, EVIamp 0.307, EVIarea 65.205
+FLAG EVImax: order broken, denominator too small; observed order bare < grass < tree < shrub, tree - bare 0.050, pooled IQR 0.061
+FLAG EVIamp: order broken, denominator too small; observed order bare < tree < grass < shrub, tree - bare 0.043, pooled IQR 0.056
+FLAG EVIarea: order broken; observed order bare < shrub < grass < tree, tree - bare 15.185, pooled IQR 6.876
+wrote endmember_stats_Walnut_Gulch_Kendall_Grasslands_2023.json and endmember_cells_Walnut_Gulch_Kendall_Grasslands_2023.csv
+wrote SRER_2022_endmember_class_spread.png and SRER_2022_endmember_polygon_counts.png
+wrote WKG_2023_endmember_class_spread.png and WKG_2023_endmember_polygon_counts.png
+
+======================================================================
+summary: MOAB: skipped, stage 4_6 says NOT STARTED, ONAQ: skipped, stage 4_6 says NOT STARTED, RWS: skipped, stage 4_6 says NOT STARTED, SJER: skipped, stage 4_6 says NOT STARTED, SRER: statistics from 69 polygons, TON: skipped, stage 4_6 says NOT STARTED, WJS: skipped, stage 4_6 says NOT STARTED, WKG: statistics from 63 polygons
+wrote /Users/alexfache/Dropbox/planet/results/v4/stage4_aggregation/run5/endmembers/stage4_7_endmember_statistics.json and endmember_stats_summary.csv

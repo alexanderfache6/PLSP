@@ -1,0 +1,55 @@
+Stage 4_6 - end member labelling progress
+======================================================================
+gate: 15 counting polygons per class, and 5 per class in every downloaded tile
+a polygon counts if it is at least 9 m2, holds a whole 3 m cell after a 0.5 m inward buffer, and touches only QA-usable cells
+
+----------------------------------------------------------------------
+MOAB Moab_NEON, imagery 2022, QA available: NOT STARTED
+
+
+----------------------------------------------------------------------
+ONAQ Onaqui_NEON, imagery 2022, QA not available: NOT STARTED
+
+
+----------------------------------------------------------------------
+RWS Reynolds_Creek_Wyoming_big_sagebrush, imagery 2021, QA available: NOT STARTED
+
+
+----------------------------------------------------------------------
+SJER San_Joaquin_Experimental_Range_NEON, imagery 2023, QA not available: NOT STARTED
+
+
+----------------------------------------------------------------------
+SRER Santa_Rita_Experimental_Range_NEON, imagery 2022, QA available: PASS
+
+areas: 519000_3527000 low, 517000_3526000 medium, 515000_3530000 high
+skipped 0
+bare: counting 18 of 15, per area 6, 6, 6 (min 5 each), drawn 21, not counting: no whole 3.0 m cell after the 0.5 m inward buffer 1; touches a cell that is not QA-usable 2
+grass: counting 23 of 15, per area 7, 9, 7 (min 5 each), drawn 23
+shrub: counting 22 of 15, per area 7, 5, 10 (min 5 each), drawn 23, not counting: touches a cell that is not QA-usable 1
+tree: counting 18 of 15, per area 6, 7, 5 (min 5 each), drawn 21, not counting: no whole 3.0 m cell after the 0.5 m inward buffer 3
+
+----------------------------------------------------------------------
+TON Tonzi_Ranch, imagery 2022, QA not available: NOT STARTED
+
+
+----------------------------------------------------------------------
+WJS Willard_Juniper_Savannah, imagery 2022, QA available: NOT STARTED
+
+
+----------------------------------------------------------------------
+WKG Walnut_Gulch_Kendall_Grasslands, imagery 2023, QA available: FAIL
+
+areas: naip_window window
+skipped 0
+bare: counting 17 of 15, per area 17 (min 5 each), drawn 19, not counting: no whole 3.0 m cell after the 0.5 m inward buffer 2
+grass: counting 8 of 15, per area 8 (min 5 each), drawn 8
+shrub: counting 9 of 15, per area 9 (min 5 each), drawn 10, not counting: no whole 3.0 m cell after the 0.5 m inward buffer 1
+tree: counting 9 of 15, per area 9 (min 5 each), drawn 10, not counting: no whole 3.0 m cell after the 0.5 m inward buffer 1
+- grass: 8 of 15 in total
+- shrub: 9 of 15 in total
+- tree: 9 of 15 in total
+
+======================================================================
+summary: MOAB NOT STARTED, ONAQ NOT STARTED, RWS NOT STARTED, SJER NOT STARTED, SRER PASS, TON NOT STARTED, WJS NOT STARTED, WKG FAIL
+wrote /Users/alexfache/Dropbox/planet/results/v4/stage4_aggregation/run5/endmembers/stage4_6_labeling_progress.json

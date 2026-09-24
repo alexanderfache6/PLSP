@@ -1,0 +1,36 @@
+Stage 4_7 - end member statistics
+======================================================================
+the polygon is the sample: each polygon's median first, then the median across polygons, 3 per class held out
+
+MOAB Moab_NEON: skipped, stage 4_6 says NOT STARTED
+
+ONAQ Onaqui_NEON: skipped, stage 4_6 says NOT STARTED
+
+RWS Reynolds_Creek_Wyoming_big_sagebrush: skipped, stage 4_6 says NOT STARTED
+
+SJER San_Joaquin_Experimental_Range_NEON: skipped, stage 4_6 says NOT STARTED
+
+SRER Santa_Rita_Experimental_Range_NEON, PLSP 2022 (stage tier, PLSP_2022.nc)
+bare: 15 polygons in stats, 3 held out (20, 51, 63), cells 18 of 18 kept, QA pass 100.0%
+bare medians: EVImax 0.254, EVIamp 0.166, EVIarea 48.320
+grass: 20 polygons in stats, 3 held out (4, 24, 81), cells 23 of 23 kept, QA pass 100.0%
+grass medians: EVImax 0.384, EVIamp 0.279, EVIarea 58.095
+shrub: 19 polygons in stats, 3 held out (18, 25, 68), cells 22 of 22 kept, QA pass 100.0%
+shrub medians: EVImax 0.301, EVIamp 0.197, EVIarea 50.290
+tree: 15 polygons in stats, 3 held out (3, 71, 79), cells 18 of 18 kept, QA pass 100.0%
+tree medians: EVImax 0.379, EVIamp 0.255, EVIarea 64.720
+FLAG EVImax: order broken; observed order bare < shrub < tree < grass, tree - bare 0.125, pooled IQR 0.076
+FLAG EVIamp: order broken; observed order bare < shrub < tree < grass, tree - bare 0.090, pooled IQR 0.075
+FLAG EVIarea: order broken; observed order bare < shrub < grass < tree, tree - bare 16.400, pooled IQR 11.905
+wrote endmember_stats_Santa_Rita_Experimental_Range_NEON_2022.json and endmember_cells_Santa_Rita_Experimental_Range_NEON_2022.csv
+
+TON Tonzi_Ranch: skipped, stage 4_6 says NOT STARTED
+
+WJS Willard_Juniper_Savannah: skipped, stage 4_6 says NOT STARTED
+
+WKG Walnut_Gulch_Kendall_Grasslands: skipped, stage 4_6 says FAIL
+wrote SRER_2022_endmember_class_spread.png and SRER_2022_endmember_polygon_counts.png
+
+======================================================================
+summary: MOAB: skipped, stage 4_6 says NOT STARTED, ONAQ: skipped, stage 4_6 says NOT STARTED, RWS: skipped, stage 4_6 says NOT STARTED, SJER: skipped, stage 4_6 says NOT STARTED, SRER: statistics from 69 polygons, TON: skipped, stage 4_6 says NOT STARTED, WJS: skipped, stage 4_6 says NOT STARTED, WKG: skipped, stage 4_6 says FAIL
+wrote /Users/alexfache/Dropbox/planet/results/v4/stage4_aggregation/run5/endmembers/stage4_7_endmember_statistics.json and endmember_stats_summary.csv

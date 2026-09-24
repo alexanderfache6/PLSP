@@ -1,0 +1,56 @@
+Step 1d - RF-A per-pixel classification - SRER 2022
+======================================================================
+run 9, subsample seed 2028, forest seeds 2028, 2029, 2030, train tiles 6, test tiles 4
+labels: stage2_labeling/labels_clean/, manifest sha256 825b955c52dc
+forest settings: stage3_1_run9_pretuned_hyperparameters.json, sha256 2267b84daff2: n_estimators 300, min_samples_leaf 2, class_weight balanced, max_features sqrt, max_samples None, criterion gini
+polygon subsampling: max 100 px per polygon
+tile weighting: none - no sample weights, as runs 1 to 9
+DIAGNOSTIC ONLY - cross-validation over training polygons is not map accuracy.
+Step 6 accuracy needs the Olofsson protocol on an independent sample (section 6).
+
+run 9 note: THE REBUILT BASELINE. Labels: stage2_labeling/labels_clean, the exact run 5 label state, reconstructed and verified by training pixel counts (3,361 / 4,752 / 1,255 / 1,959), read through run_stage3_1's fixed LABEL_SET path and recorded by the manifest sha256 in the report. Settings identical to run 5: cap min(100, n) pixels per polygon, RF_HYPERPARAMETERS as run 5 used them, subsample seed 2028. New: frameworks C and D, --seeds 3 (forest seeds 2028 to 2030 on identical pixels), and the steps/stage3_steps.md section 8b assessment from stage3_assessment.py (balanced accuracy, quantity and allocation disagreement, per-polygon majority vote, polygon-bootstrap 95% intervals, seed band, permutation importance), raw held-out predictions and derived tables, and the saved final model. EXPECTED: the primary seed reproduces run 5 exactly for C and D, since labels, cap, settings and seed are identical; the seed band sets the noise floor that tuning and run 10 must clear. The test tiles are not scored. NOTE: a sandbox test of the Tier 2 gate on 2026-09-23 scored the test tiles once for run 5's C settings (macro-F1 0.801); no decision may follow from that number.
+
+
+==========================================================================
+framework C - 19 features: r, g, b, ExG, ExR, ExGR, VARI, GLI, luma, saturation, glcm_contrast, glcm_homogeneity, glcm_correlation, glcm_entropy, lbp_nonuniform, std, SAVI, NDVI, EVI
+train pixels per class: bare 3361, grass 4752, shrub 1255, tree 1959
+
+TIER 2, C, the 4 test tiles pooled, pixels
+bare: support 3112, recall 0.994, precision 0.912, F1 0.951, area bias +9.00%
+grass: support 2418, recall 0.648, precision 0.940, F1 0.767, area bias -31.02%
+shrub: support 1799, recall 0.646, precision 0.834, F1 0.728, area bias -22.51%
+tree: support 1820, recall 0.941, precision 0.635, F1 0.758, area bias +48.08%
+macro-F1 0.801, balanced accuracy 0.807, overall 0.824 (overall is dominated by bare and grass - judge on per-class)
+quantity disagreement 0.1262, allocation disagreement 0.0502, shrub -> tree 0.183, shrub -> grass 0.019
+
+TIER 2, C, per polygon by majority vote (337 polygons)
+bare: support 65, recall 1.000, precision 0.730, F1 0.844, area bias +36.92%
+grass: support 51, recall 0.804, precision 0.820, F1 0.812, area bias -1.96%
+shrub: support 156, recall 0.699, precision 0.973, F1 0.813, area bias -28.21%
+tree: support 65, recall 0.969, precision 0.733, F1 0.834, area bias +32.31%
+macro-F1 0.826, balanced accuracy 0.868, overall 0.825 (overall is dominated by bare and grass - judge on per-class)
+quantity disagreement 0.1335, allocation disagreement 0.0415, shrub -> tree 0.103, shrub -> grass 0.045
+recorded Tier 2 for C in stage3_1_report_SRER_2022.json
+
+==========================================================================
+framework D - 20 features: r, g, b, ExG, ExR, ExGR, VARI, GLI, luma, saturation, glcm_contrast, glcm_homogeneity, glcm_correlation, glcm_entropy, lbp_nonuniform, std, SAVI, NDVI, EVI, CHM
+train pixels per class: bare 3361, grass 4752, shrub 1255, tree 1959
+
+TIER 2, D, the 4 test tiles pooled, pixels
+bare: support 3112, recall 0.996, precision 0.926, F1 0.960, area bias +7.62%
+grass: support 2418, recall 0.820, precision 0.952, F1 0.881, area bias -13.85%
+shrub: support 1799, recall 0.754, precision 0.849, F1 0.799, area bias -11.23%
+tree: support 1820, recall 0.920, precision 0.790, F1 0.850, area bias +16.48%
+macro-F1 0.872, balanced accuracy 0.873, overall 0.887 (overall is dominated by bare and grass - judge on per-class)
+quantity disagreement 0.0587, allocation disagreement 0.0544, shrub -> tree 0.115, shrub -> grass 0.012
+
+TIER 2, D, per polygon by majority vote (337 polygons)
+bare: support 65, recall 1.000, precision 0.823, F1 0.903, area bias +21.54%
+grass: support 51, recall 0.980, precision 0.926, F1 0.952, area bias +5.88%
+shrub: support 156, recall 0.853, precision 1.000, F1 0.920, area bias -14.74%
+tree: support 65, recall 0.969, precision 0.887, F1 0.926, area bias +9.23%
+macro-F1 0.926, balanced accuracy 0.951, overall 0.923 (overall is dominated by bare and grass - judge on per-class)
+quantity disagreement 0.0682, allocation disagreement 0.0089, shrub -> tree 0.045, shrub -> grass 0.013
+recorded Tier 2 for D in stage3_1_report_SRER_2022.json
+
+wrote /Users/alexfache/Dropbox/planet/results/v4/stage3_classification/run9/stage3_1_report_SRER_2022.json
